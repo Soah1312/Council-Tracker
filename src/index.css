@@ -89,3 +89,91 @@
 .transition-brutal {
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ── React Big Calendar Dark Theme Overrides ── */
+.calendar-dark-theme .rbc-calendar {
+  font-family: 'Satoshi', sans-serif;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.calendar-dark-theme .rbc-month-view,
+.calendar-dark-theme .rbc-time-view,
+.calendar-dark-theme .rbc-agenda-view {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-dark-theme .rbc-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 12px 0;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.calendar-dark-theme .rbc-month-row,
+.calendar-dark-theme .rbc-day-bg,
+.calendar-dark-theme .rbc-time-content,
+.calendar-dark-theme .rbc-timeslot-group,
+.calendar-dark-theme .rbc-time-header-content {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.calendar-dark-theme .rbc-off-range-bg {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-dark-theme .rbc-today {
+  background: rgba(255, 225, 124, 0.05);
+}
+
+.calendar-dark-theme .rbc-date-cell {
+  padding: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.calendar-dark-theme .rbc-event {
+  background-color: transparent;
+  padding: 0;
+  margin: 1px 2px;
+}
+
+.calendar-dark-theme .rbc-show-more {
+  color: #ffe17c;
+  font-size: 10px;
+  font-weight: bold;
+  background: rgba(255, 225, 124, 0.1);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin-top: 2px;
+  display: inline-block;
+}
+
+.calendar-dark-theme .rbc-time-header.rbc-overflowing {
+  border-right: none;
+}
+
+.calendar-dark-theme .rbc-time-gutter .rbc-timeslot-group {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.calendar-dark-theme .rbc-label {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 10px;
+  padding: 0 4px;
+}
+
+.calendar-dark-theme .rbc-agenda-view table.rbc-agenda-table {
+  border: none;
+}
+
+.calendar-dark-theme .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 12px;
+}

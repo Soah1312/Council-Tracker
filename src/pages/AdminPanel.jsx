@@ -467,8 +467,11 @@ export default function AdminPanel() {
           </form>
 
           <div className="text-center pt-4 border-t border-[#171e19]/10">
-            <Link to="/" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:underline">
-              &larr; BACK TO EVENT PORTAL
+            <Link to="/" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2] hover:text-[#171e19] hover:underline mr-4">
+              &larr; HOME
+            </Link>
+            <Link to="/portal" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:underline">
+              EVENT PORTAL
             </Link>
           </div>
         </div>
@@ -715,7 +718,7 @@ export default function AdminPanel() {
 
         <div className="flex items-center gap-3">
           <Link
-            to="/"
+            to="/portal"
             className="inline-flex items-center px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
           >
             &larr; PORTAL HOME
