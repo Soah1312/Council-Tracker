@@ -1,0 +1,25 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Councils Collection
+    // - Anyone can read/query (needed to validate access codes and display council info)
+    // - Strictly read-only for clients (prevent registration tempering, config changes)
+    match /councils/{councilId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    
+    // Events Collection
+    // - Anyone can read (to display logbooks and dashboards)
+    // - Anyone can create a proposal request
+    // - Council portals and admins can update statuses and submit reports
+    // - Deletions are forbidden to preserve audit trail integrity
+    match /events/{eventId} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if true;
+      allow delete: if false;
+    }
+  }
+}

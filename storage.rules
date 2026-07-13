@@ -1,0 +1,18 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Allow read/write for event documents (proposals & reports)
+    // - Anyone can read file references (permission letters, images, and reports)
+    // - File uploads are limited to 10MB
+    // - Restricts file types to PDFs and standard images for security
+    match /events/{eventId}/{folder}/{fileName} {
+      allow read: if true;
+      allow write: if request.resource.size < 10 * 1024 * 1024
+                   && (
+                     request.resource.contentType.matches('application/pdf') ||
+                     request.resource.contentType.startsWith('image/')
+                   );
+    }
+  }
+}
