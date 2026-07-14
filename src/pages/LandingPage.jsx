@@ -169,11 +169,11 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#050505] text-white font-satoshi selection:bg-[#ffe17c] selection:text-black relative overflow-x-hidden">
       {/* ── AMBIENT BACKGROUND GLOWS ───────────────────────────────────── */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#ffe17c]/5 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#ffe17c]/5 rounded-full blur-[150px] pointer-events-none transform-gpu -z-10" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none transform-gpu -z-10" />
       
       {/* ── TOP NAVBAR ─────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 bg-[#050505]/70 backdrop-blur-2xl border-b border-white/[0.05]">
+      <nav className="sticky top-0 z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.05] transform-gpu">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Fr.CRCE Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
@@ -248,7 +248,7 @@ export default function LandingPage() {
         </motion.div>
 
         {/* ── SLEEK HORIZONTAL FILTERS ─────────────────────────────────── */}
-        <div className="sticky top-[72px] z-40 bg-[#050505]/80 backdrop-blur-xl py-4 border-b border-white/5 mb-8 flex flex-col gap-4">
+        <div className="sticky top-[72px] z-40 bg-[#050505]/80 backdrop-blur-xl py-4 border-b border-white/5 mb-8 flex flex-col gap-4 transform-gpu">
           <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
             <span className="text-white/30 text-xs font-bold uppercase tracking-widest shrink-0">Status</span>
             <button
