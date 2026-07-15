@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, submitReport, submitPermissionLetters } from '../lib/events';
+import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, registerWithEmail } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
@@ -719,6 +719,20 @@ export default function CouncilPortal() {
     setErrors({});
     setEditingEventId(event.eventId);
     setActiveTab('new-request');
+  };
+
+  const handleDeleteProposal = async (eventId, e) => {
+    e.stopPropagation();
+    if (window.confirm('Are you sure you want to permanently delete this proposal? This action cannot be undone.')) {
+      try {
+        await deleteEventRequest(eventId);
+        showNotification('Proposal deleted successfully.', 'success');
+        if (expandedEventId === eventId) setExpandedEventId(null);
+      } catch (err) {
+        console.error('Error deleting proposal:', err);
+        showNotification('Failed to delete proposal.', 'error');
+      }
+    }
   };
 
   const handleResetForm = () => {
@@ -1738,7 +1752,6 @@ export default function CouncilPortal() {
                           <span className={statusInfo.colorClass}>
                             {statusInfo.label}
                           </span>
-                          
                           {/* Show Upload Permissions only (report submit button moved to Stage 3 banner above) */}
                           {(event.status === 'proposal_approved' || event.status === 'permissions_revision_needed') && (
                             <button
@@ -1754,6 +1767,18 @@ export default function CouncilPortal() {
                             </button>
                           )}
 
+                          {/* Delete Proposal Button */}
+                          <button
+                            onClick={(e) => handleDeleteProposal(event.eventId, e)}
+                            title="Delete Proposal"
+                            className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 border border-transparent hover:border-red-200 transition-colors rounded-none shrink-0"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
                         </div>
                       </div>
 
