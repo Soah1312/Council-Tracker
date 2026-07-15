@@ -808,7 +808,12 @@ export default function AdminPanel() {
                     <div className="grid grid-cols-1 gap-2 font-satoshi">
                       {selectedEventDetail.eventDescriptionUrl && (
                         <a href={selectedEventDetail.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> Proposal Summary PDF
+                          <IconFile className="w-5 h-5 shrink-0" /> Proposal Document
+                        </a>
+                      )}
+                      {selectedEventDetail.eventOutcomeUrl && (
+                        <a href={selectedEventDetail.eventOutcomeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-5 h-5 shrink-0" /> Event Outcome
                         </a>
                       )}
                       {selectedEventDetail.doswPermissionLetterUrl && (
@@ -831,7 +836,7 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
                         </a>
                       )}
-                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.councilPermissionLetterUrl && !selectedEventDetail.venuePermissionLetterUrl && !selectedEventDetail.attendanceWaiverUrl && (
+                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.councilPermissionLetterUrl && !selectedEventDetail.venuePermissionLetterUrl && !selectedEventDetail.attendanceWaiverUrl && (
                         <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
                     </div>
@@ -1326,6 +1331,11 @@ export default function AdminPanel() {
                                 <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                   <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
                                 </a>
+                                {event.eventOutcomeUrl && (
+                                  <a href={event.eventOutcomeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> EVENT OUTCOME PDF
+                                  </a>
+                                )}
                                 {event.attendanceWaiverUrl && (
                                   <a href={event.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> WAIVER REQUEST LIST PDF
@@ -1425,6 +1435,11 @@ export default function AdminPanel() {
                                 <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                   <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
                                 </a>
+                                {event.eventOutcomeUrl && (
+                                  <a href={event.eventOutcomeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> EVENT OUTCOME PDF
+                                  </a>
+                                )}
                                 {event.doswPermissionLetterUrl && (
                                   <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> DOSW CLEARANCE PDF
