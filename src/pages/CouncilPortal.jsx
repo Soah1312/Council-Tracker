@@ -170,6 +170,7 @@ export default function CouncilPortal() {
   // Attached files state
   const [files, setFiles] = useState({
     eventDescription: null,
+    eventOutcome: null,
     doswLetter: null,
     councilLetter: null,
     venueLetter: null,
@@ -185,6 +186,7 @@ export default function CouncilPortal() {
   const [editingEventId, setEditingEventId] = useState(null);
   const [existingUrls, setExistingUrls] = useState({
     eventDescriptionUrl: '',
+    eventOutcomeUrl: '',
     doswPermissionLetterUrl: '',
     councilPermissionLetterUrl: '',
     venuePermissionLetterUrl: '',
@@ -660,6 +662,9 @@ export default function CouncilPortal() {
     if (!files.eventDescription && !existingUrls.eventDescriptionUrl) {
       newErrors.eventDescription = 'Proposal description PDF is required.';
     }
+    if (!files.eventOutcome && !existingUrls.eventOutcomeUrl) {
+      newErrors.eventOutcome = 'Event Outcome PDF is required.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -684,6 +689,12 @@ export default function CouncilPortal() {
         setUploadProgress('Uploading event proposal description PDF...');
         eventDescriptionUrl = await uploadFile(files.eventDescription, uploadPath);
       }
+
+      let eventOutcomeUrl = existingUrls.eventOutcomeUrl;
+      if (files.eventOutcome) {
+        setUploadProgress('Uploading event outcome PDF...');
+        eventOutcomeUrl = await uploadFile(files.eventOutcome, uploadPath);
+      }
       
       // Preserve existing permission letters if editing, otherwise null
       const doswPermissionLetterUrl = existingUrls.doswPermissionLetterUrl || null;
@@ -707,6 +718,7 @@ export default function CouncilPortal() {
         startDate: formData.startDate,
         endDate: formData.endDate,
         eventDescriptionUrl,
+        eventOutcomeUrl,
         doswPermissionLetterUrl,
         councilPermissionLetterUrl,
         venuePermissionLetterUrl,
@@ -749,13 +761,15 @@ export default function CouncilPortal() {
 
     setExistingUrls({
       eventDescriptionUrl: event.eventDescriptionUrl || '',
+      eventOutcomeUrl: event.eventOutcomeUrl || '',
       doswPermissionLetterUrl: event.doswPermissionLetterUrl || '',
       councilPermissionLetterUrl: event.councilPermissionLetterUrl || '',
       venuePermissionLetterUrl: event.venuePermissionLetterUrl || ''
     });
 
     setFiles({
-      eventDescription: null
+      eventDescription: null,
+      eventOutcome: null
     });
 
     setErrors({});
@@ -785,7 +799,8 @@ export default function CouncilPortal() {
       endDate: ''
     });
     setFiles({
-      eventDescription: null
+      eventDescription: null,
+      eventOutcome: null
     });
     setErrors({});
     setSubmittedEventId(null);
@@ -1538,6 +1553,18 @@ export default function CouncilPortal() {
                       error={errors.eventDescription}
                       cachedUrl={existingUrls.eventDescriptionUrl}
                     />
+
+                    {/* Outcome file */}
+                    <DragDropUpload
+                      id="eventOutcome"
+                      label={`Event Outcome PDF ${editingEventId ? '(Optional)' : '*'}`}
+                      helperText="Please upload a PDF detailing the expected outcomes, benefits, and key takeaways from the event."
+                      accept="application/pdf"
+                      file={files.eventOutcome}
+                      onChange={(file) => setFiles(prev => ({ ...prev, eventOutcome: file }))}
+                      error={errors.eventOutcome}
+                      cachedUrl={existingUrls.eventOutcomeUrl}
+                    />
                   </div>
                 </div>
 
@@ -1838,9 +1865,16 @@ export default function CouncilPortal() {
                           <div className="space-y-3">
                             <span className="font-bold text-[#b7c6c2] uppercase tracking-wider block text-xs">Clearance Documents</span>
                             <div className="flex flex-wrap gap-3 font-bold text-sm uppercase">
-                              <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                <IconFile className="w-4 h-4" /> PROPOSAL SUMMARY PDF
-                              </a>
+                              {event.eventDescriptionUrl && (
+                                <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
+                                  <IconFile className="w-4 h-4 shrink-0" /> PROPOSAL DOCUMENT
+                                </a>
+                              )}
+                              {event.eventOutcomeUrl && (
+                                <a href={event.eventOutcomeUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
+                                  <IconFile className="w-4 h-4 shrink-0" /> EVENT OUTCOME
+                                </a>
+                              )}
                               {event.doswPermissionLetterUrl && (
                                 <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
                                   <IconFile className="w-4 h-4" /> DOSW CLEARANCE PDF
@@ -2024,9 +2058,12 @@ export default function CouncilPortal() {
                 <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
                   {permissionsUploadEvent.eventName.toUpperCase()}
                 </h3>
-                <p className="font-satoshi text-xs uppercase font-semibold mt-1">
-                  ID: <span className="underline">{permissionsUploadEvent.eventId}</span>
-                </p>
+                <div className="mt-3 bg-[#ffe17c]/30 border-2 border-[#171e19] p-3 text-[#171e19] shadow-[2px_2px_0px_0px_#171e19]">
+                  <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider mb-1">⚠️ IMPORTANT INSTRUCTION</p>
+                  <p className="font-satoshi text-xs font-semibold leading-relaxed">
+                    Please ensure that you have mentioned the Event ID <span className="font-bold underline bg-white px-1 border border-[#171e19]">{permissionsUploadEvent.eventId}</span> (received in Stage 1) on all physical permission documents before scanning and uploading them.
+                  </p>
+                </div>
               </div>
 
               {permissionsSubmitting && (
