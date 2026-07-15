@@ -201,9 +201,9 @@ export default function CouncilPortal() {
   // Permission Upload States (Stage 2)
   const [permissionsUploadEvent, setPermissionsUploadEvent] = useState(null);
   const [permissionsFiles, setPermissionsFiles] = useState({
-    doswLetter: null,
-    otherDocument: null
+    doswLetter: null
   });
+  const [customPermissionDocs, setCustomPermissionDocs] = useState([]);
   const [permissionsErrors, setPermissionsErrors] = useState({});
   const [permissionsSubmitting, setPermissionsSubmitting] = useState(false);
   const [startCalMonth, setStartCalMonth] = useState(new Date());
@@ -657,12 +657,9 @@ export default function CouncilPortal() {
     if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
       newErrors.endDate = 'End date must be after the start date.';
     }
-    // File description validation
+    // File description validation - Single required PDF
     if (!files.eventDescription && !existingUrls.eventDescriptionUrl) {
       newErrors.eventDescription = 'Proposal description PDF is required.';
-    }
-    if (!files.eventOutcome && !existingUrls.eventOutcomeUrl) {
-      newErrors.eventOutcome = 'Event Outcome PDF is required.';
     }
 
     setErrors(newErrors);
@@ -689,11 +686,7 @@ export default function CouncilPortal() {
         eventDescriptionUrl = await uploadFile(files.eventDescription, uploadPath);
       }
 
-      let eventOutcomeUrl = existingUrls.eventOutcomeUrl;
-      if (files.eventOutcome) {
-        setUploadProgress('Uploading event outcome PDF...');
-        eventOutcomeUrl = await uploadFile(files.eventOutcome, uploadPath);
-      }
+      let eventOutcomeUrl = existingUrls.eventOutcomeUrl || null;
       
       // Preserve existing permission letters if editing, otherwise null
       const doswPermissionLetterUrl = existingUrls.doswPermissionLetterUrl || null;
@@ -879,23 +872,29 @@ export default function CouncilPortal() {
       setUploadProgress('Uploading DoSW clearance letter PDF...');
       const doswPermissionLetterUrl = await uploadFile(permissionsFiles.doswLetter, uploadPath);
       
-      let otherDocumentUrl = null;
-      if (permissionsFiles.otherDocument) {
-        setUploadProgress('Uploading other relevant document PDF...');
-        otherDocumentUrl = await uploadFile(permissionsFiles.otherDocument, uploadPath);
+      const customPermissionLetters = [];
+      for (let i = 0; i < customPermissionDocs.length; i++) {
+        const item = customPermissionDocs[i];
+        if (item.file) {
+          const docTitle = item.name.trim() || `Additional Clearance ${i + 1}`;
+          setUploadProgress(`Uploading ${docTitle}...`);
+          const url = await uploadFile(item.file, uploadPath);
+          customPermissionLetters.push({ title: docTitle, url });
+        }
       }
 
       setUploadProgress('Saving to database...');
       await submitPermissionLetters(permissionsUploadEvent.eventId, {
         doswPermissionLetterUrl,
-        otherDocumentUrl
+        customPermissionLetters
       });
       // Fire-and-forget email notification
       notifyPermissionsSubmitted(permissionsUploadEvent, council.name).catch(console.error);
 
       showNotification('Permission letters uploaded successfully! Awaiting review.');
       setPermissionsUploadEvent(null);
-      setPermissionsFiles({ doswLetter: null, otherDocument: null });
+      setPermissionsFiles({ doswLetter: null });
+      setCustomPermissionDocs([]);
       setPermissionsErrors({});
     } catch (err) {
       console.error(err);
@@ -1542,28 +1541,16 @@ export default function CouncilPortal() {
                   </div>
                   
                   <div className="grid grid-cols-1 gap-6">
-                    {/* Description file */}
+                    {/* Single Comprehensive Description/Proposal PDF */}
                     <DragDropUpload
                       id="eventDescription"
-                      label={`Event Description/Proposal PDF ${editingEventId ? '(Optional)' : '*'}`}
-                      helperText="Please upload a single PDF file that details what the event exactly is, the timeline, schedule, flow, and other important aspects of the event."
+                      label={`Event Description & Proposal Summary PDF ${editingEventId ? '(Optional)' : '*'}`}
+                      helperText="Please upload a single PDF file that details what the event exactly is, the timeline, schedule, flow, expected outcomes, benefits, key takeaways, and other important aspects of the event."
                       accept="application/pdf"
                       file={files.eventDescription}
                       onChange={(file) => setFiles(prev => ({ ...prev, eventDescription: file }))}
                       error={errors.eventDescription}
                       cachedUrl={existingUrls.eventDescriptionUrl}
-                    />
-
-                    {/* Outcome file */}
-                    <DragDropUpload
-                      id="eventOutcome"
-                      label={`Event Outcome PDF ${editingEventId ? '(Optional)' : '*'}`}
-                      helperText="Please upload a PDF detailing the expected outcomes, benefits, and key takeaways from the event."
-                      accept="application/pdf"
-                      file={files.eventOutcome}
-                      onChange={(file) => setFiles(prev => ({ ...prev, eventOutcome: file }))}
-                      error={errors.eventOutcome}
-                      cachedUrl={existingUrls.eventOutcomeUrl}
                     />
                   </div>
                 </div>
@@ -1879,9 +1866,14 @@ export default function CouncilPortal() {
                               )}
                               {event.doswPermissionLetterUrl && (
                                 <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> DOSW CLEARANCE PDF
+                                  <IconFile className="w-4 h-4" /> DOSW & PRINCIPAL CLEARANCE PDF
                                 </a>
                               )}
+                              {event.customPermissionLetters && event.customPermissionLetters.map((docItem, idx) => (
+                                <a key={idx} href={docItem.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
+                                  <IconFile className="w-4 h-4" /> {String(docItem.title || `ADDITIONAL LETTER ${idx + 1}`).toUpperCase()} PDF
+                                </a>
+                              ))}
                               {event.otherDocumentUrl && (
                                 <a href={event.otherDocumentUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
                                   <IconFile className="w-4 h-4" /> OTHER RELEVANT DOCUMENT PDF
@@ -1960,6 +1952,24 @@ export default function CouncilPortal() {
                                   <span className="flex items-center gap-1 text-[10px] text-[#b7c6c2]"><IconPhoto className="w-3 h-3" /> Images Uploaded: {event.reportImageUrls.length}</span>
                                 )}
                               </div>
+                            </div>
+                          )}
+
+                          {/* Bottom Right Action Bar inside Drawer for Stage 2 Upload Permissions */}
+                          {(event.status === 'proposal_approved' || event.status === 'permissions_revision_needed') && (
+                            <div className="flex justify-end pt-4 border-t-2 border-[#171e19]">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPermissionsUploadEvent(event);
+                                  setPermissionsFiles({ doswLetter: null });
+                                  setCustomPermissionDocs([]);
+                                  setPermissionsErrors({});
+                                }}
+                                className="px-5 py-2.5 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[3px_3px_0px_0px_#171e19] transition-all rounded-none"
+                              >
+                                Upload Permissions
+                              </button>
                             </div>
                           )}
                         </div>
@@ -2074,7 +2084,7 @@ export default function CouncilPortal() {
               )}
 
               <form onSubmit={handlePermissionsSubmit} className="space-y-4">
-                {/* DoSW Letter File */}
+                {/* Mandatory DoSW Letter File */}
                 <DragDropUpload
                   id="doswLetter"
                   label="DoSW & Principal Clearance (PDF) *"
@@ -2084,15 +2094,57 @@ export default function CouncilPortal() {
                   error={permissionsErrors.doswLetter}
                 />
 
-                {/* Other Relevant Document */}
-                <DragDropUpload
-                  id="otherDocument"
-                  label="Other Relevant Document (PDF) (Optional)"
-                  accept="application/pdf"
-                  file={permissionsFiles.otherDocument}
-                  onChange={(file) => setPermissionsFiles(prev => ({ ...prev, otherDocument: file }))}
-                  error={permissionsErrors.otherDocument}
-                />
+                {/* Optional Custom Permission Letters Section */}
+                <div className="space-y-3 pt-3 border-t-2 border-[#171e19]">
+                  <div className="flex items-center justify-between">
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]">
+                      Additional Permission Letters (Optional)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setCustomPermissionDocs(prev => [...prev, { id: Date.now() + Math.random(), name: '', file: null }])}
+                      className="px-3 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] font-satoshi font-bold text-[10px] uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-all rounded-none"
+                    >
+                      + Add Custom Document
+                    </button>
+                  </div>
+
+                  {customPermissionDocs.map((item, idx) => (
+                    <div key={item.id} className="p-3 bg-[#b7c6c2]/10 border-2 border-[#171e19] space-y-2 relative rounded-none">
+                      <div className="flex items-center justify-between gap-2">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                          Document #{idx + 1} Title
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => setCustomPermissionDocs(prev => prev.filter(d => d.id !== item.id))}
+                          className="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 border border-[#171e19] text-[10px] font-bold uppercase transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+
+                      <input
+                        type="text"
+                        placeholder="e.g. Police NOC, Lab Clearance, Venue Permission..."
+                        value={item.name}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCustomPermissionDocs(prev => prev.map(d => d.id === item.id ? { ...d, name: val } : d));
+                        }}
+                        className="w-full bg-white border border-[#171e19] px-3 py-1.5 text-xs font-bold text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                      />
+
+                      <DragDropUpload
+                        id={`customDoc-${item.id}`}
+                        label={`Upload PDF for "${item.name.trim() || 'Custom Document ' + (idx + 1)}"`}
+                        accept="application/pdf"
+                        file={item.file}
+                        onChange={(file) => setCustomPermissionDocs(prev => prev.map(d => d.id === item.id ? { ...d, file } : d))}
+                      />
+                    </div>
+                  ))}
+                </div>
 
                 <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
                   <button
@@ -2100,7 +2152,8 @@ export default function CouncilPortal() {
                     disabled={permissionsSubmitting}
                     onClick={() => {
                       setPermissionsUploadEvent(null);
-                      setPermissionsFiles({ doswLetter: null, otherDocument: null });
+                      setPermissionsFiles({ doswLetter: null });
+                      setCustomPermissionDocs([]);
                       setPermissionsErrors({});
                     }}
                     className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"

@@ -523,7 +523,9 @@ export default function AdminPanel() {
     return matchesSearch;
   });
 
-  const pendingEvents = allEvents.filter(e => e.status === 'submitted');
+  const pendingEvents = allEvents.filter(e => e.status === 'submitted' || e.status === 'permissions_submitted');
+  const pendingProposals = allEvents.filter(e => e.status === 'submitted' || e.status === 'revision_needed');
+  const pendingPermissions = allEvents.filter(e => e.status === 'permissions_submitted' || e.status === 'permissions_revision_needed');
 
   // PASSCODE LOCK SCREEN RENDER
   if (!authenticated) {
@@ -824,9 +826,14 @@ export default function AdminPanel() {
                       )}
                       {selectedEventDetail.doswPermissionLetterUrl && (
                         <a href={selectedEventDetail.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> DOSW Clearance PDF
+                          <IconFile className="w-4 h-4 shrink-0" /> DOSW & Principal Clearance PDF
                         </a>
                       )}
+                      {selectedEventDetail.customPermissionLetters && selectedEventDetail.customPermissionLetters.map((docItem, idx) => (
+                        <a key={idx} href={docItem.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> {String(docItem.title || `Additional Letter ${idx + 1}`).toUpperCase()} PDF
+                        </a>
+                      ))}
                       {selectedEventDetail.otherDocumentUrl && (
                         <a href={selectedEventDetail.otherDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
                           <IconFile className="w-4 h-4 shrink-0" /> Other Relevant Document
@@ -837,7 +844,7 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
                         </a>
                       )}
-                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
+                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
                         <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
                     </div>

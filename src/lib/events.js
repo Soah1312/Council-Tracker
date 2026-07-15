@@ -285,6 +285,7 @@ export async function submitPermissionLetters(eventId, urls) {
   await updateDoc(eventRef, {
     doswPermissionLetterUrl: urls.doswPermissionLetterUrl || null,
     otherDocumentUrl: urls.otherDocumentUrl || null,
+    customPermissionLetters: urls.customPermissionLetters || [],
     permissionsSubmittedAt: Timestamp.fromDate(new Date()),
     status: 'permissions_submitted'
   });
