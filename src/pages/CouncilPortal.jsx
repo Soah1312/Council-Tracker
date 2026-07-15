@@ -2067,9 +2067,12 @@ export default function CouncilPortal() {
                 <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
                   {permissionsUploadEvent.eventName.toUpperCase()}
                 </h3>
-                <p className="font-satoshi text-xs uppercase font-semibold mt-1">
-                  ID: <span className="underline">{permissionsUploadEvent.eventId}</span>
-                </p>
+                <div className="mt-3 bg-[#ffe17c]/30 border-2 border-[#171e19] p-3 text-[#171e19] shadow-[2px_2px_0px_0px_#171e19]">
+                  <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider mb-1">⚠️ IMPORTANT INSTRUCTION</p>
+                  <p className="font-satoshi text-xs font-semibold leading-relaxed">
+                    Please ensure that you have mentioned the Event ID <span className="font-bold underline bg-white px-1 border border-[#171e19]">{permissionsUploadEvent.eventId}</span> (received in Stage 1) on all physical permission documents before scanning and uploading them.
+                  </p>
+                </div>
               </div>
 
               {permissionsSubmitting && (
