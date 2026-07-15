@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar as CalendarIcon, MapPin, Users, Trophy, Ticket, X, 
+import {
+  Calendar as CalendarIcon, MapPin, Users, Trophy, Ticket, X,
   Activity, CheckCircle, Clock, AlertCircle, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
@@ -81,15 +81,14 @@ const CustomToolbar = (toolbar) => {
       </h2>
 
       <div className="inline-flex bg-white/5 border border-white/10 rounded-full p-1 backdrop-blur-md">
-        {['month', 'week', 'day', 'agenda'].map(view => (
+        {['month', 'agenda'].map(view => (
           <button
             key={view}
             onClick={() => toolbar.onView(view)}
-            className={`px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-              toolbar.view === view 
-                ? 'bg-white/10 text-white shadow-[inset_0_0_12px_rgba(255,255,255,0.2),_0_4px_15px_rgba(0,0,0,0.4)] border border-white/20' 
+            className={`px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 ${toolbar.view === view
+                ? 'bg-white/10 text-white shadow-[inset_0_0_12px_rgba(255,255,255,0.2),_0_4px_15px_rgba(0,0,0,0.4)] border border-white/20'
                 : 'text-white/50 hover:text-white hover:bg-white/5'
-            }`}
+              }`}
           >
             {view}
           </button>
@@ -116,7 +115,7 @@ export default function LandingPage() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [councilFilter, setCouncilFilter] = useState('all');
   const [detailEvent, setDetailEvent] = useState(null);
-  
+
   // Calendar state
   const [currentView, setCurrentView] = useState('month');
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -171,7 +170,7 @@ export default function LandingPage() {
       {/* ── AMBIENT BACKGROUND GLOWS ───────────────────────────────────── */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#ffe17c]/5 rounded-full blur-[150px] pointer-events-none transform-gpu -z-10" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none transform-gpu -z-10" />
-      
+
       {/* ── TOP NAVBAR ─────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.05] transform-gpu">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -190,7 +189,7 @@ export default function LandingPage() {
       <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
         {/* ── HERO SPOTLIGHT ───────────────────────────────────────────── */}
         <div className="mb-16">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
             className="font-anton text-6xl md:text-8xl leading-[0.9] text-white tracking-tight mb-8"
           >
@@ -199,7 +198,7 @@ export default function LandingPage() {
           </motion.h1>
 
           {nextMajorEvent && statusFilter === 'all' && councilFilter === 'all' && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
               onClick={() => setDetailEvent(nextMajorEvent)}
               className="relative group cursor-pointer rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] backdrop-blur-xl p-8 transition-all hover:bg-white/[0.04] hover:border-white/20"
@@ -230,14 +229,13 @@ export default function LandingPage() {
         </div>
 
         {/* ── STATS BENTO ──────────────────────────────────────────────── */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-16"
+          className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-16"
         >
           {[
             { label: 'Total Events', val: stats.total, color: 'text-white' },
             { label: 'Upcoming', val: stats.upcoming, color: 'text-[#10b981]' },
-            { label: 'In Review', val: stats.pending, color: 'text-[#f59e0b]' },
             { label: 'Completed', val: stats.closed, color: 'text-[#94a3b8]' },
           ].map(s => (
             <div key={s.label} className="bg-white/[0.02] border border-white/5 rounded-2xl p-6 backdrop-blur-sm">
@@ -246,66 +244,6 @@ export default function LandingPage() {
             </div>
           ))}
         </motion.div>
-
-        {/* ── SLEEK HORIZONTAL FILTERS ─────────────────────────────────── */}
-        <div className="sticky top-[72px] z-40 bg-[#050505]/80 backdrop-blur-xl py-4 border-b border-white/5 mb-8 flex flex-col gap-4 transform-gpu">
-          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-            <span className="text-white/30 text-xs font-bold uppercase tracking-widest shrink-0">Status</span>
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${statusFilter === 'all' ? 'bg-white text-black' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
-            >
-              All
-            </button>
-            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => {
-              const Icon = cfg.icon;
-              const active = statusFilter === key;
-              return (
-                <button
-                  key={key}
-                  onClick={() => setStatusFilter(key)}
-                  className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border`}
-                  style={{ 
-                    backgroundColor: active ? `${cfg.color}15` : 'transparent',
-                    borderColor: active ? `${cfg.color}40` : 'transparent',
-                    color: active ? cfg.color : '#6b7280'
-                  }}
-                >
-                  <Icon size={14} /> {cfg.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-3 overflow-x-auto no-scrollbar pb-2">
-            <span className="text-white/30 text-xs font-bold uppercase tracking-widest shrink-0">Council</span>
-            <button
-              onClick={() => setCouncilFilter('all')}
-              className={`shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all ${councilFilter === 'all' ? 'bg-white text-black' : 'bg-white/5 text-white/50 hover:bg-white/10'}`}
-            >
-              All Councils
-            </button>
-            {allCouncilIds.map(id => {
-              const cColor = COUNCIL_COLORS[id] || '#fff';
-              const active = councilFilter === id;
-              const name = allEvents.find(e => e.councilId === id)?.councilName || id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => setCouncilFilter(id)}
-                  className={`shrink-0 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold transition-all border`}
-                  style={{ 
-                    backgroundColor: active ? `${cColor}15` : 'transparent',
-                    borderColor: active ? `${cColor}40` : 'transparent',
-                    color: active ? cColor : '#6b7280'
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cColor }} />
-                  {name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
 
         {/* ── FULL CALENDAR GRID ───────────────────────────────────────── */}
         <div className="p-[1px] rounded-3xl bg-gradient-to-br from-white/20 via-white/5 to-transparent">
@@ -321,6 +259,7 @@ export default function LandingPage() {
                   events={calendarEvents}
                   startAccessor="start"
                   endAccessor="end"
+                  views={['month', 'agenda']}
                   view={currentView}
                   onView={setCurrentView}
                   date={currentDate}
@@ -358,16 +297,16 @@ export default function LandingPage() {
       <AnimatePresence>
         {detailEvent && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setDetailEvent(null)}
               className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             />
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="relative w-full max-w-2xl bg-[#0a0a0a] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
             >
-              <button 
+              <button
                 onClick={() => setDetailEvent(null)}
                 className="absolute top-6 right-6 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/20 transition-colors z-10"
               >
@@ -381,7 +320,7 @@ export default function LandingPage() {
                     {detailEvent.councilName}
                   </span>
                   <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5" style={{ backgroundColor: `${(STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).color}20`, color: (STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).color }}>
-                    {(() => { const Icon = (STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).icon; return <Icon size={12}/>; })()}
+                    {(() => { const Icon = (STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).icon; return <Icon size={12} />; })()}
                     {(STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).label}
                   </span>
                 </div>
@@ -395,11 +334,11 @@ export default function LandingPage() {
               <div className="p-8 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-6 mb-8">
                   <div className="bg-white/5 rounded-2xl p-4">
-                    <p className="text-white/40 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14}/> Expected Footfall</p>
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Users size={14} /> Expected Footfall</p>
                     <p className="text-xl text-white font-medium">{detailEvent.expectedFootfall || 'N/A'}</p>
                   </div>
                   <div className="bg-white/5 rounded-2xl p-4">
-                    <p className="text-white/40 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Ticket size={14}/> Registration</p>
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2"><Ticket size={14} /> Registration</p>
                     <p className="text-xl text-white font-medium">{detailEvent.registrationFeeApplicable ? `₹${detailEvent.registrationFeeAmount}` : 'Free'}</p>
                   </div>
                 </div>
@@ -407,7 +346,7 @@ export default function LandingPage() {
                 <div className="space-y-6">
                   {detailEvent.prizeMoneyApplicable && (
                     <div>
-                      <h4 className="text-white/40 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><Trophy size={14}/> Prize Pool</h4>
+                      <h4 className="text-white/40 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><Trophy size={14} /> Prize Pool</h4>
                       <p className="text-white bg-amber-500/10 border border-amber-500/20 px-4 py-3 rounded-xl inline-block">₹{detailEvent.prizeMoneyAmount} <span className="text-white/40 ml-2">({detailEvent.prizeMoneySource})</span></p>
                     </div>
                   )}
