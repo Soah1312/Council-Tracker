@@ -1005,27 +1005,44 @@ export default function AdminPanel() {
           <div className="mt-8 p-4 bg-red-50 border-2 border-red-500 space-y-3 font-satoshi text-xs text-left">
             <p className="font-bold text-red-800 uppercase tracking-wide">Developer Seeding Console</p>
             <p className="text-red-950 font-medium leading-relaxed">
-              Resets the database by clearing all records and reseeding with the new 3-stage flow mock events.
+              Resets the database by clearing all records and optionally reseeding with mock events.
             </p>
-            <button
-              onClick={async () => {
-                if (window.confirm("Are you sure you want to CLEAR the database and reseed with clean 3-stage data?")) {
-                  try {
-                    showNotification("Clearing database events...");
-                    await clearAllEvents();
-                    showNotification("Seeding new mock events...");
-                    await seedAllEvents();
-                    showNotification("Database reseeded successfully!");
-                    fetchEvents();
-                  } catch (e) {
-                    showNotification("Error reseeding database: " + e.message, "error");
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={async () => {
+                  if (window.confirm("Are you sure you want to CLEAR the database and reseed with clean 3-stage data?")) {
+                    try {
+                      showNotification("Clearing database events...");
+                      await clearAllEvents();
+                      showNotification("Seeding new mock events...");
+                      await seedAllEvents();
+                      showNotification("Database reseeded successfully!");
+                    } catch (e) {
+                      showNotification("Error reseeding database: " + e.message, "error");
+                    }
                   }
-                }
-              }}
-              className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-anton text-xs uppercase tracking-widest transition-colors rounded-none border border-red-700 cursor-pointer"
-            >
-              Clear & Reseed System
-            </button>
+                }}
+                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-anton text-xs uppercase tracking-widest transition-colors rounded-none border border-red-700 cursor-pointer"
+              >
+                Clear & Reseed System
+              </button>
+              <button
+                onClick={async () => {
+                  if (window.confirm("Are you sure you want to completely CLEAR all events from the database? This action is irreversible and starts you fresh.")) {
+                    try {
+                      showNotification("Clearing all database events...");
+                      const deletedCount = await clearAllEvents();
+                      showNotification(`Successfully cleared ${deletedCount} events from the database!`);
+                    } catch (e) {
+                      showNotification("Error clearing database: " + e.message, "error");
+                    }
+                  }
+                }}
+                className="w-full py-2 bg-[#171e19] hover:bg-black text-white font-anton text-xs uppercase tracking-widest transition-colors rounded-none border border-[#171e19] cursor-pointer"
+              >
+                Clear Database (Start Fresh)
+              </button>
+            </div>
           </div>
         </div>
 

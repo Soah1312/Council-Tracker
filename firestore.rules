@@ -38,8 +38,8 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && isValidStatus(request.resource.data.status);
 
-      // Audit trail preservation: No client-side deletions allowed
-      allow delete: if false;
+      // Allow deletion for admin database clearance and reseeding
+      allow delete: if true;
     }
   }
 }
