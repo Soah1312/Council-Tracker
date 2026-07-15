@@ -416,8 +416,8 @@ export default function CouncilPortal() {
     setResetMessage(null);
     try {
       await sendPasswordReset(targetEmail);
-      setResetMessage({ type: 'success', text: `Password reset email sent to ${targetEmail}. Check your inbox!` });
-      showNotification(`Password reset link sent to ${targetEmail}`);
+      setResetMessage({ type: 'success', text: `Password reset link sent to ${targetEmail}. Please check your Inbox and Spam/Junk folder!` });
+      showNotification(`Password reset link sent to ${targetEmail}. Check Inbox & Spam folder!`);
     } catch (err) {
       console.error(err);
       setResetMessage({ type: 'error', text: err.message || 'Failed to send password reset email.' });
