@@ -1152,7 +1152,7 @@ export default function CouncilPortal() {
                     <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">EVENT DETAILS</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <div className="flex flex-col gap-1.5">
                       <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Event Name *</label>
                       <input
@@ -1164,6 +1164,19 @@ export default function CouncilPortal() {
                         className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
                       />
                       {errors.eventName && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.eventName}</p>}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Venue *</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. Main Auditorium"
+                        value={formData.venue}
+                        onChange={e => setFormData(p => ({ ...p, venue: e.target.value }))}
+                        className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
+                      />
+                      {errors.venue && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.venue}</p>}
                     </div>
 
                     <div className="flex flex-col gap-1.5">
