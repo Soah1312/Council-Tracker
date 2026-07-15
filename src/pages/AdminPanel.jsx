@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getAllEvents, updateEventStatus, subscribeToAllEvents } from '../lib/events';
 import { COUNCILS } from '../lib/auth';
 import { format } from 'date-fns';
+import { notifyProposalReopened } from '../lib/emailService';
 import { seedAllEvents } from '../lib/seedData';
 import { clearAllEvents } from '../lib/clearData';
 import { IconFile, IconCheck, IconX, IconWarning, IconDownload, IconPhoto } from '../lib/icons';
@@ -102,10 +103,10 @@ export default function AdminPanel() {
       }
       return;
     }
-    // Rejection / revision actions open the comment dialog
+    // Rejection / revision / re-open actions open the comment dialog
     setReviewingEvent(event);
     setReviewStatusType(statusType);
-    setReviewNotes('');
+    setReviewNotes(statusType === 'submitted' ? 'Proposal re-opened by administration for re-evaluation.' : '');
   };
 
   const submitReview = async () => {
@@ -125,7 +126,12 @@ export default function AdminPanel() {
     setActionLoading(reviewingEvent.id);
     try {
       await updateEventStatus(reviewingEvent.id, reviewStatusType, reviewNotes);
-      showNotification(`Proposal marked as ${reviewStatusType.replace('_', ' ')}.`);
+      if (reviewStatusType === 'submitted') {
+        notifyProposalReopened(reviewingEvent, reviewingEvent.councilName).catch(console.error);
+        showNotification(`Proposal ${reviewingEvent.eventId || reviewingEvent.id} re-opened successfully!`);
+      } else {
+        showNotification(`Proposal marked as ${reviewStatusType.replace(/_/g, ' ')}.`);
+      }
       setReviewingEvent(null);
       // Close the details modal drawer on success
       setSelectedEventDetail(null);
@@ -870,7 +876,7 @@ export default function AdminPanel() {
             </div>
 
             {/* Sticky Action Footer */}
-            {(selectedEventDetail.status === 'submitted' || selectedEventDetail.status === 'permissions_submitted') && (
+            {(selectedEventDetail.status === 'submitted' || selectedEventDetail.status === 'permissions_submitted' || selectedEventDetail.status === 'rejected') && (
               <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0">
                 {selectedEventDetail.status === 'submitted' && (<>
                   <button
@@ -912,6 +918,14 @@ export default function AdminPanel() {
                     Reject Request
                   </button>
                 </>)}
+                {selectedEventDetail.status === 'rejected' && (
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all flex items-center justify-center gap-2"
+                  >
+                    <IconCheck className="w-4 h-4" /> Re-open Proposal (Revert Rejection)
+                  </button>
+                )}
               </div>
             )}
           </div>

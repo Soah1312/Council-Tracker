@@ -110,6 +110,24 @@ export async function notifyProposalSubmitted(event, councilName) {
 }
 
 /**
+ * Stage 1 — Admin re-opens a previously rejected proposal.
+ */
+export async function notifyProposalReopened(event, councilName) {
+  await dispatch({
+    subject:        `[Stage 1] Proposal Re-opened: ${event.eventName}`,
+    stage_label:    'Stage 1 — Proposal Re-opened',
+    action_type:    'A previously rejected proposal has been re-opened by administration.',
+    event_id:       event.eventId,
+    event_name:     event.eventName,
+    council_name:   councilName,
+    start_date:     formatDate(event.startDate),
+    end_date:       formatDate(event.endDate),
+    extra_notes:    'The proposal is active again for review and clearance uploads.',
+    admin_url:      `${window.location.origin}/admin`,
+  });
+}
+
+/**
  * Stage 1 — Council re-submits a revised proposal after admin requested changes.
  */
 export async function notifyProposalResubmitted(event, councilName) {

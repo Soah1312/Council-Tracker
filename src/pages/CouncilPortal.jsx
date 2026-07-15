@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, registerWithEmail } from '../lib/auth';
@@ -207,6 +207,40 @@ export default function CouncilPortal() {
   const [permissionsSubmitting, setPermissionsSubmitting] = useState(false);
   const [startCalMonth, setStartCalMonth] = useState(new Date());
   const [endCalMonth, setEndCalMonth] = useState(new Date());
+  const [activePopover, setActivePopover] = useState(null); // 'startDate' | 'endDate' | null
+  const popoverRef = useRef(null);
+
+  // Close calendar popover on outside click or Escape key
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target)) {
+        setActivePopover(null);
+      }
+    };
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setActivePopover(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  // 30-minute interval time options generator for clean dropdowns
+  const timeOptions = useMemo(() => {
+    const slots = [];
+    for (let h = 7; h <= 23; h++) {
+      const hr12 = h % 12 === 0 ? 12 : h % 12;
+      const ampm = h >= 12 ? 'PM' : 'AM';
+      slots.push({ label: `${String(hr12).padStart(2, '0')}:00 ${ampm}`, value: `${String(h).padStart(2, '0')}:00` });
+      slots.push({ label: `${String(hr12).padStart(2, '0')}:30 ${ampm}`, value: `${String(h).padStart(2, '0')}:30` });
+    }
+    return slots;
+  }, []);
 
   // Firebase Auth State
   const [authEmail, setAuthEmail] = useState('');
@@ -318,12 +352,12 @@ export default function CouncilPortal() {
   };
 
   const getEventDuration = () => {
-    if (!formData.startDate || !formData.endDate) return '';
+    if (!formData.startDate || !formData.endDate) return null;
     const start = new Date(formData.startDate);
     const end = new Date(formData.endDate);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return '';
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
     const diffMs = end - start;
-    if (diffMs < 0) return 'Invalid: End is before Start';
+    if (diffMs < 0) return { isInvalid: true, text: 'End date/time must be after start date/time.' };
     
     const diffMins = Math.round(diffMs / (1000 * 60));
     const days = Math.floor(diffMins / (24 * 60));
@@ -335,7 +369,15 @@ export default function CouncilPortal() {
     if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
     if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
     
-    return `Duration: ${parts.join(', ') || '0 minutes'}`;
+    const durationStr = parts.join(', ') || '0 minutes';
+    
+    const isSameDay = start.getFullYear() === end.getFullYear() &&
+                      start.getMonth() === end.getMonth() &&
+                      start.getDate() === end.getDate();
+                      
+    const tagStr = isSameDay ? 'single day' : `${days + (hours > 0 || minutes > 0 ? 1 : 0)} days span`;
+    
+    return { isInvalid: false, text: `${durationStr} (${tagStr})` };
   };
 
   const handleSelectCalendarDate = (field, dateObj) => {
@@ -1209,95 +1251,102 @@ export default function CouncilPortal() {
                   </div>
                 </div>
 
-                {/* SECTION 2: Logistics */}
-                <div className="space-y-5">
-                  <div className="flex items-center gap-2 mb-5">
+                {/* SECTION 2: Logistics - Schedule & Timings */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 mb-4">
                     <div className="w-3 h-7 bg-[#ffe17c] border border-[#171e19]" />
                     <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">SCHEDULE & TIMINGS</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c]">
-                    
-                    {/* START TIMINGS */}
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center bg-[#ffe17c] border-2 border-[#171e19] px-3 py-1.5 shadow-[2px_2px_0px_0px_#171e19]">
-                        <span className="font-anton text-sm text-[#171e19] uppercase tracking-wider">Start Schedule</span>
-                        <span className="font-satoshi text-[10px] font-bold text-[#171e19] bg-white px-2 py-0.5 border border-[#171e19]">
-                          {formData.startDate ? format(new Date(formData.startDate), 'MMM dd, yyyy @ hh:mm a') : 'Not Set'}
-                        </span>
-                      </div>
+                  <div className="bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c] relative" ref={popoverRef}>
+                    {/* Compact 4-Field Row Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        {/* Mini Calendar Column (7 cols) */}
-                        <div className="sm:col-span-7 space-y-2">
-                          <span className="font-satoshi text-[9px] font-bold uppercase tracking-wider text-[#b7c6c2] block">Select Start Date</span>
-                          {/* Render Mini Calendar for Start Date */}
-                          <div className="bg-white border-2 border-[#171e19] p-2.5">
-                            {/* Calendar Header */}
-                            <div className="flex items-center justify-between border-b border-[#171e19] pb-1.5 mb-2">
+                      {/* 1. START DATE */}
+                      <div className="flex flex-col gap-1.5 relative">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Start Date *</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dateObj = formData.startDate ? new Date(formData.startDate) : new Date();
+                            if (!isNaN(dateObj.getTime())) setStartCalMonth(dateObj);
+                            setActivePopover(prev => prev === 'startDate' ? null : 'startDate');
+                          }}
+                          className="w-full bg-white border-2 border-[#171e19] px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase"
+                        >
+                          <span>
+                            {formData.startDate ? format(new Date(formData.startDate), 'MMM dd, yyyy') : 'SELECT START DATE'}
+                          </span>
+                          <IconCalendar className="w-4 h-4 text-[#171e19] shrink-0" />
+                        </button>
+
+                        {/* Calendar Popover for Start Date */}
+                        {activePopover === 'startDate' && (
+                          <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-white border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#171e19] p-3 animate-fade-in">
+                            <div className="flex items-center justify-between border-b-2 border-[#171e19] pb-2 mb-2">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const prevM = new Date(startCalMonth.getFullYear(), startCalMonth.getMonth() - 1, 1);
-                                  setStartCalMonth(prevM);
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setStartCalMonth(new Date(startCalMonth.getFullYear(), startCalMonth.getMonth() - 1, 1));
                                 }}
-                                className="w-5 h-5 border border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-[10px] rounded-none transition-brutal"
+                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
                               >
                                 &larr;
                               </button>
-                              <span className="font-anton text-[10px] uppercase tracking-wider text-[#171e19]">
+                              <span className="font-anton text-xs uppercase tracking-wider text-[#171e19]">
                                 {format(startCalMonth, 'MMMM yyyy')}
                               </span>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const nextM = new Date(startCalMonth.getFullYear(), startCalMonth.getMonth() + 1, 1);
-                                  setStartCalMonth(nextM);
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setStartCalMonth(new Date(startCalMonth.getFullYear(), startCalMonth.getMonth() + 1, 1));
                                 }}
-                                className="w-5 h-5 border border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-[10px] rounded-none transition-brutal"
+                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
                               >
                                 &rarr;
                               </button>
                             </div>
-                            
-                            {/* Weekday Labels */}
-                            <div className="grid grid-cols-7 text-center font-bold text-[8px] uppercase tracking-wider text-[#b7c6c2] mb-1">
+
+                            <div className="grid grid-cols-7 text-center font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] mb-1.5">
                               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, idx) => <div key={idx}>{w}</div>)}
                             </div>
-                            
-                            {/* Days Grid */}
-                            <div className="grid grid-cols-7 gap-0.5 text-center font-satoshi text-[10px] font-bold">
+
+                            <div className="grid grid-cols-7 gap-1 text-center font-satoshi text-xs font-bold">
                               {(() => {
                                 const year = startCalMonth.getFullYear();
                                 const month = startCalMonth.getMonth();
                                 const firstDay = new Date(year, month, 1);
                                 const startWeekDay = firstDay.getDay();
                                 const totalDays = new Date(year, month + 1, 0).getDate();
-                                
+
                                 const dayButtons = [];
                                 for (let i = 0; i < startWeekDay; i++) {
-                                  dayButtons.push(<div key={`pad-${i}`} className="h-5" />);
+                                  dayButtons.push(<div key={`pad-${i}`} className="h-6" />);
                                 }
-                                
-                                const selected = getSplitDateTime(formData.startDate).date;
+
+                                const selectedDateStr = getSplitDateTime(formData.startDate).date;
                                 for (let i = 1; i <= totalDays; i++) {
                                   const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                                  const isSelected = selected === currentDayStr;
+                                  const isSelected = selectedDateStr === currentDayStr;
                                   const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
-                                  
+
                                   dayButtons.push(
                                     <button
                                       type="button"
                                       key={`day-${i}`}
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         const newDateObj = new Date(year, month, i);
                                         handleSelectCalendarDate('startDate', newDateObj);
+                                        setActivePopover(null);
                                       }}
-                                      className={`h-5 w-full flex items-center justify-center transition-all rounded-none border ${
-                                        isSelected 
-                                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black' 
+                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${
+                                        isSelected
+                                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
                                           : isToday
-                                            ? 'border-[#ffe17c] bg-[#ffe17c]/15 text-[#171e19]' 
+                                            ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
                                             : 'border-transparent hover:border-[#171e19] text-[#171e19]'
                                       }`}
                                     >
@@ -1309,140 +1358,111 @@ export default function CouncilPortal() {
                               })()}
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Time Slots Column (5 cols) */}
-                        <div className="sm:col-span-5 flex flex-col space-y-2">
-                          <span className="font-satoshi text-[9px] font-bold uppercase tracking-wider text-[#b7c6c2] block">Select Start Time</span>
-                          
-                          {/* Scrollable preset slots */}
-                          <div className="bg-white border-2 border-[#171e19] h-[138px] overflow-y-auto p-1.5 space-y-1 scrollbar-thin">
-                            {(() => {
-                              const selectedTime = getSplitDateTime(formData.startDate).time;
-                              const slots = [];
-                              for (let h = 8; h <= 22; h++) {
-                                const hr12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-                                const ampm = h >= 12 ? 'PM' : 'AM';
-                                slots.push({ label: `${hr12}:00 ${ampm}`, value: `${String(h).padStart(2, '0')}:00` });
-                                slots.push({ label: `${hr12}:30 ${ampm}`, value: `${String(h).padStart(2, '0')}:30` });
-                              }
-                              return slots.map(slot => {
-                                const isSelected = selectedTime && selectedTime.slice(0, 5) === slot.value;
-                                return (
-                                  <button
-                                    type="button"
-                                    key={slot.value}
-                                    onClick={() => handleSelectTimeSlot('startDate', slot.value)}
-                                    className={`w-full text-left px-2 py-1 transition-all rounded-none border text-[10px] font-bold uppercase flex justify-between ${
-                                      isSelected
-                                        ? 'bg-[#ffe17c] border-[#171e19] text-[#171e19]'
-                                        : 'bg-white border-transparent hover:border-[#171e19]/30 text-[#171e19]'
-                                    }`}
-                                  >
-                                    <span>{slot.label}</span>
-                                    {isSelected && <span>✓</span>}
-                                  </button>
-                                );
-                              });
-                            })()}
-                          </div>
-                          
-                          {/* Custom time fallback input */}
-                          <div className="flex gap-1.5 items-center">
-                            <span className="font-satoshi text-[8px] font-bold uppercase text-[#b7c6c2] shrink-0">Custom:</span>
-                            <input
-                              type="time"
-                              required
-                              value={getSplitDateTime(formData.startDate).time}
-                              onChange={e => handleSplitDateTimeChange('startDate', 'time', e.target.value)}
-                              className="w-full bg-white border border-[#171e19]/30 px-2 py-1 text-[10px] text-[#171e19] font-bold focus:border-[#ffe17c] focus:outline-none rounded-none"
-                            />
-                          </div>
-                        </div>
+                        )}
+                        {errors.startDate && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.startDate}</p>}
                       </div>
-                      {errors.startDate && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.startDate}</p>}
-                    </div>
-                    
-                    {/* END TIMINGS */}
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center bg-[#ffe17c] border-2 border-[#171e19] px-3 py-1.5 shadow-[2px_2px_0px_0px_#171e19]">
-                        <span className="font-anton text-sm text-[#171e19] uppercase tracking-wider">End Schedule</span>
-                        <span className="font-satoshi text-[10px] font-bold text-[#171e19] bg-white px-2 py-0.5 border border-[#171e19]">
-                          {formData.endDate ? format(new Date(formData.endDate), 'MMM dd, yyyy @ hh:mm a') : 'Not Set'}
-                        </span>
+
+                      {/* 2. START TIME */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Start Time *</label>
+                        <select
+                          value={getSplitDateTime(formData.startDate).time || '09:00'}
+                          onChange={(e) => handleSplitDateTimeChange('startDate', 'time', e.target.value)}
+                          className="w-full bg-white border-2 border-[#171e19] px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase"
+                        >
+                          {timeOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
                       </div>
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                        {/* Mini Calendar Column (7 cols) */}
-                        <div className="sm:col-span-7 space-y-2">
-                          <span className="font-satoshi text-[9px] font-bold uppercase tracking-wider text-[#b7c6c2] block">Select End Date</span>
-                          {/* Render Mini Calendar for End Date */}
-                          <div className="bg-white border-2 border-[#171e19] p-2.5">
-                            {/* Calendar Header */}
-                            <div className="flex items-center justify-between border-b border-[#171e19] pb-1.5 mb-2">
+
+                      {/* 3. END DATE */}
+                      <div className="flex flex-col gap-1.5 relative">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">End Date *</label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const dateObj = formData.endDate ? new Date(formData.endDate) : new Date();
+                            if (!isNaN(dateObj.getTime())) setEndCalMonth(dateObj);
+                            setActivePopover(prev => prev === 'endDate' ? null : 'endDate');
+                          }}
+                          className="w-full bg-white border-2 border-[#171e19] px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase"
+                        >
+                          <span>
+                            {formData.endDate ? format(new Date(formData.endDate), 'MMM dd, yyyy') : 'SELECT END DATE'}
+                          </span>
+                          <IconCalendar className="w-4 h-4 text-[#171e19] shrink-0" />
+                        </button>
+
+                        {/* Calendar Popover for End Date */}
+                        {activePopover === 'endDate' && (
+                          <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-white border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#171e19] p-3 animate-fade-in">
+                            <div className="flex items-center justify-between border-b-2 border-[#171e19] pb-2 mb-2">
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const prevM = new Date(endCalMonth.getFullYear(), endCalMonth.getMonth() - 1, 1);
-                                  setEndCalMonth(prevM);
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEndCalMonth(new Date(endCalMonth.getFullYear(), endCalMonth.getMonth() - 1, 1));
                                 }}
-                                className="w-5 h-5 border border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-[10px] rounded-none transition-brutal"
+                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
                               >
                                 &larr;
                               </button>
-                              <span className="font-anton text-[10px] uppercase tracking-wider text-[#171e19]">
+                              <span className="font-anton text-xs uppercase tracking-wider text-[#171e19]">
                                 {format(endCalMonth, 'MMMM yyyy')}
                               </span>
                               <button
                                 type="button"
-                                onClick={() => {
-                                  const nextM = new Date(endCalMonth.getFullYear(), endCalMonth.getMonth() + 1, 1);
-                                  setEndCalMonth(nextM);
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setEndCalMonth(new Date(endCalMonth.getFullYear(), endCalMonth.getMonth() + 1, 1));
                                 }}
-                                className="w-5 h-5 border border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-[10px] rounded-none transition-brutal"
+                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
                               >
                                 &rarr;
                               </button>
                             </div>
-                            
-                            {/* Weekday Labels */}
-                            <div className="grid grid-cols-7 text-center font-bold text-[8px] uppercase tracking-wider text-[#b7c6c2] mb-1">
+
+                            <div className="grid grid-cols-7 text-center font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] mb-1.5">
                               {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, idx) => <div key={idx}>{w}</div>)}
                             </div>
-                            
-                            {/* Days Grid */}
-                            <div className="grid grid-cols-7 gap-0.5 text-center font-satoshi text-[10px] font-bold">
+
+                            <div className="grid grid-cols-7 gap-1 text-center font-satoshi text-xs font-bold">
                               {(() => {
                                 const year = endCalMonth.getFullYear();
                                 const month = endCalMonth.getMonth();
                                 const firstDay = new Date(year, month, 1);
                                 const startWeekDay = firstDay.getDay();
                                 const totalDays = new Date(year, month + 1, 0).getDate();
-                                
+
                                 const dayButtons = [];
                                 for (let i = 0; i < startWeekDay; i++) {
-                                  dayButtons.push(<div key={`pad-${i}`} className="h-5" />);
+                                  dayButtons.push(<div key={`pad-${i}`} className="h-6" />);
                                 }
-                                
-                                const selected = getSplitDateTime(formData.endDate).date;
+
+                                const selectedDateStr = getSplitDateTime(formData.endDate).date;
                                 for (let i = 1; i <= totalDays; i++) {
                                   const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                                  const isSelected = selected === currentDayStr;
+                                  const isSelected = selectedDateStr === currentDayStr;
                                   const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
-                                  
+
                                   dayButtons.push(
                                     <button
                                       type="button"
                                       key={`day-${i}`}
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         const newDateObj = new Date(year, month, i);
                                         handleSelectCalendarDate('endDate', newDateObj);
+                                        setActivePopover(null);
                                       }}
-                                      className={`h-5 w-full flex items-center justify-center transition-all rounded-none border ${
-                                        isSelected 
-                                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black' 
+                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${
+                                        isSelected
+                                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
                                           : isToday
-                                            ? 'border-[#ffe17c] bg-[#ffe17c]/15 text-[#171e19]' 
+                                            ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
                                             : 'border-transparent hover:border-[#171e19] text-[#171e19]'
                                       }`}
                                     >
@@ -1454,78 +1474,49 @@ export default function CouncilPortal() {
                               })()}
                             </div>
                           </div>
-                        </div>
-                        
-                        {/* Time Slots Column (5 cols) */}
-                        <div className="sm:col-span-5 flex flex-col space-y-2">
-                          <span className="font-satoshi text-[9px] font-bold uppercase tracking-wider text-[#b7c6c2] block">Select End Time</span>
-                          
-                          {/* Scrollable preset slots */}
-                          <div className="bg-white border-2 border-[#171e19] h-[138px] overflow-y-auto p-1.5 space-y-1 scrollbar-thin">
-                            {(() => {
-                              const selectedTime = getSplitDateTime(formData.endDate).time;
-                              const slots = [];
-                              for (let h = 8; h <= 22; h++) {
-                                const hr12 = h > 12 ? h - 12 : h === 0 ? 12 : h;
-                                const ampm = h >= 12 ? 'PM' : 'AM';
-                                slots.push({ label: `${hr12}:00 ${ampm}`, value: `${String(h).padStart(2, '0')}:00` });
-                                slots.push({ label: `${hr12}:30 ${ampm}`, value: `${String(h).padStart(2, '0')}:30` });
-                              }
-                              return slots.map(slot => {
-                                const isSelected = selectedTime && selectedTime.slice(0, 5) === slot.value;
-                                return (
-                                  <button
-                                    type="button"
-                                    key={slot.value}
-                                    onClick={() => handleSelectTimeSlot('endDate', slot.value)}
-                                    className={`w-full text-left px-2 py-1 transition-all rounded-none border text-[10px] font-bold uppercase flex justify-between ${
-                                      isSelected
-                                        ? 'bg-[#ffe17c] border-[#171e19] text-[#171e19]'
-                                        : 'bg-white border-transparent hover:border-[#171e19]/30 text-[#171e19]'
-                                    }`}
-                                  >
-                                    <span>{slot.label}</span>
-                                    {isSelected && <span>✓</span>}
-                                  </button>
-                                );
-                              });
-                            })()}
-                          </div>
-                          
-                          {/* Custom time fallback input */}
-                          <div className="flex gap-1.5 items-center">
-                            <span className="font-satoshi text-[8px] font-bold uppercase text-[#b7c6c2] shrink-0">Custom:</span>
-                            <input
-                              type="time"
-                              required
-                              value={getSplitDateTime(formData.endDate).time}
-                              onChange={e => handleSplitDateTimeChange('endDate', 'time', e.target.value)}
-                              className="w-full bg-white border border-[#171e19]/30 px-2 py-1 text-[10px] text-[#171e19] font-bold focus:border-[#ffe17c] focus:outline-none rounded-none"
-                            />
-                          </div>
-                        </div>
+                        )}
+                        {errors.endDate && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.endDate}</p>}
                       </div>
-                      {errors.endDate && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.endDate}</p>}
-                    </div>
-                  </div>
 
-                  {/* DURATION & LIVE VALIDATION BANNER */}
-                  {(() => {
-                    const durationText = getEventDuration();
-                    const isInvalid = durationText.includes('Invalid');
-                    if (isInvalid) {
+                      {/* 4. END TIME */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">End Time *</label>
+                        <select
+                          value={getSplitDateTime(formData.endDate).time || '17:00'}
+                          onChange={(e) => handleSplitDateTimeChange('endDate', 'time', e.target.value)}
+                          className={`w-full bg-white border-2 px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase ${
+                            getEventDuration()?.isInvalid ? 'border-red-500 bg-red-50/30' : 'border-[#171e19]'
+                          }`}
+                        >
+                          {timeOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+
+                        {/* Inline error for End < Start */}
+                        {getEventDuration()?.isInvalid && (
+                          <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide mt-1">
+                            End date/time must be after start date/time.
+                          </p>
+                        )}
+                      </div>
+
+                    </div>
+
+                    {/* Computed Duration Summary Line */}
+                    {(() => {
+                      const dur = getEventDuration();
+                      if (!dur || dur.isInvalid) return null;
                       return (
-                        <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1">
-                          ⚠️ {durationText}
-                        </p>
+                        <div className="mt-4 pt-3 border-t border-[#171e19]/15 flex items-center gap-2 font-satoshi text-xs font-bold text-[#171e19]">
+                          <span className="w-2.5 h-2.5 bg-[#ffe17c] border border-[#171e19] shrink-0" />
+                          <span className="uppercase tracking-wide">Calculated Duration: {dur.text}</span>
+                        </div>
                       );
-                    }
-                    return durationText ? (
-                      <p className="font-satoshi text-[10px] text-[#171e19] font-bold uppercase tracking-wider mt-1.5 flex items-center gap-1">
-                        <IconCalendar className="w-3 h-3" /> {durationText}
-                      </p>
-                    ) : null;
-                  })()}
+                    })()}
+                  </div>
                 </div>
 
                 {/* SECTION 3: Required Attachments */}
