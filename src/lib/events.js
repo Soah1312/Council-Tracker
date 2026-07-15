@@ -11,6 +11,7 @@ import {
   setDoc, 
   getDoc, 
   getDocs, 
+  deleteDoc,
   query, 
   where, 
   orderBy, 
@@ -110,6 +111,14 @@ export async function createEventRequest(data) {
   // Use eventId as the document ID for clean URL structures and simple retrievals
   await setDoc(doc(db, 'events', eventId), finalData);
   return { id: eventId, ...finalData };
+}
+
+/**
+ * Deletes an event proposal request from Firestore.
+ */
+export async function deleteEventRequest(eventId) {
+  const eventRef = doc(db, 'events', eventId);
+  await deleteDoc(eventRef);
 }
 
 /**

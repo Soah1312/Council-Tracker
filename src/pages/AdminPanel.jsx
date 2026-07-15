@@ -369,14 +369,14 @@ export default function AdminPanel() {
 
     return (
       <div className="border border-[#171e19]/10 bg-slate-50 p-4 rounded-none space-y-3 font-satoshi">
-        <span className="font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] block">Event Progression Flow</span>
+        <span className="font-bold text-[9px] uppercase tracking-wider text-[#171e19]/60 block">Event Progression Flow</span>
         <div className="grid grid-cols-3 gap-2">
           {stages.map((stg) => {
             const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
             const isActive = currentStage === stg.num && status !== 'closed';
             const isFuture = !isCompleted && !isActive;
 
-            let bgColor = 'bg-white border-[#171e19]/15 text-[#171e19]/40';
+            let bgColor = 'bg-white border-[#171e19]/15 text-[#171e19]/60';
             if (isActive) {
               bgColor = 'bg-[#ffe17c] border-[#171e19] text-[#171e19] font-bold shadow-[2px_2px_0px_0px_#171e19]';
             } else if (isCompleted) {
@@ -386,14 +386,14 @@ export default function AdminPanel() {
             return (
               <div key={stg.num} className={`p-2.5 border-2 flex flex-col items-center text-center justify-between gap-1 transition-brutal ${bgColor}`}>
                 <div className="flex items-center gap-1.5 justify-center flex-wrap">
-                  <span className={`w-3.5 h-3.5 rounded-full text-[8px] flex items-center justify-center font-bold ${
+                  <span className={`w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold ${
                     isCompleted ? 'bg-[#ffe17c] text-[#171e19]' : isActive ? 'bg-[#171e19] text-[#ffe17c]' : 'bg-[#171e19]/10 text-[#171e19]/50'
                   }`}>
                     {isCompleted ? '✓' : stg.num}
                   </span>
-                  <span className="font-anton text-[10px] uppercase tracking-wide">{stg.name}</span>
+                  <span className="font-anton text-xs uppercase tracking-wide">{stg.name}</span>
                 </div>
-                <span className="text-[8px] uppercase tracking-wide block opacity-80 mt-1 font-semibold">{stg.desc}</span>
+                <span className="text-[10px] uppercase tracking-wide block opacity-80 mt-1 font-semibold">{stg.desc}</span>
               </div>
             );
           })}
@@ -528,14 +528,14 @@ export default function AdminPanel() {
             <h1 className="font-anton text-5xl md:text-6xl text-[#171e19] tracking-tight">
               COUNCILTRACK<span className="text-[#ffe17c]">.</span>
             </h1>
-            <p className="font-satoshi text-xs uppercase tracking-widest text-[#b7c6c2] font-bold">
+            <p className="font-satoshi text-xs uppercase tracking-widest text-[#171e19]/60 font-bold">
               Administrative Access
             </p>
           </div>
 
           <form onSubmit={handlePasscodeSubmit} className="space-y-6">
             <div className="space-y-2">
-              <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2] block">
+              <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block">
                 Enter Administrator Passcode
               </label>
               <input
@@ -567,7 +567,7 @@ export default function AdminPanel() {
           </form>
 
           <div className="text-center pt-4 border-t border-[#171e19]/10">
-            <Link to="/" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2] hover:text-[#171e19] hover:underline mr-4">
+            <Link to="/" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60 hover:text-[#171e19] hover:underline mr-4">
               &larr; HOME
             </Link>
             <Link to="/portal" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:underline">
@@ -598,7 +598,7 @@ export default function AdminPanel() {
         <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
           <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c]">
             <div>
-              <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Submit Event Review</p>
+              <p className="font-satoshi text-[10px] uppercase font-bold text-[#171e19]/60">Submit Event Review</p>
               <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
                 ACTION ON: {reviewingEvent.eventName.toUpperCase()}
               </h3>
@@ -608,7 +608,7 @@ export default function AdminPanel() {
             </div>
 
             <div className="flex flex-col gap-2">
-              <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">
+              <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">
                 Review Comments & Notes *
               </label>
               <textarea
@@ -712,43 +712,43 @@ export default function AdminPanel() {
                 <div className="space-y-4">
                   {/* Logistical Grid */}
                   <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
-                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block">Event Logistics</span>
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Event Logistics</span>
                     <div className="grid grid-cols-2 gap-4 text-[#171e19] font-satoshi">
                       <div>
-                        <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Start Date</span>
+                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Start Date</span>
                         <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.startDate)}</span>
                       </div>
                       <div>
-                        <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">End Date</span>
+                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">End Date</span>
                         <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.endDate)}</span>
                       </div>
                       {selectedEventDetail.venue && (
                         <div className="col-span-2">
-                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Venue Location</span>
+                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
                           <span className="font-bold text-sm">{String(selectedEventDetail.venue).toUpperCase()}</span>
                         </div>
                       )}
                       {selectedEventDetail.expectedFootfall > 0 && (
                         <div>
-                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Expected Footfall</span>
+                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Expected Footfall</span>
                           <span className="font-bold text-sm">{selectedEventDetail.expectedFootfall} Attendees</span>
                         </div>
                       )}
                       {selectedEventDetail.registrationFeeApplicable && selectedEventDetail.registrationFeeAmount !== undefined && (
                         <div>
-                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Registration Fee</span>
+                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Registration Fee</span>
                           <span className="font-bold text-sm">₹{selectedEventDetail.registrationFeeAmount} / head</span>
                         </div>
                       )}
                       {selectedEventDetail.prizeMoneyApplicable && selectedEventDetail.prizeMoneyAmount && (
                         <div className="col-span-2">
-                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Prize Pool</span>
-                          <span className="font-bold text-sm">₹{selectedEventDetail.prizeMoneyAmount} <span className="text-[#b7c6c2] font-medium">via {selectedEventDetail.prizeMoneySource}</span></span>
+                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Prize Pool</span>
+                          <span className="font-bold text-sm">₹{selectedEventDetail.prizeMoneyAmount} <span className="text-[#171e19]/60 font-medium">via {selectedEventDetail.prizeMoneySource}</span></span>
                         </div>
                       )}
                       {selectedEventDetail.externalParticipantsApplicable && selectedEventDetail.externalParticipantsExpected > 0 && (
                         <div>
-                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">External Participants</span>
+                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">External Participants</span>
                           <span className="font-bold text-sm">{selectedEventDetail.externalParticipantsExpected} Students</span>
                         </div>
                       )}
@@ -758,24 +758,24 @@ export default function AdminPanel() {
                   {/* Contacts */}
                   {(selectedEventDetail.facultyCoordinatorName || selectedEventDetail.studentContactName) && (
                     <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
-                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block">Contacts</span>
+                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Contacts</span>
                       <div className="grid grid-cols-2 gap-4 text-[#171e19] font-satoshi">
                         {selectedEventDetail.facultyCoordinatorName && (
                           <div>
-                            <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Faculty Coordinator</span>
+                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Faculty Coordinator</span>
                             <span className="font-bold text-sm">{String(selectedEventDetail.facultyCoordinatorName).toUpperCase()}</span>
                           </div>
                         )}
                         {selectedEventDetail.studentContactName && (
                           <div>
-                            <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Student Lead POC</span>
+                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Student Lead POC</span>
                             <span className="font-bold text-sm block">{String(selectedEventDetail.studentContactName).toUpperCase()}</span>
-                            {selectedEventDetail.studentContactPhone && <span className="text-sm text-[#b7c6c2]">{selectedEventDetail.studentContactPhone}</span>}
+                            {selectedEventDetail.studentContactPhone && <span className="text-sm text-[#171e19]/60">{selectedEventDetail.studentContactPhone}</span>}
                           </div>
                         )}
                         {selectedEventDetail.guestApplicable && selectedEventDetail.guestName && (
                           <div className="col-span-2">
-                            <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Chief Guest</span>
+                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Chief Guest</span>
                             <span className="font-bold text-sm">{String(selectedEventDetail.guestName).toUpperCase()}{selectedEventDetail.guestDesignation ? `, ${selectedEventDetail.guestDesignation}` : ''}</span>
                           </div>
                         )}
@@ -789,7 +789,7 @@ export default function AdminPanel() {
                   {/* Resources */}
                   {selectedEventDetail.resourcesNeeded && (
                     <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5">
-                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block mb-2">AV / Resources Requested</span>
+                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block mb-2">AV / Resources Requested</span>
                       <p className="italic text-[#171e19]/80 text-sm leading-relaxed font-medium font-satoshi">"{String(selectedEventDetail.resourcesNeeded).toUpperCase()}"</p>
                     </div>
                   )}
@@ -804,7 +804,7 @@ export default function AdminPanel() {
 
                   {/* Document Clearance Links */}
                   <div className="border border-[#171e19]/15 p-5 space-y-3">
-                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block">Uploaded Clearances</span>
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Clearances</span>
                     <div className="grid grid-cols-1 gap-2 font-satoshi">
                       {selectedEventDetail.eventDescriptionUrl && (
                         <a href={selectedEventDetail.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
@@ -832,7 +832,7 @@ export default function AdminPanel() {
                         </a>
                       )}
                       {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.councilPermissionLetterUrl && !selectedEventDetail.venuePermissionLetterUrl && !selectedEventDetail.attendanceWaiverUrl && (
-                        <p className="text-[#b7c6c2] text-sm italic">No documents uploaded yet.</p>
+                        <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
                     </div>
                   </div>
@@ -846,7 +846,7 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> Download Final Wrap-Up Report PDF
                         </a>
                         {selectedEventDetail.reportSubmittedAt && (
-                          <p className="text-xs text-[#b7c6c2] lowercase font-semibold">
+                          <p className="text-xs text-[#171e19]/60 lowercase font-semibold">
                             Submitted: {formatEventDate(selectedEventDetail.reportSubmittedAt)}
                           </p>
                         )}
@@ -1056,7 +1056,7 @@ export default function AdminPanel() {
                 {/* Card 1 */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
                   <p className="font-anton text-7xl text-white">{countPendingReview}</p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Pending Review</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Pending Review</p>
                 </div>
                 
                 {/* Card 2 — Stage 2: Awaiting council documents */}
@@ -1066,20 +1066,20 @@ export default function AdminPanel() {
                   <p className={`font-anton text-7xl ${countAwaitingDocs > 0 ? 'text-indigo-300' : 'text-white'}`}>
                     {countAwaitingDocs}
                   </p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Awaiting Council Docs</p>
-                  <p className="font-satoshi text-[10px] text-[#b7c6c2]/70 uppercase">Stage 2 — letters not yet uploaded</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Awaiting Council Docs</p>
+                  <p className="font-satoshi text-[10px] text-[#171e19]/60/70 uppercase">Stage 2 — letters not yet uploaded</p>
                 </div>
 
                 {/* Card 3 */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
                   <p className="font-anton text-7xl text-white">{countApprovedUpcoming}</p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Approved Upcoming</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Approved Upcoming</p>
                 </div>
 
                 {/* Card 4 */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
                   <p className="font-anton text-7xl text-white">{countReportPending}</p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Report Pending</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Report Pending</p>
                 </div>
 
                 {/* Card 5 - Overdue reports with a yellow left border accent */}
@@ -1087,7 +1087,7 @@ export default function AdminPanel() {
                   <p className={`font-anton text-7xl ${countOverdueReports > 0 ? 'text-[#ffe17c] animate-pulse' : 'text-white'}`}>
                     {countOverdueReports}
                   </p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Overdue Reports</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Overdue Reports</p>
                 </div>
               </div>
 
@@ -1095,7 +1095,7 @@ export default function AdminPanel() {
               <div className="bg-white border-2 border-[#171e19] rounded-none p-6 space-y-4 shadow-[4px_4px_0px_0px_#171e19]">
                 <div>
                   <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">NEEDS ATTENTION</h3>
-                  <p className="font-satoshi text-[10px] text-[#b7c6c2] font-bold uppercase mt-1">
+                  <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase mt-1">
                     Action items — overdue reports, proposals awaiting admin review, and events waiting for council documents.
                   </p>
                 </div>
@@ -1114,7 +1114,7 @@ export default function AdminPanel() {
                   </div>
                 ) : needsAttentionList.length === 0 ? (
                   <div className="text-center py-6 border border-dashed border-[#171e19] rounded-none">
-                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2] flex items-center gap-1.5"><IconCheck className="w-3 h-3 text-emerald-500" /> Clear Desk! No pending items require attention.</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60 flex items-center gap-1.5"><IconCheck className="w-3 h-3 text-emerald-500" /> Clear Desk! No pending items require attention.</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-[#171e19]/10">
@@ -1143,7 +1143,7 @@ export default function AdminPanel() {
                                 );
                               })()}
                             </div>
-                            <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wide">
+                            <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wide">
                               Council: <span className="text-[#171e19] font-bold">{event.councilName}</span> &bull; Venue: {event.venue ? event.venue.toUpperCase() : 'TBD'}
                             </p>
                           </div>
@@ -1215,7 +1215,7 @@ export default function AdminPanel() {
             <div className="space-y-6">
               <div>
                 <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">Review Queue</h2>
-                <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider mt-1">
+                <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider mt-1">
                   Verify logistics, target venues, and official clearances. Approve requests or request revisions back to the student councils.
                 </p>
               </div>
@@ -1236,7 +1236,7 @@ export default function AdminPanel() {
                 </div>
               ) : (pendingProposals.length === 0 && pendingPermissions.length === 0) ? (
                 <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none">
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Clear queue! No pending items to review.</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Clear queue! No pending items to review.</p>
                 </div>
               ) : (
                 <div className="space-y-8">
@@ -1272,7 +1272,7 @@ export default function AdminPanel() {
                                     );
                                   })()}
                                 </div>
-                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#b7c6c2] mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
                               </div>
                               
                               <div className="flex gap-2 sm:self-start flex-wrap">
@@ -1300,19 +1300,19 @@ export default function AdminPanel() {
                             {/* Logistical Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Start Date</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Start Date</span>
                                 <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
                               </div>
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue</span>
                                 <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
                               </div>
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Expected Crowd</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Expected Crowd</span>
                                 <span className="text-[11px]">{event.expectedFootfall} ATTENDEES</span>
                               </div>
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue Slip Required?</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue Slip Required?</span>
                                 <span className="text-[11px] uppercase font-bold text-[#171e19]">
                                   {event.venuePermissionApplicable ? 'YES' : 'NO'}
                                 </span>
@@ -1321,7 +1321,7 @@ export default function AdminPanel() {
 
                             {/* Documents */}
                             <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
-                              <h4 className="text-[9px] uppercase font-bold text-[#b7c6c2] tracking-wider">Uploaded Files</h4>
+                              <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Files</h4>
                               <div className="flex flex-wrap gap-4">
                                 <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                   <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
@@ -1371,7 +1371,7 @@ export default function AdminPanel() {
                                     );
                                   })()}
                                 </div>
-                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#b7c6c2] mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
                               </div>
                               
                               <div className="flex gap-2 sm:self-start flex-wrap">
@@ -1399,19 +1399,19 @@ export default function AdminPanel() {
                             {/* Logistical Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Start Date</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Start Date</span>
                                 <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
                               </div>
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue</span>
                                 <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
                               </div>
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Expected Crowd</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Expected Crowd</span>
                                 <span className="text-[11px]">{event.expectedFootfall} ATTENDEES</span>
                               </div>
                               <div>
-                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue slip status</span>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue slip status</span>
                                 <span className="text-[11px] uppercase font-bold text-[#171e19]">
                                   {event.venuePermissionApplicable ? 'REQUIRED' : 'NOT APPLICABLE'}
                                 </span>
@@ -1420,7 +1420,7 @@ export default function AdminPanel() {
 
                             {/* Clearance letters */}
                             <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
-                              <h4 className="text-[9px] uppercase font-bold text-[#b7c6c2] tracking-wider">Uploaded Clearance Letters</h4>
+                              <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Clearance Letters</h4>
                               <div className="flex flex-wrap gap-4">
                                 <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                   <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
@@ -1458,7 +1458,7 @@ export default function AdminPanel() {
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#171e19]/10 pb-4">
                 <div>
                   <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">Events Registry</h2>
-                  <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider mt-1">
+                  <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider mt-1">
                     Search, filter, and audit chronological event request histories and final reports.
                   </p>
                 </div>
@@ -1476,7 +1476,7 @@ export default function AdminPanel() {
                   {/* Column 1: Search & Council */}
                   <div className="space-y-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Search Text</label>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Search Text</label>
                       <input
                         type="text"
                         placeholder="Search by event name or ID..."
@@ -1486,7 +1486,7 @@ export default function AdminPanel() {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Council / Committee</label>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Council / Committee</label>
                       <select
                         value={councilFilter}
                         onChange={e => setCouncilFilter(e.target.value)}
@@ -1503,7 +1503,7 @@ export default function AdminPanel() {
                   {/* Column 2: Status & Category */}
                   <div className="space-y-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Status</label>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Status</label>
                       <select
                         value={statusFilter}
                         onChange={e => setStatusFilter(e.target.value)}
@@ -1519,7 +1519,7 @@ export default function AdminPanel() {
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Category</label>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Category</label>
                       <select
                         value={categoryFilter}
                         onChange={e => setCategoryFilter(e.target.value)}
@@ -1540,7 +1540,7 @@ export default function AdminPanel() {
                   {/* Column 3: Date Range */}
                   <div className="space-y-3">
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">From Date</label>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">From Date</label>
                       <input
                         type="date"
                         value={startDateFilter}
@@ -1549,7 +1549,7 @@ export default function AdminPanel() {
                       />
                     </div>
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">To Date</label>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">To Date</label>
                       <input
                         type="date"
                         value={endDateFilter}
@@ -1576,14 +1576,14 @@ export default function AdminPanel() {
                 </div>
               ) : filteredEvents.length === 0 ? (
                 <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none shadow-[4px_4px_0px_0px_#171e19]">
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">No events yet.</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">No events yet.</p>
                 </div>
               ) : (
                 <div className="bg-white border-2 border-[#171e19] overflow-hidden rounded-none">
                   <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-[#171e19]/10 font-satoshi text-[10px] uppercase tracking-wider text-[#b7c6c2] font-bold">
+                        <tr className="bg-slate-50 border-b border-[#171e19]/10 font-satoshi text-[10px] uppercase tracking-wider text-[#171e19]/60 font-bold">
                           <th className="p-4 pl-6">Event ID</th>
                           <th className="p-4">Council</th>
                           <th className="p-4">Event Name</th>
@@ -1649,7 +1649,7 @@ export default function AdminPanel() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#171e19]/10 pb-4 gap-4">
                 <div>
                   <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">CALENDAR REGISTRY</h2>
-                  <p className="font-satoshi text-[10px] text-[#b7c6c2] font-bold uppercase">
+                  <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase">
                     Chronological month view detailing approved schedules and venue booking conflicts.
                   </p>
                 </div>
