@@ -117,8 +117,18 @@ export async function createEventRequest(data) {
  * Deletes an event proposal request from Firestore.
  */
 export async function deleteEventRequest(eventId) {
+  if (!eventId) return;
   const eventRef = doc(db, 'events', eventId);
-  await deleteDoc(eventRef);
+  const snap = await getDoc(eventRef);
+  
+  if (snap.exists()) {
+    const data = snap.data();
+    const status = data.status;
+    if (!['submitted', 'revision_needed', 'rejected'].includes(status)) {
+      throw new Error('Deletion restricted: Proposal cannot be deleted once Stage 1 has been approved.');
+    }
+    await deleteDoc(eventRef);
+  }
 }
 
 /**
