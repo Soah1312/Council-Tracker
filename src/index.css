@@ -5,12 +5,12 @@
   --color-brand-card: #272727;
   --color-brand-card-hover: #333333;
   --color-brand-border: #b7c6c2;
-  
+
   --color-charcoal: #171e19;
   --color-darkgray: #272727;
   --color-sage: #b7c6c2;
   --color-gold: #ffe17c;
-  
+
   /* Standard palette aliases */
   --color-brand-primary: #ffe17c;
   --color-brand-primary-hover: #ffd854;
@@ -20,7 +20,7 @@
   --color-brand-danger: #ef4444;
   --color-brand-text: #171e19;
   --color-brand-text-muted: #b7c6c2;
-  
+
   --font-sans: 'Satoshi', system-ui, -apple-system, sans-serif;
   --font-display: 'Anton', sans-serif;
 }
@@ -35,7 +35,9 @@
   }
 
   /* Custom inputs for the high-contrast brutalist look */
-  input, select, textarea {
+  input,
+  select,
+  textarea {
     font-family: 'Satoshi', sans-serif;
     font-weight: 500;
   }
@@ -45,9 +47,11 @@
     width: 6px;
     height: 6px;
   }
+
   ::-webkit-scrollbar-track {
     background: #ffffff;
   }
+
   ::-webkit-scrollbar-thumb {
     background: #171e19;
     border-radius: 9999px;
@@ -69,7 +73,7 @@
 /* Custom Grid background utility */
 .grid-pattern-charcoal {
   background-size: 40px 40px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(183, 198, 194, 0.12) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(183, 198, 194, 0.12) 1px, transparent 1px);
   background-color: #171e19;
@@ -173,7 +177,7 @@
   border: none;
 }
 
-.calendar-dark-theme .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+.calendar-dark-theme .rbc-agenda-view table.rbc-agenda-table tbody>tr>td {
   border-top: 1px solid rgba(255, 255, 255, 0.05);
   padding: 12px;
 }

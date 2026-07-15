@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import {
   Calendar as CalendarIcon, MapPin, Users, Trophy, Ticket, X,
   Activity, CheckCircle, Clock, AlertCircle, ChevronLeft, ChevronRight
@@ -86,8 +86,8 @@ const CustomToolbar = (toolbar) => {
             key={view}
             onClick={() => toolbar.onView(view)}
             className={`px-4 py-1.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all duration-300 ${toolbar.view === view
-                ? 'bg-white/10 text-white shadow-[inset_0_0_12px_rgba(255,255,255,0.2),_0_4px_15px_rgba(0,0,0,0.4)] border border-white/20'
-                : 'text-white/50 hover:text-white hover:bg-white/5'
+              ? 'bg-white/10 text-white shadow-[inset_0_0_12px_rgba(255,255,255,0.2),_0_4px_15px_rgba(0,0,0,0.4)] border border-white/20'
+              : 'text-white/50 hover:text-white hover:bg-white/5'
               }`}
           >
             {view}
@@ -110,6 +110,9 @@ const CustomEvent = ({ event }) => {
 
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const { scrollY } = useScroll();
+  const heroY = useTransform(scrollY, [0, 1000], [0, 400]);
+
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -188,20 +191,22 @@ export default function LandingPage() {
 
       <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
         {/* ── HERO SPOTLIGHT ───────────────────────────────────────────── */}
-        <div className="mb-16">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="font-anton text-6xl md:text-8xl leading-[0.9] text-white tracking-tight mb-8"
-          >
-            Fr.CRCE OFFICIAL <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffe17c] to-amber-400">EVENTS PORTAL</span>
-          </motion.h1>
+        <div className="mb-16 relative z-0">
+          <motion.div style={{ y: heroY }}>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+              className="font-anton text-6xl md:text-8xl leading-[0.9] text-white tracking-tight mb-8"
+            >
+              Fr.CRCE OFFICIAL <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffe17c] to-amber-400">EVENTS PORTAL</span>
+            </motion.h1>
+          </motion.div>
 
           {nextMajorEvent && statusFilter === 'all' && councilFilter === 'all' && (
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
               onClick={() => setDetailEvent(nextMajorEvent)}
-              className="relative group cursor-pointer rounded-3xl overflow-hidden border border-white/10 bg-white/[0.02] backdrop-blur-xl p-8 transition-all hover:bg-white/[0.04] hover:border-white/20"
+              className="relative z-10 group cursor-pointer rounded-3xl overflow-hidden border border-white/10 bg-[#050505]/60 backdrop-blur-xl p-8 transition-all hover:bg-[#050505]/80 hover:border-white/20"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-[#ffe17c]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <p className="text-[#ffe17c] text-xs font-bold uppercase tracking-widest mb-4 flex items-center gap-2">
@@ -231,7 +236,7 @@ export default function LandingPage() {
         {/* ── STATS BENTO ──────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-16"
+          className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-16 relative z-10"
         >
           {[
             { label: 'Total Events', val: stats.total, color: 'text-white' },
