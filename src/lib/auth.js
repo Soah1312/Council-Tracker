@@ -18,7 +18,7 @@ import {
  */
 export const COUNCILS = [
   // Student Council / Main Bodies
-  { id: 'stuco', name: "Students' Council CRCE", category: 'Main Council', email: 'frcrce.stuco@gmail.com', coordinator: 'Dr. Swapnali Makdey' },
+  { id: 'stuco', name: "Students' Council CRCE", category: 'Main Council', email: 'soah.fernandes2005@gmail.com', coordinator: 'Dr. Swapnali Makdey' },
 
   // Professional Chapters
   { id: 'ieee-wie', name: 'IEEE & WIE', category: 'Professional Chapters', email: '', coordinator: 'Prof. Archana Lopes' },
