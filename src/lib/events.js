@@ -274,8 +274,7 @@ export async function submitPermissionLetters(eventId, urls) {
   
   await updateDoc(eventRef, {
     doswPermissionLetterUrl: urls.doswPermissionLetterUrl || null,
-    councilPermissionLetterUrl: urls.councilPermissionLetterUrl || null,
-    venuePermissionLetterUrl: urls.venuePermissionLetterUrl || null,
+    otherDocumentUrl: urls.otherDocumentUrl || null,
     permissionsSubmittedAt: Timestamp.fromDate(new Date()),
     status: 'permissions_submitted'
   });

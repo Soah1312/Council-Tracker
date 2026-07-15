@@ -202,8 +202,7 @@ export default function CouncilPortal() {
   const [permissionsUploadEvent, setPermissionsUploadEvent] = useState(null);
   const [permissionsFiles, setPermissionsFiles] = useState({
     doswLetter: null,
-    councilLetter: null,
-    venueLetter: null
+    otherDocument: null
   });
   const [permissionsErrors, setPermissionsErrors] = useState({});
   const [permissionsSubmitting, setPermissionsSubmitting] = useState(false);
@@ -858,9 +857,6 @@ export default function CouncilPortal() {
     if (!permissionsFiles.doswLetter) {
       errors.doswLetter = 'DoSW & Principal clearance letter PDF is required.';
     }
-    if (!permissionsFiles.councilLetter) {
-      errors.councilLetter = 'Student Council permission letter PDF is required.';
-    }
 
     if (Object.keys(errors).length > 0) {
       setPermissionsErrors(errors);
@@ -875,27 +871,23 @@ export default function CouncilPortal() {
       setUploadProgress('Uploading DoSW clearance letter PDF...');
       const doswPermissionLetterUrl = await uploadFile(permissionsFiles.doswLetter, uploadPath);
       
-      setUploadProgress('Uploading Student Council letter PDF...');
-      const councilPermissionLetterUrl = await uploadFile(permissionsFiles.councilLetter, uploadPath);
-      
-      let venuePermissionLetterUrl = null;
-      if (permissionsFiles.venueLetter) {
-        setUploadProgress('Uploading venue permission letter PDF...');
-        venuePermissionLetterUrl = await uploadFile(permissionsFiles.venueLetter, uploadPath);
+      let otherDocumentUrl = null;
+      if (permissionsFiles.otherDocument) {
+        setUploadProgress('Uploading other relevant document PDF...');
+        otherDocumentUrl = await uploadFile(permissionsFiles.otherDocument, uploadPath);
       }
 
       setUploadProgress('Saving to database...');
       await submitPermissionLetters(permissionsUploadEvent.eventId, {
         doswPermissionLetterUrl,
-        councilPermissionLetterUrl,
-        venuePermissionLetterUrl
+        otherDocumentUrl
       });
       // Fire-and-forget email notification
       notifyPermissionsSubmitted(permissionsUploadEvent, council.name).catch(console.error);
 
       showNotification('Permission letters uploaded successfully! Awaiting review.');
       setPermissionsUploadEvent(null);
-      setPermissionsFiles({ doswLetter: null, councilLetter: null, venueLetter: null });
+      setPermissionsFiles({ doswLetter: null, otherDocument: null });
       setPermissionsErrors({});
     } catch (err) {
       console.error(err);
@@ -1880,14 +1872,9 @@ export default function CouncilPortal() {
                                   <IconFile className="w-4 h-4" /> DOSW CLEARANCE PDF
                                 </a>
                               )}
-                              {event.councilPermissionLetterUrl && (
-                                <a href={event.councilPermissionLetterUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> COUNCIL APPROVAL PDF
-                                </a>
-                              )}
-                              {event.venuePermissionLetterUrl && (
-                                <a href={event.venuePermissionLetterUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> VENUE BOOKING SLIP PDF
+                              {event.otherDocumentUrl && (
+                                <a href={event.otherDocumentUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
+                                  <IconFile className="w-4 h-4" /> OTHER RELEVANT DOCUMENT PDF
                                 </a>
                               )}
                               {event.attendanceWaiverUrl && (
@@ -2087,24 +2074,14 @@ export default function CouncilPortal() {
                   error={permissionsErrors.doswLetter}
                 />
 
-                {/* Student Council Letter File */}
+                {/* Other Relevant Document */}
                 <DragDropUpload
-                  id="councilLetter"
-                  label="Student Council Clearance (PDF) *"
+                  id="otherDocument"
+                  label="Other Relevant Document (PDF) (Optional)"
                   accept="application/pdf"
-                  file={permissionsFiles.councilLetter}
-                  onChange={(file) => setPermissionsFiles(prev => ({ ...prev, councilLetter: file }))}
-                  error={permissionsErrors.councilLetter}
-                />
-
-                {/* Venue Letter File */}
-                <DragDropUpload
-                  id="venueLetter"
-                  label="Venue booking permission / booking slip (PDF) (Optional)"
-                  accept="application/pdf"
-                  file={permissionsFiles.venueLetter}
-                  onChange={(file) => setPermissionsFiles(prev => ({ ...prev, venueLetter: file }))}
-                  error={permissionsErrors.venueLetter}
+                  file={permissionsFiles.otherDocument}
+                  onChange={(file) => setPermissionsFiles(prev => ({ ...prev, otherDocument: file }))}
+                  error={permissionsErrors.otherDocument}
                 />
 
                 <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
@@ -2113,7 +2090,7 @@ export default function CouncilPortal() {
                     disabled={permissionsSubmitting}
                     onClick={() => {
                       setPermissionsUploadEvent(null);
-                      setPermissionsFiles({ doswLetter: null, councilLetter: null, venueLetter: null });
+                      setPermissionsFiles({ doswLetter: null, otherDocument: null });
                       setPermissionsErrors({});
                     }}
                     className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"

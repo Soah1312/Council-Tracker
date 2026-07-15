@@ -827,14 +827,9 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> DOSW Clearance PDF
                         </a>
                       )}
-                      {selectedEventDetail.councilPermissionLetterUrl && (
-                        <a href={selectedEventDetail.councilPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> Council Permission PDF
-                        </a>
-                      )}
-                      {selectedEventDetail.venuePermissionLetterUrl && (
-                        <a href={selectedEventDetail.venuePermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> Venue Booking Slip
+                      {selectedEventDetail.otherDocumentUrl && (
+                        <a href={selectedEventDetail.otherDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> Other Relevant Document
                         </a>
                       )}
                       {selectedEventDetail.attendanceWaiverUrl && (
@@ -842,7 +837,7 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
                         </a>
                       )}
-                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.councilPermissionLetterUrl && !selectedEventDetail.venuePermissionLetterUrl && !selectedEventDetail.attendanceWaiverUrl && (
+                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
                         <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
                     </div>
@@ -1459,14 +1454,9 @@ export default function AdminPanel() {
                                     <IconFile className="w-3 h-3 shrink-0" /> DOSW CLEARANCE PDF
                                   </a>
                                 )}
-                                {event.councilPermissionLetterUrl && (
-                                  <a href={event.councilPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
-                                    <IconFile className="w-3 h-3 shrink-0" /> COUNCIL APPROVAL PDF
-                                  </a>
-                                )}
-                                {event.venuePermissionLetterUrl && (
-                                  <a href={event.venuePermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
-                                    <IconFile className="w-3 h-3 shrink-0" /> VENUE BOOKING SLIP PDF
+                                {event.otherDocumentUrl && (
+                                  <a href={event.otherDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> OTHER RELEVANT DOCUMENT PDF
                                   </a>
                                 )}
                               </div>
