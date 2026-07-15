@@ -40,9 +40,12 @@ function formatDate(value) {
   }
 }
 
+// Deduplication lock map to prevent duplicate emails triggered within short intervals
+const recentDispatches = new Set();
+
 /**
- * Core dispatcher — sends one email per recipient.
- * Silently swallows errors so a mail failure never blocks the user flow.
+ * Core dispatcher — sends a single email notification covering all configured recipients.
+ * Implements deduplication to ensure rapid consecutive triggers for the same event stage are ignored.
  *
  * @param {Object} params  - Template variables forwarded to EmailJS
  */
@@ -56,17 +59,31 @@ async function dispatch(params) {
     return;
   }
 
-  for (const email of RECIPIENTS) {
-    try {
-      await emailjs.send(
-        SERVICE_ID,
-        TEMPLATE_ID,
-        { ...params, to_email: email },
-        { publicKey: PUBLIC_KEY }
-      );
-    } catch (err) {
-      console.error(`[EmailJS] Failed to send to ${email}:`, err);
-    }
+  // Create a unique key for deduplication (Event ID + Stage)
+  const lockKey = `${params.event_id || ''}:${params.stage_label || ''}:${params.subject || ''}`;
+  if (recentDispatches.has(lockKey)) {
+    console.warn(`[EmailJS] Duplicate notification dispatch prevented for key: ${lockKey}`);
+    return;
+  }
+
+  // Lock key for 5 seconds
+  recentDispatches.add(lockKey);
+  setTimeout(() => recentDispatches.delete(lockKey), 5000);
+
+  // Join all configured recipients into a single comma-separated string
+  // so EmailJS handles delivery in ONE single API call instead of multiple loops.
+  const toEmailString = RECIPIENTS.join(', ');
+
+  try {
+    await emailjs.send(
+      SERVICE_ID,
+      TEMPLATE_ID,
+      { ...params, to_email: toEmailString },
+      { publicKey: PUBLIC_KEY }
+    );
+    console.log(`[EmailJS] Notification successfully sent to ${toEmailString} for ${params.event_id}`);
+  } catch (err) {
+    console.error(`[EmailJS] Failed to send email notification:`, err);
   }
 }
 
