@@ -9,7 +9,8 @@ import {
   signInWithEmailAndPassword, 
   signOut, 
   sendPasswordResetEmail, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  createUserWithEmailAndPassword
 } from 'firebase/auth';
 
 /**
@@ -64,6 +65,15 @@ export async function loginWithEmail(email, password) {
   const userCredential = await signInWithEmailAndPassword(auth, email.trim(), password);
   return userCredential.user;
 }
+
+/**
+ * Registers a user with email and password via Firebase Auth.
+ */
+export async function registerWithEmail(email, password) {
+  const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  return userCredential.user;
+}
+
 
 /**
  * Signs out the current user.

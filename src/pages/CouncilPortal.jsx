@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, submitReport, submitPermissionLetters } from '../lib/events';
-import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
+import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, registerWithEmail } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
@@ -382,11 +382,29 @@ export default function CouncilPortal() {
       await loginWithEmail(authEmail, authPassword);
       showNotification('AUTHENTICATED SUCCESSFULLY!');
     } catch (err) {
-      console.error(err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-        setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
+      console.error('Login error:', err);
+      // In local development, if authentication fails, attempt to register the user.
+      // This solves the problem where the account does not exist in the local/development Firebase project.
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (isLocalhost && (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found')) {
+        try {
+          await registerWithEmail(authEmail, authPassword);
+          showNotification('USER CREATED AND AUTHENTICATED SUCCESSFULLY!');
+          return;
+        } catch (regErr) {
+          console.error('Auto-registration error:', regErr);
+          if (regErr.code === 'auth/email-already-in-use') {
+            setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
+          } else {
+            setAuthError(regErr.message || 'AUTHENTICATION FAILED.');
+          }
+        }
       } else {
-        setAuthError(err.message || 'AUTHENTICATION FAILED.');
+        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+          setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
+        } else {
+          setAuthError(err.message || 'AUTHENTICATION FAILED.');
+        }
       }
     } finally {
       setAuthSubmitting(false);
@@ -754,7 +772,6 @@ export default function CouncilPortal() {
       setReportPdf(null);
       setReportImages([]);
       setActiveTab('my-events');
-      fetchMyEvents();
     } catch (err) {
       console.error(err);
       showNotification('Failed to submit report assets.', 'error');
@@ -809,7 +826,6 @@ export default function CouncilPortal() {
       setPermissionsUploadEvent(null);
       setPermissionsFiles({ doswLetter: null, councilLetter: null, venueLetter: null });
       setPermissionsErrors({});
-      fetchMyEvents();
     } catch (err) {
       console.error(err);
       showNotification(err.message || 'Failed to upload permission letters.', 'error');
