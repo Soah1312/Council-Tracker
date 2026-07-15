@@ -16,6 +16,7 @@ import {
   orderBy, 
   limit, 
   updateDoc, 
+  onSnapshot,
   Timestamp, 
   serverTimestamp 
 } from 'firebase/firestore';
@@ -133,6 +134,47 @@ export async function getEventsByCouncil(councilId) {
 }
 
 /**
+ * Real-time subscription for events belonging to a specific council.
+ */
+export function subscribeToEventsByCouncil(councilId, callback) {
+  const q = query(
+    collection(db, 'events'),
+    where('councilId', '==', councilId)
+  );
+
+  return onSnapshot(q, (querySnapshot) => {
+    const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const sorted = results.sort((a, b) => {
+      const tA = a.createdAt?.seconds || 0;
+      const tB = b.createdAt?.seconds || 0;
+      return tB - tA;
+    });
+    callback(sorted);
+  }, (err) => {
+    console.error('Error in subscribeToEventsByCouncil:', err);
+  });
+}
+
+/**
+ * Real-time subscription for all events in the system.
+ */
+export function subscribeToAllEvents(callback) {
+  const q = collection(db, 'events');
+
+  return onSnapshot(q, (querySnapshot) => {
+    const results = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const sorted = results.sort((a, b) => {
+      const tA = a.createdAt?.seconds || 0;
+      const tB = b.createdAt?.seconds || 0;
+      return tB - tA;
+    });
+    callback(sorted);
+  }, (err) => {
+    console.error('Error in subscribeToAllEvents:', err);
+  });
+}
+
+/**
  * Retrieves all events matching optional status, councilId, and date range filters.
  * Filters multi-field queries client-side to ensure out-of-the-box operation without requiring composite indexes.
  */
@@ -194,16 +236,8 @@ export async function updateEventStatus(eventId, status, reviewNotes = '') {
   };
   
   if (status === 'approved') {
-    const eventSnap = await getDoc(eventRef);
-    if (eventSnap.exists()) {
-      const eventData = eventSnap.data();
-      const endDate = eventData.endDate;
-      if (endDate) {
-        const endDateJS = endDate.toDate ? endDate.toDate() : new Date(endDate);
-        const dueDateJS = new Date(endDateJS.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days later
-        updates.reportDueDate = Timestamp.fromDate(dueDateJS);
-      }
-    }
+    const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 days from approval
+    updates.reportDueDate = Timestamp.fromDate(dueDateJS);
   }
   
   await updateDoc(eventRef, updates);
@@ -220,6 +254,21 @@ export async function submitReport(eventId, reportPdfUrl = null, reportImageUrls
     reportImageUrls: reportImageUrls || [],
     reportSubmittedAt: Timestamp.fromDate(new Date()),
     status: 'closed'
+  });
+}
+
+/**
+ * Submits the event permission letters. Sets the status to 'permissions_submitted'.
+ */
+export async function submitPermissionLetters(eventId, urls) {
+  const eventRef = doc(db, 'events', eventId);
+  
+  await updateDoc(eventRef, {
+    doswPermissionLetterUrl: urls.doswPermissionLetterUrl || null,
+    councilPermissionLetterUrl: urls.councilPermissionLetterUrl || null,
+    venuePermissionLetterUrl: urls.venuePermissionLetterUrl || null,
+    permissionsSubmittedAt: Timestamp.fromDate(new Date()),
+    status: 'permissions_submitted'
   });
 }
 

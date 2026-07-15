@@ -1,35 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllEvents, updateEventStatus } from '../lib/events';
+import { getAllEvents, updateEventStatus, subscribeToAllEvents } from '../lib/events';
+import { COUNCILS } from '../lib/auth';
 import { format } from 'date-fns';
-
-const COUNCILS = [
-  // Professional Chapters
-  { id: 'ieee-wie', name: 'IEEE & WIE' },
-  { id: 'csi', name: 'CSI' },
-  { id: 'acm', name: 'ACM' },
-  { id: 'asme', name: 'ASME' },
-  { id: 'e-cell', name: 'E-Cell' },
-  { id: 'fsai', name: 'FSAI' },
-  
-  // Technical Teams
-  { id: 'team-robix', name: 'Team Robix' },
-  { id: 'team-abadha', name: 'Team Abadha' },
-  { id: 'team-cfr', name: 'Team CFR' },
-  { id: 'team-vaayushastra', name: 'Team Vaayushastra' },
-  { id: 'team-mavericks', name: 'Team Mavericks' },
-  { id: 'project-cell', name: 'Project Cell' },
-  
-  // Technical Student Clubs
-  { id: 'mozilla-codelabs', name: 'Mozilla & Codelabs' },
-  { id: 'gdsc', name: 'GDSC' },
-  { id: 'gda', name: 'GDA' },
-  
-  // Additional Societies
-  { id: 'nss', name: 'NSS' },
-  { id: 'rotaract-club', name: 'Rotaract Club' },
-  { id: 'tedx', name: 'TEDx' }
-];
+import { seedAllEvents } from '../lib/seedData';
+import { clearAllEvents } from '../lib/clearData';
+import { IconFile, IconCheck, IconX, IconWarning, IconDownload, IconPhoto } from '../lib/icons';
 
 export default function AdminPanel() {
   // Passcode Security Gate State
@@ -64,13 +40,11 @@ export default function AdminPanel() {
   // Event Detail Modal (Phase 7)
   const [selectedEventDetail, setSelectedEventDetail] = useState(null);
 
-  const fetchEvents = async () => {
+  useEffect(() => {
+    if (!authenticated) return;
     setLoading(true);
-    try {
-      // Fetch all events to maintain consistent counters on dashboard
-      const data = await getAllEvents();
-      
-      // Auto-transition events with status === 'approved' and past endDate to 'report_pending' client-side
+
+    const unsubscribe = subscribeToAllEvents((data) => {
       const processed = data.map(event => {
         if (event.status === 'approved') {
           const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
@@ -80,20 +54,12 @@ export default function AdminPanel() {
         }
         return event;
       });
-      
-      setAllEvents(processed);
-    } catch (err) {
-      console.error(err);
-      showNotification('Failed to fetch events from Firestore.', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    if (authenticated) {
-      fetchEvents();
-    }
+      setAllEvents(processed);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, [authenticated]);
 
   const showNotification = (message, type = 'success') => {
@@ -121,7 +87,22 @@ export default function AdminPanel() {
     setPasscode('');
   };
 
-  const openReviewDialog = (event, statusType) => {
+  const openReviewDialog = async (event, statusType) => {
+    // Accept / approve actions need no comment — close modal immediately, submit in background
+    if (statusType === 'proposal_approved' || statusType === 'approved') {
+      setSelectedEventDetail(null); // close instantly for immediate feedback
+      setActionLoading(event.id);
+      try {
+        await updateEventStatus(event.id, statusType, '');
+        showNotification(`Status updated: ${statusType.replace(/_/g, ' ')}.`);
+      } catch (err) {
+        showNotification('Failed to update status.', 'error');
+      } finally {
+        setActionLoading(null);
+      }
+      return;
+    }
+    // Rejection / revision actions open the comment dialog
     setReviewingEvent(event);
     setReviewStatusType(statusType);
     setReviewNotes('');
@@ -131,7 +112,12 @@ export default function AdminPanel() {
     if (!reviewingEvent) return;
 
     // Enforce required notes/comments for Reject and Request Revision
-    if ((reviewStatusType === 'rejected' || reviewStatusType === 'revision_needed') && !reviewNotes.trim()) {
+    const isRequired = 
+      reviewStatusType === 'rejected' || 
+      reviewStatusType === 'revision_needed' || 
+      reviewStatusType === 'permissions_revision_needed';
+
+    if (isRequired && !reviewNotes.trim()) {
       showNotification('Comments/notes are required when rejecting or requesting revisions.', 'error');
       return;
     }
@@ -143,7 +129,6 @@ export default function AdminPanel() {
       setReviewingEvent(null);
       // Close the details modal drawer on success
       setSelectedEventDetail(null);
-      fetchEvents();
     } catch (err) {
       showNotification('Failed to submit review notes.', 'error');
     } finally {
@@ -253,12 +238,23 @@ export default function AdminPanel() {
   };
 
   // Status helper predicates
+  const isProposalAccepted = (status) => {
+    return [
+      'proposal_approved',
+      'permissions_submitted',
+      'permissions_revision_needed',
+      'approved',
+      'report_pending',
+      'closed'
+    ].includes(status);
+  };
+
   const isReportPending = (event) => {
-    return event.status === 'report_pending';
+    return event.status === 'approved' || event.status === 'report_pending';
   };
 
   const isReportOverdue = (event) => {
-    if (event.status !== 'report_pending') return false;
+    if (event.status !== 'approved' && event.status !== 'report_pending') return false;
     if (!event.reportDueDate) return false;
     const dueDate = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
     return dueDate < new Date();
@@ -272,21 +268,23 @@ export default function AdminPanel() {
 
   // Clash checking function for venue overlaps (only for active approved/upcoming events)
   const hasClash = (evt, eventsList) => {
-    if (evt.status !== 'approved' && evt.status !== 'report_pending' && evt.status !== 'closed') return false;
-    if (!evt.venue) return false;
+    if (!evt || !isProposalAccepted(evt.status)) return false;
+    if (!evt.venue || !evt.startDate || !evt.endDate) return false;
     const startA = evt.startDate?.toDate ? evt.startDate.toDate().getTime() : new Date(evt.startDate).getTime();
     const endA = evt.endDate?.toDate ? evt.endDate.toDate().getTime() : new Date(evt.endDate).getTime();
+    if (isNaN(startA) || isNaN(endA)) return false;
     const venueA = evt.venue.toLowerCase().trim();
     
     return eventsList.some(other => {
-      if (other.eventId === evt.eventId) return false;
-      if (other.status !== 'approved' && other.status !== 'report_pending' && other.status !== 'closed') return false;
-      if (!other.venue) return false;
+      if (!other || other.eventId === evt.eventId) return false;
+      if (!isProposalAccepted(other.status)) return false;
+      if (!other.venue || !other.startDate || !other.endDate) return false;
       const venueB = other.venue.toLowerCase().trim();
       if (venueA !== venueB) return false;
       
       const startB = other.startDate?.toDate ? other.startDate.toDate().getTime() : new Date(other.startDate).getTime();
       const endB = other.endDate?.toDate ? other.endDate.toDate().getTime() : new Date(other.endDate).getTime();
+      if (isNaN(startB) || isNaN(endB)) return false;
       
       return startA < endB && endA > startB;
     });
@@ -336,12 +334,86 @@ export default function AdminPanel() {
     }
   };
 
+  const getEventStage = (status) => {
+    switch (status) {
+      case 'submitted':
+      case 'revision_needed':
+      case 'rejected':
+        return { num: 1, label: 'STAGE 1: PROPOSAL REVIEW', colorClass: 'bg-[#ffe17c] text-[#171e19] border border-[#171e19]/35' };
+      case 'proposal_approved':
+      case 'permissions_submitted':
+      case 'permissions_revision_needed':
+        return { num: 2, label: 'STAGE 2: DOCUMENTS & CLEARANCES', colorClass: 'bg-indigo-900 text-white' };
+      case 'approved':
+        return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING (PENDING)', colorClass: 'bg-emerald-950 text-white' };
+      case 'closed':
+        return { num: 3, label: 'STAGE 3: COMPLETED / ARCHIVED', colorClass: 'bg-[#b7c6c2] text-[#171e19]' };
+      default:
+        return { num: 1, label: 'STAGE 1: PROPOSAL REVIEW', colorClass: 'bg-slate-800 text-white' };
+    }
+  };
+
+  const renderStageTracker = (status) => {
+    let currentStage = 1;
+    if (['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status)) {
+      currentStage = 2;
+    } else if (['approved', 'closed', 'report_pending'].includes(status)) {
+      currentStage = 3;
+    }
+
+    const stages = [
+      { num: 1, name: 'Proposal', desc: 'Stage 1: Concept & Description' },
+      { num: 2, name: 'Clearances', desc: 'Stage 2: Letters Uploaded' },
+      { num: 3, name: 'Report', desc: 'Stage 3: Wrap-up & Completion' }
+    ];
+
+    return (
+      <div className="border border-[#171e19]/10 bg-slate-50 p-4 rounded-none space-y-3 font-satoshi">
+        <span className="font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] block">Event Progression Flow</span>
+        <div className="grid grid-cols-3 gap-2">
+          {stages.map((stg) => {
+            const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
+            const isActive = currentStage === stg.num && status !== 'closed';
+            const isFuture = !isCompleted && !isActive;
+
+            let bgColor = 'bg-white border-[#171e19]/15 text-[#171e19]/40';
+            if (isActive) {
+              bgColor = 'bg-[#ffe17c] border-[#171e19] text-[#171e19] font-bold shadow-[2px_2px_0px_0px_#171e19]';
+            } else if (isCompleted) {
+              bgColor = 'bg-[#171e19] border-[#171e19] text-[#ffe17c]';
+            }
+
+            return (
+              <div key={stg.num} className={`p-2.5 border-2 flex flex-col items-center text-center justify-between gap-1 transition-brutal ${bgColor}`}>
+                <div className="flex items-center gap-1.5 justify-center flex-wrap">
+                  <span className={`w-3.5 h-3.5 rounded-full text-[8px] flex items-center justify-center font-bold ${
+                    isCompleted ? 'bg-[#ffe17c] text-[#171e19]' : isActive ? 'bg-[#171e19] text-[#ffe17c]' : 'bg-[#171e19]/10 text-[#171e19]/50'
+                  }`}>
+                    {isCompleted ? '✓' : stg.num}
+                  </span>
+                  <span className="font-anton text-[10px] uppercase tracking-wide">{stg.name}</span>
+                </div>
+                <span className="text-[8px] uppercase tracking-wide block opacity-80 mt-1 font-semibold">{stg.desc}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const getBadgeClass = (event) => {
     const isRepPending = isReportPending(event);
     if (isRepPending) return 'bg-[#171e19] text-white border-2 border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold';
     switch (event.status) {
       case 'submitted':
-        return 'bg-[#b7c6c2] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return 'bg-[#b7c6c2]/50 text-[#171e19] border border-[#171e19]/25 px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+      case 'proposal_approved':
+        return 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+      case 'permissions_submitted':
+        return 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+      case 'permissions_revision_needed':
+        return 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]';
       case 'approved':
         return 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
       case 'rejected':
@@ -356,7 +428,8 @@ export default function AdminPanel() {
   };
 
   // Dynamic Dashboard Stats Counters
-  const countPendingReview = allEvents.filter(e => e.status === 'submitted').length;
+  const countPendingReview = allEvents.filter(e => e.status === 'submitted' || e.status === 'permissions_submitted').length;
+  const countAwaitingDocs = allEvents.filter(e => e.status === 'proposal_approved').length;
   const countApprovedUpcoming = allEvents.filter(isUpcoming).length;
   const countReportPending = allEvents.filter(isReportPending).length;
   const countOverdueReports = allEvents.filter(isReportOverdue).length;
@@ -364,7 +437,8 @@ export default function AdminPanel() {
   // "Needs Attention" List Compilation & Urgency Sorting
   const getNeedsAttentionList = () => {
     const overdue = allEvents.filter(isReportOverdue);
-    const pending = allEvents.filter(e => e.status === 'submitted');
+    const pendingProposals = allEvents.filter(e => e.status === 'submitted');
+    const pendingPermissions = allEvents.filter(e => e.status === 'permissions_submitted');
     
     const sortedOverdue = overdue.sort((a, b) => {
       const dateA = a.reportDueDate?.toDate ? a.reportDueDate.toDate() : new Date(a.reportDueDate);
@@ -372,15 +446,41 @@ export default function AdminPanel() {
       return dateA - dateB;
     });
     
-    const sortedPending = pending.sort((a, b) => {
+    const sortedPendingProposals = pendingProposals.sort((a, b) => {
+      const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+      const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+      return dateA - dateB;
+    });
+
+    const sortedPendingPermissions = pendingPermissions.sort((a, b) => {
       const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
       const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
       return dateA - dateB;
     });
     
+    // Events waiting for council to upload permission documents (Stage 2, council's turn)
+    const awaitingDocs = allEvents.filter(e => e.status === 'proposal_approved');
+    const sortedAwaitingDocs = awaitingDocs.sort((a, b) => {
+      const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+      const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+      return dateA - dateB;
+    });
+
+    // Stage 3: Events that are approved and awaiting post-event report
+    const reportPendingEvents = allEvents.filter(e => e.status === 'approved' || e.status === 'report_pending');
+    const sortedReportPending = reportPendingEvents.sort((a, b) => {
+      // Sort overdue first, then by due date ascending
+      const dueA = a.reportDueDate?.toDate ? a.reportDueDate.toDate() : (a.reportDueDate ? new Date(a.reportDueDate) : new Date(9999, 0));
+      const dueB = b.reportDueDate?.toDate ? b.reportDueDate.toDate() : (b.reportDueDate ? new Date(b.reportDueDate) : new Date(9999, 0));
+      return dueA - dueB;
+    });
+
     return [
       ...sortedOverdue.map(e => ({ ...e, attentionReason: 'overdue' })),
-      ...sortedPending.map(e => ({ ...e, attentionReason: 'pending' }))
+      ...sortedPendingPermissions.map(e => ({ ...e, attentionReason: 'pending_permissions' })),
+      ...sortedPendingProposals.map(e => ({ ...e, attentionReason: 'pending_proposal' })),
+      ...sortedAwaitingDocs.map(e => ({ ...e, attentionReason: 'awaiting_docs' })),
+      ...sortedReportPending.map(e => ({ ...e, attentionReason: 'report_pending' }))
     ];
   };
 
@@ -481,7 +581,7 @@ export default function AdminPanel() {
 
   // MAIN ADMIN PANEL VIEW
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
       {/* Toast Notification */}
       {notification && (
         <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${
@@ -509,11 +609,11 @@ export default function AdminPanel() {
 
             <div className="flex flex-col gap-2">
               <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">
-                Review Comments & Notes {(reviewStatusType === 'rejected' || reviewStatusType === 'revision_needed') && '*'}
+                Review Comments & Notes *
               </label>
               <textarea
                 rows="4"
-                required={reviewStatusType === 'rejected' || reviewStatusType === 'revision_needed'}
+                required
                 placeholder="Provide details or revision requirements..."
                 value={reviewNotes}
                 onChange={e => setReviewNotes(e.target.value)}
@@ -541,168 +641,284 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* EVENT DETAIL DRAWER MODAL */}
+      {/* EVENT DETAIL MODAL — full screen centered */}
       {selectedEventDetail && (
-        <div className="fixed inset-0 z-40 bg-[#171e19]/70 backdrop-blur-sm flex justify-end">
-          <div className="bg-white border-l-4 border-[#171e19] w-full max-w-2xl h-full overflow-y-auto p-6 md:p-8 space-y-6 shadow-2xl flex flex-col justify-between rounded-none animate-slide-left">
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="flex items-start justify-between border-b border-[#171e19]/10 pb-5">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    {/* Signature ID Tag */}
-                    <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19]">
-                      {selectedEventDetail.eventId}
+        <div className="fixed inset-0 z-40 bg-[#171e19]/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+          <div className="bg-white border-2 border-[#171e19] w-full max-w-5xl max-h-[92vh] overflow-hidden shadow-[8px_8px_0px_0px_#171e19] flex flex-col animate-slide-up">
+            
+            {/* Modal Header Bar */}
+            <div className="flex items-start justify-between border-b-2 border-[#171e19] px-6 py-4 shrink-0">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-satoshi text-xs font-bold tracking-widest border border-[#171e19] px-3 py-1 bg-white text-[#171e19]">
+                  {selectedEventDetail.eventId}
+                </span>
+                {(() => {
+                  const stage = getEventStage(selectedEventDetail.status);
+                  return (
+                    <span className={`px-3 py-1 font-satoshi text-xs font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
+                      {stage.label}
                     </span>
-                    <span className={getBadgeClass(selectedEventDetail)}>
-                      {selectedEventDetail.status}
-                    </span>
-                  </div>
-                  <h3 className="font-anton text-3xl text-[#171e19] leading-tight tracking-tight">
-                    {selectedEventDetail.eventName.toUpperCase()}
-                  </h3>
-                  <p className="font-satoshi text-xs text-[#ffe17c] bg-[#171e19] px-2.5 py-1 inline-block uppercase font-bold tracking-wider mt-1">{selectedEventDetail.councilName}</p>
-                </div>
-                <button
-                  onClick={() => setSelectedEventDetail(null)}
-                  className="font-satoshi text-xs font-bold uppercase tracking-wider border-2 border-[#171e19] px-3 py-1.5 hover:bg-slate-100 transition-colors"
-                >
-                  ✕ Close
-                </button>
+                  );
+                })()}
+                <span className={getBadgeClass(selectedEventDetail)}>
+                  {selectedEventDetail.status}
+                </span>
               </div>
-
-              {/* Logistical Grid */}
-              <div className="grid grid-cols-2 gap-4 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none text-xs text-[#171e19]/90 font-satoshi">
-                <div>
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] mb-1">Start Date</span>
-                  <span className="font-bold">{formatEventDate(selectedEventDetail.startDate)}</span>
-                </div>
-                <div>
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] mb-1">End Date</span>
-                  <span className="font-bold">{formatEventDate(selectedEventDetail.endDate)}</span>
-                </div>
-                <div>
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] mb-1">Venue Location</span>
-                  <span className="font-bold">{selectedEventDetail.venue.toUpperCase()}</span>
-                </div>
-                <div>
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] mb-1">Expected Footfall</span>
-                  <span className="font-bold">{selectedEventDetail.expectedFootfall} ATTENDEES</span>
-                </div>
-              </div>
-
-              {/* Contacts */}
-              <div className="grid grid-cols-2 gap-4 text-xs text-[#171e19] font-satoshi font-semibold">
-                <div>
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] mb-1">Faculty Coordinator</span>
-                  <span className="font-bold">{selectedEventDetail.facultyCoordinatorName.toUpperCase()}</span>
-                </div>
-                <div>
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] mb-1">Student Lead POC</span>
-                  <span>
-                    {selectedEventDetail.studentContactName.toUpperCase()} ({selectedEventDetail.studentContactPhone})
-                  </span>
-                </div>
-              </div>
-
-              {/* Resources */}
-              {selectedEventDetail.resourcesNeeded && (
-                <div className="space-y-1 text-xs font-satoshi">
-                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px]">AV/Resources Requested</span>
-                  <p className="italic text-[#171e19]/80 leading-relaxed font-medium">"{selectedEventDetail.resourcesNeeded.toUpperCase()}"</p>
-                </div>
-              )}
-
-              {/* Safety */}
-              {selectedEventDetail.safetyArrangementNeeded && (
-                <div className="space-y-1 text-xs font-satoshi">
-                  <span className="font-bold text-red-600 uppercase block text-[9px]">Barricading & Safety Arrangements</span>
-                  <p className="italic text-red-950 leading-relaxed font-semibold">"{selectedEventDetail.safetyArrangementDetails.toUpperCase()}"</p>
-                </div>
-              )}
-
-              {/* Document Clearance Links */}
-              <div className="space-y-2 border-t border-[#171e19]/10 pt-4 font-satoshi">
-                <h4 className="font-bold text-[#b7c6c2] uppercase tracking-wider text-[9px]">Uploaded Clearances</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs uppercase font-bold">
-                  <a href={selectedEventDetail.eventDescriptionUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                    📄 PROPOSAL SUMMARY PDF
-                  </a>
-                  <a href={selectedEventDetail.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                    📄 DOSW CLEARANCE PDF
-                  </a>
-                  <a href={selectedEventDetail.councilPermissionLetterUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                    📄 COUNCIL PERMISSION PDF
-                  </a>
-                  {selectedEventDetail.venuePermissionLetterUrl && (
-                    <a href={selectedEventDetail.venuePermissionLetterUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                      📄 VENUE BOOKING SLIP
-                    </a>
-                  )}
-                  {selectedEventDetail.attendanceWaiverUrl && (
-                    <a href={selectedEventDetail.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                      📄 WAIVER LEAVE REQUESTS
-                    </a>
-                  )}
-                </div>
-              </div>
-
-              {/* Post-Event Report (if closed) */}
-              {selectedEventDetail.status === 'closed' && selectedEventDetail.reportPdfUrl && (
-                <div className="space-y-3 border-t-2 border-dashed border-[#171e19] pt-4 bg-[#ffe17c]/5 p-4 rounded-none font-satoshi">
-                  <h4 className="font-bold text-[#171e19] uppercase tracking-wider text-[10px]">Archived Post-Event Report</h4>
-                  <div className="space-y-2 text-xs uppercase font-bold">
-                    <a href={selectedEventDetail.reportPdfUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                      📄 Download final wrap-up report PDF
-                    </a>
-                    {selectedEventDetail.reportSubmittedAt && (
-                      <p className="text-[10px] text-[#b7c6c2] lowercase font-semibold">
-                        Submitted: {formatEventDate(selectedEventDetail.reportSubmittedAt)}
-                      </p>
-                    )}
-                    {selectedEventDetail.reportImageUrls && selectedEventDetail.reportImageUrls.length > 0 && (
-                      <div className="space-y-1.5 pt-2">
-                        <p className="font-semibold text-[#171e19]">Uploaded Photos ({selectedEventDetail.reportImageUrls.length}):</p>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedEventDetail.reportImageUrls.map((url, index) => (
-                            <a href={url} target="_blank" rel="noreferrer" key={index} className="w-12 h-12 bg-white border border-[#171e19] rounded-none overflow-hidden flex items-center justify-center shrink-0">
-                              <img src={url} alt={`event-${index}`} className="object-cover w-full h-full" />
-                            </a>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
+              <button
+                onClick={() => setSelectedEventDetail(null)}
+                className="font-satoshi text-sm font-bold uppercase tracking-wider border-2 border-[#171e19] px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 shrink-0"
+              >
+                <IconX className="w-4 h-4" /> Close
+              </button>
             </div>
 
-            {/* Review actions footer (for pending proposals) */}
-            {selectedEventDetail.status === 'submitted' && (
-              <div className="flex items-center gap-3 pt-6 border-t-2 border-[#171e19]">
-                <button
-                  onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
-                  className="flex-grow py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest transition-brutal"
-                >
-                  Approve Request
-                </button>
-                <button
-                  onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
-                  className="flex-grow py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest transition-brutal"
-                >
-                  Request Revision
-                </button>
-                <button
-                  onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                  className="flex-grow py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-sm uppercase tracking-widest transition-brutal hover:bg-red-50"
-                >
-                  Reject Request
-                </button>
+            {/* Scrollable Body */}
+            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+              
+              {/* Event Title Row */}
+              <div>
+                <h3 className="font-anton text-4xl text-[#171e19] leading-tight tracking-tight">
+                  {String(selectedEventDetail.eventName || '').toUpperCase()}
+                </h3>
+                <p className="font-satoshi text-sm text-[#ffe17c] bg-[#171e19] px-3 py-1.5 inline-block uppercase font-bold tracking-wider mt-2">{selectedEventDetail.councilName}</p>
+              </div>
+
+              {/* Event Progress Tracker */}
+              {renderStageTracker(selectedEventDetail.status)}
+
+              {/* Overdue / Deadline Banner */}
+              {selectedEventDetail.status === 'approved' && selectedEventDetail.reportDueDate && (
+                <div className="bg-amber-50 border border-amber-300 p-4 text-amber-800 flex items-center justify-between gap-3 flex-wrap font-medium text-sm font-satoshi">
+                  <div>
+                    <span className="font-bold text-xs uppercase tracking-wider text-amber-600 block mb-1">Report Submission Deadline</span>
+                    <span className="text-sm uppercase">Post-event report expected by {formatEventDate(selectedEventDetail.reportDueDate)}.</span>
+                  </div>
+                  <span className="font-mono text-sm font-bold bg-amber-200 border border-amber-400 px-3 py-1 uppercase shrink-0">
+                    {(() => {
+                      const due = selectedEventDetail.reportDueDate.toDate ? selectedEventDetail.reportDueDate.toDate() : new Date(selectedEventDetail.reportDueDate);
+                      const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+                      if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
+                      if (diffDays === 0) return 'Due Today!';
+                      return `${diffDays} days remaining`;
+                    })()}
+                  </span>
+                </div>
+              )}
+
+              {/* Two-Column Detail Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                {/* LEFT: Dates, Venue, Footfall, Contacts */}
+                <div className="space-y-4">
+                  {/* Logistical Grid */}
+                  <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block">Event Logistics</span>
+                    <div className="grid grid-cols-2 gap-4 text-[#171e19] font-satoshi">
+                      <div>
+                        <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Start Date</span>
+                        <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.startDate)}</span>
+                      </div>
+                      <div>
+                        <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">End Date</span>
+                        <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.endDate)}</span>
+                      </div>
+                      {selectedEventDetail.venue && (
+                        <div className="col-span-2">
+                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Venue Location</span>
+                          <span className="font-bold text-sm">{String(selectedEventDetail.venue).toUpperCase()}</span>
+                        </div>
+                      )}
+                      {selectedEventDetail.expectedFootfall > 0 && (
+                        <div>
+                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Expected Footfall</span>
+                          <span className="font-bold text-sm">{selectedEventDetail.expectedFootfall} Attendees</span>
+                        </div>
+                      )}
+                      {selectedEventDetail.registrationFeeApplicable && selectedEventDetail.registrationFeeAmount !== undefined && (
+                        <div>
+                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Registration Fee</span>
+                          <span className="font-bold text-sm">₹{selectedEventDetail.registrationFeeAmount} / head</span>
+                        </div>
+                      )}
+                      {selectedEventDetail.prizeMoneyApplicable && selectedEventDetail.prizeMoneyAmount && (
+                        <div className="col-span-2">
+                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Prize Pool</span>
+                          <span className="font-bold text-sm">₹{selectedEventDetail.prizeMoneyAmount} <span className="text-[#b7c6c2] font-medium">via {selectedEventDetail.prizeMoneySource}</span></span>
+                        </div>
+                      )}
+                      {selectedEventDetail.externalParticipantsApplicable && selectedEventDetail.externalParticipantsExpected > 0 && (
+                        <div>
+                          <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">External Participants</span>
+                          <span className="font-bold text-sm">{selectedEventDetail.externalParticipantsExpected} Students</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Contacts */}
+                  {(selectedEventDetail.facultyCoordinatorName || selectedEventDetail.studentContactName) && (
+                    <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
+                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block">Contacts</span>
+                      <div className="grid grid-cols-2 gap-4 text-[#171e19] font-satoshi">
+                        {selectedEventDetail.facultyCoordinatorName && (
+                          <div>
+                            <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Faculty Coordinator</span>
+                            <span className="font-bold text-sm">{String(selectedEventDetail.facultyCoordinatorName).toUpperCase()}</span>
+                          </div>
+                        )}
+                        {selectedEventDetail.studentContactName && (
+                          <div>
+                            <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Student Lead POC</span>
+                            <span className="font-bold text-sm block">{String(selectedEventDetail.studentContactName).toUpperCase()}</span>
+                            {selectedEventDetail.studentContactPhone && <span className="text-sm text-[#b7c6c2]">{selectedEventDetail.studentContactPhone}</span>}
+                          </div>
+                        )}
+                        {selectedEventDetail.guestApplicable && selectedEventDetail.guestName && (
+                          <div className="col-span-2">
+                            <span className="font-bold text-[#b7c6c2] uppercase block text-xs mb-1">Chief Guest</span>
+                            <span className="font-bold text-sm">{String(selectedEventDetail.guestName).toUpperCase()}{selectedEventDetail.guestDesignation ? `, ${selectedEventDetail.guestDesignation}` : ''}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* RIGHT: Resources, Safety, Documents */}
+                <div className="space-y-4">
+                  {/* Resources */}
+                  {selectedEventDetail.resourcesNeeded && (
+                    <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5">
+                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block mb-2">AV / Resources Requested</span>
+                      <p className="italic text-[#171e19]/80 text-sm leading-relaxed font-medium font-satoshi">"{String(selectedEventDetail.resourcesNeeded).toUpperCase()}"</p>
+                    </div>
+                  )}
+
+                  {/* Safety */}
+                  {selectedEventDetail.safetyArrangementNeeded && selectedEventDetail.safetyArrangementDetails && (
+                    <div className="bg-red-50 border border-red-200 p-5">
+                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-red-600 block mb-2">Barricading & Safety Arrangements</span>
+                      <p className="italic text-red-900 text-sm leading-relaxed font-semibold font-satoshi">"{String(selectedEventDetail.safetyArrangementDetails).toUpperCase()}"</p>
+                    </div>
+                  )}
+
+                  {/* Document Clearance Links */}
+                  <div className="border border-[#171e19]/15 p-5 space-y-3">
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#b7c6c2] block">Uploaded Clearances</span>
+                    <div className="grid grid-cols-1 gap-2 font-satoshi">
+                      {selectedEventDetail.eventDescriptionUrl && (
+                        <a href={selectedEventDetail.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> Proposal Summary PDF
+                        </a>
+                      )}
+                      {selectedEventDetail.doswPermissionLetterUrl && (
+                        <a href={selectedEventDetail.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> DOSW Clearance PDF
+                        </a>
+                      )}
+                      {selectedEventDetail.councilPermissionLetterUrl && (
+                        <a href={selectedEventDetail.councilPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> Council Permission PDF
+                        </a>
+                      )}
+                      {selectedEventDetail.venuePermissionLetterUrl && (
+                        <a href={selectedEventDetail.venuePermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> Venue Booking Slip
+                        </a>
+                      )}
+                      {selectedEventDetail.attendanceWaiverUrl && (
+                        <a href={selectedEventDetail.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                          <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
+                        </a>
+                      )}
+                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.councilPermissionLetterUrl && !selectedEventDetail.venuePermissionLetterUrl && !selectedEventDetail.attendanceWaiverUrl && (
+                        <p className="text-[#b7c6c2] text-sm italic">No documents uploaded yet.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Post-Event Report (if closed) */}
+                  {selectedEventDetail.status === 'closed' && selectedEventDetail.reportPdfUrl && (
+                    <div className="space-y-3 border-t-2 border-dashed border-[#171e19] pt-4 bg-[#ffe17c]/5 p-5 font-satoshi">
+                      <h4 className="font-bold text-[#171e19] uppercase tracking-wider text-xs">Archived Post-Event Report</h4>
+                      <div className="space-y-2 font-bold">
+                        <a href={selectedEventDetail.reportPdfUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm">
+                          <IconFile className="w-4 h-4 shrink-0" /> Download Final Wrap-Up Report PDF
+                        </a>
+                        {selectedEventDetail.reportSubmittedAt && (
+                          <p className="text-xs text-[#b7c6c2] lowercase font-semibold">
+                            Submitted: {formatEventDate(selectedEventDetail.reportSubmittedAt)}
+                          </p>
+                        )}
+                        {selectedEventDetail.reportImageUrls && selectedEventDetail.reportImageUrls.length > 0 && (
+                          <div className="space-y-1.5 pt-2">
+                            <p className="font-semibold text-sm text-[#171e19]">Uploaded Photos ({selectedEventDetail.reportImageUrls.length}):</p>
+                            <div className="flex flex-wrap gap-2">
+                              {selectedEventDetail.reportImageUrls.map((url, index) => (
+                                <a href={url} target="_blank" rel="noreferrer" key={index} className="w-16 h-16 bg-white border border-[#171e19] overflow-hidden flex items-center justify-center shrink-0">
+                                  <img src={url} alt={`event-${index}`} className="object-cover w-full h-full" />
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Sticky Action Footer */}
+            {(selectedEventDetail.status === 'submitted' || selectedEventDetail.status === 'permissions_submitted') && (
+              <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0">
+                {selectedEventDetail.status === 'submitted' && (<>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
+                  >
+                    Accept Proposal
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                  >
+                    Request Revision
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-sm uppercase tracking-widest hover:bg-red-50 transition-all"
+                  >
+                    Reject Proposal
+                  </button>
+                </>)}
+                {selectedEventDetail.status === 'permissions_submitted' && (<>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
+                  >
+                    Approve Permissions
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                  >
+                    Request Letters Revision
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-sm uppercase tracking-widest hover:bg-red-50 transition-all"
+                  >
+                    Reject Request
+                  </button>
+                </>)}
               </div>
             )}
           </div>
         </div>
       )}
+
+
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-[#171e19] pb-6 gap-4">
@@ -784,6 +1000,33 @@ export default function AdminPanel() {
           >
             <span>Calendar View</span>
           </button>
+
+          {/* Developer Seeding Utility */}
+          <div className="mt-8 p-4 bg-red-50 border-2 border-red-500 space-y-3 font-satoshi text-xs text-left">
+            <p className="font-bold text-red-800 uppercase tracking-wide">Developer Seeding Console</p>
+            <p className="text-red-950 font-medium leading-relaxed">
+              Resets the database by clearing all records and reseeding with the new 3-stage flow mock events.
+            </p>
+            <button
+              onClick={async () => {
+                if (window.confirm("Are you sure you want to CLEAR the database and reseed with clean 3-stage data?")) {
+                  try {
+                    showNotification("Clearing database events...");
+                    await clearAllEvents();
+                    showNotification("Seeding new mock events...");
+                    await seedAllEvents();
+                    showNotification("Database reseeded successfully!");
+                    fetchEvents();
+                  } catch (e) {
+                    showNotification("Error reseeding database: " + e.message, "error");
+                  }
+                }
+              }}
+              className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-anton text-xs uppercase tracking-widest transition-colors rounded-none border border-red-700 cursor-pointer"
+            >
+              Clear & Reseed System
+            </button>
+          </div>
         </div>
 
         {/* Content Area */}
@@ -792,26 +1035,37 @@ export default function AdminPanel() {
           {activeSubTab === 'dashboard' && (
             <div className="space-y-8">
               {/* Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
                 {/* Card 1 */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
                   <p className="font-anton text-7xl text-white">{countPendingReview}</p>
                   <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Pending Review</p>
                 </div>
                 
-                {/* Card 2 */}
+                {/* Card 2 — Stage 2: Awaiting council documents */}
+                <div className={`border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm border-l-4 ${
+                  countAwaitingDocs > 0 ? 'bg-indigo-950 border-l-indigo-400' : 'bg-[#272727] border-l-[#272727]'
+                }`}>
+                  <p className={`font-anton text-7xl ${countAwaitingDocs > 0 ? 'text-indigo-300' : 'text-white'}`}>
+                    {countAwaitingDocs}
+                  </p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Awaiting Council Docs</p>
+                  <p className="font-satoshi text-[10px] text-[#b7c6c2]/70 uppercase">Stage 2 — letters not yet uploaded</p>
+                </div>
+
+                {/* Card 3 */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
                   <p className="font-anton text-7xl text-white">{countApprovedUpcoming}</p>
                   <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Approved Upcoming</p>
                 </div>
 
-                {/* Card 3 */}
+                {/* Card 4 */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
                   <p className="font-anton text-7xl text-white">{countReportPending}</p>
                   <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Report Pending</p>
                 </div>
 
-                {/* Card 4 - Overdue reports with a yellow left border accent */}
+                {/* Card 5 - Overdue reports with a yellow left border accent */}
                 <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm border-l-4 border-l-[#ffe17c]">
                   <p className={`font-anton text-7xl ${countOverdueReports > 0 ? 'text-[#ffe17c] animate-pulse' : 'text-white'}`}>
                     {countOverdueReports}
@@ -825,7 +1079,7 @@ export default function AdminPanel() {
                 <div>
                   <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">NEEDS ATTENTION</h3>
                   <p className="font-satoshi text-[10px] text-[#b7c6c2] font-bold uppercase mt-1">
-                    Action items (overdue summaries and incoming proposals) sorted by administrative urgency.
+                    Action items — overdue reports, proposals awaiting admin review, and events waiting for council documents.
                   </p>
                 </div>
 
@@ -843,7 +1097,7 @@ export default function AdminPanel() {
                   </div>
                 ) : needsAttentionList.length === 0 ? (
                   <div className="text-center py-6 border border-dashed border-[#171e19] rounded-none">
-                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">✓ Clear Desk! No pending items require attention.</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2] flex items-center gap-1.5"><IconCheck className="w-3 h-3 text-emerald-500" /> Clear Desk! No pending items require attention.</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-[#171e19]/10">
@@ -863,22 +1117,63 @@ export default function AdminPanel() {
                               <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19]">
                                 {event.eventId}
                               </span>
+                              {(() => {
+                                const stage = getEventStage(event.status);
+                                return (
+                                  <span className={`px-2 py-0.5 font-satoshi text-[9px] font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
+                                    {stage.label}
+                                  </span>
+                                );
+                              })()}
                             </div>
                             <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wide">
-                              Council: <span className="text-[#171e19] font-bold">{event.councilName}</span> &bull; Venue: {event.venue.toUpperCase()}
+                              Council: <span className="text-[#171e19] font-bold">{event.councilName}</span> &bull; Venue: {event.venue ? event.venue.toUpperCase() : 'TBD'}
                             </p>
                           </div>
 
                           <div className="flex items-center gap-3 shrink-0">
-                            {isOverdue ? (
-                              <span className="px-2.5 py-0.5 bg-[#ffe17c] border border-[#171e19] text-[#171e19] text-[9px] font-bold uppercase rounded-none">
-                                Report Overdue ({getNeedsAttentionList ? `${getDaysDiff(event.reportDueDate)}d` : ''})
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 bg-slate-100 border border-[#171e19]/30 text-[#171e19] text-[9px] font-bold uppercase rounded-none">
-                                Review Awaiting (Starts {getNeedsAttentionList ? `${getDaysDiffFuture(event.startDate)}d` : ''})
+                            {event.attentionReason === 'overdue' && (
+                              <span className="px-2.5 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] text-xs font-bold uppercase rounded-none">
+                                Report Overdue ({getDaysDiff(event.reportDueDate)}d)
                               </span>
                             )}
+                            {event.attentionReason === 'pending_permissions' && (
+                              <span className="px-2.5 py-1 bg-blue-900 border border-[#171e19]/30 text-white text-xs font-bold uppercase rounded-none">
+                                Permissions Submitted — Needs Review
+                              </span>
+                            )}
+                            {event.attentionReason === 'awaiting_docs' && (
+                              <span className="px-2.5 py-1 bg-indigo-900 border border-indigo-300/30 text-indigo-100 text-xs font-bold uppercase rounded-none">
+                                ⏳ Awaiting Council Documents
+                              </span>
+                            )}
+                            {event.attentionReason === 'pending_proposal' && (
+                              <span className="px-2.5 py-1 bg-slate-100 border border-[#171e19]/30 text-[#171e19] text-xs font-bold uppercase rounded-none">
+                                Proposal Awaiting ({getDaysDiffFuture(event.startDate)}d)
+                              </span>
+                            )}
+                            {event.attentionReason === 'report_pending' && (() => {
+                              const due = event.reportDueDate?.toDate ? event.reportDueDate.toDate() : (event.reportDueDate ? new Date(event.reportDueDate) : null);
+                              const diffDays = due ? Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                              const isOverdue = diffDays !== null && diffDays < 0;
+                              return (
+                                <span className={`px-2.5 py-1 text-xs font-bold uppercase rounded-none border ${
+                                  isOverdue
+                                    ? 'bg-red-800 border-red-900 text-white'
+                                    : diffDays !== null && diffDays <= 3
+                                    ? 'bg-amber-400 border-amber-600 text-[#171e19]'
+                                    : 'bg-emerald-900 border-emerald-700 text-emerald-100'
+                                }`}>
+                                  {isOverdue
+                                    ? `⚠ Report Overdue (${Math.abs(diffDays)}d ago)`
+                                    : diffDays === 0
+                                    ? '⚠ Report Due Today!'
+                                    : due
+                                    ? `Stage 3 — Report Due in ${diffDays}d`
+                                    : 'Stage 3 — Report Pending'}
+                                </span>
+                              );
+                            })()}
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -922,120 +1217,219 @@ export default function AdminPanel() {
                     </div>
                   ))}
                 </div>
-              ) : pendingEvents.length === 0 ? (
+              ) : (pendingProposals.length === 0 && pendingPermissions.length === 0) ? (
                 <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none">
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Clear queue! No pending event proposals to review.</p>
+                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#b7c6c2]">Clear queue! No pending items to review.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
-                  {pendingEvents.map(event => (
-                    <div
-                      key={event.eventId}
-                      className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none"
-                    >
-                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#171e19]/10 pb-4">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="font-anton text-xl text-[#171e19] tracking-tight">
-                              {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
-                            </h3>
-                            <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
-                              {event.eventId}
-                            </span>
-                          </div>
-                          <p className="font-satoshi text-xs text-[#ffe17c] bg-[#171e19] px-2.5 py-1 inline-block uppercase font-bold tracking-wider mt-1">{event.councilName}</p>
-                          <p className="font-satoshi text-[10px] uppercase font-semibold text-[#b7c6c2] mt-1">Contact: {event.studentContactName.toUpperCase()} &bull; {event.studentContactPhone}</p>
-                        </div>
-                        
-                        <div className="flex gap-2 sm:self-start flex-wrap">
-                          <button
-                            onClick={() => openReviewDialog(event, 'approved')}
-                            className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => openReviewDialog(event, 'revision_needed')}
-                            className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
-                          >
-                            Revision
-                          </button>
-                          <button
-                            onClick={() => openReviewDialog(event, 'rejected')}
-                            className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
-                          >
-                            Reject
-                          </button>
-                        </div>
+                <div className="space-y-8">
+                  {/* Stage 1 Queue */}
+                  {pendingProposals.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 border-b border-[#171e19]/10 pb-2">
+                        <span className="w-2.5 h-2.5 bg-[#ffe17c] border border-[#171e19]" />
+                        <h3 className="font-anton text-lg text-[#171e19] tracking-tight uppercase">Stage 1: Proposal Review Queue ({pendingProposals.length})</h3>
                       </div>
+                      
+                      <div className="space-y-4">
+                        {pendingProposals.map(event => (
+                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#171e19]/10 pb-4">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-anton text-xl text-[#171e19] tracking-tight">
+                                    {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
+                                  </h3>
+                                  <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
+                                    {event.eventId}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap mt-1">
+                                  <p className="font-satoshi text-xs text-[#ffe17c] bg-[#171e19] px-2.5 py-1 inline-block uppercase font-bold tracking-wider">{event.councilName}</p>
+                                  {(() => {
+                                    const stage = getEventStage(event.status);
+                                    return (
+                                      <span className={`px-2 py-0.5 font-satoshi text-[9px] font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
+                                        {stage.label}
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
+                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#b7c6c2] mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                              </div>
+                              
+                              <div className="flex gap-2 sm:self-start flex-wrap">
+                                <button
+                                  onClick={() => openReviewDialog(event, 'proposal_approved')}
+                                  className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                >
+                                  Accept Proposal
+                                </button>
+                                <button
+                                  onClick={() => openReviewDialog(event, 'revision_needed')}
+                                  className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                >
+                                  Revision
+                                </button>
+                                <button
+                                  onClick={() => openReviewDialog(event, 'rejected')}
+                                  className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
 
-                      {/* Logistical Grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
-                        <div>
-                          <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Start Date</span>
-                          <span className="text-[11px]">
-                            {formatEventDate(event.startDate)}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue</span>
-                          <span className="text-[11px]">{event.venue.toUpperCase()}</span>
-                        </div>
-                        <div>
-                          <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Expected Crowd</span>
-                          <span className="text-[11px]">{event.expectedFootfall} ATTENDEES</span>
-                        </div>
-                        <div>
-                          <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Prize Pool Offered</span>
-                          <span className="text-[11px] text-[#ffe17c] bg-[#171e19] px-1.5 py-0.5 inline-block font-bold">
-                            {event.prizeMoneyApplicable ? `$${event.prizeMoneyAmount}` : 'NONE'}
-                          </span>
-                        </div>
-                      </div>
+                            {/* Logistical Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Start Date</span>
+                                <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue</span>
+                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Expected Crowd</span>
+                                <span className="text-[11px]">{event.expectedFootfall} ATTENDEES</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue Slip Required?</span>
+                                <span className="text-[11px] uppercase font-bold text-[#171e19]">
+                                  {event.venuePermissionApplicable ? 'YES' : 'NO'}
+                                </span>
+                              </div>
+                            </div>
 
-                      {/* Attached documents */}
-                      <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
-                        <h4 className="text-[9px] uppercase font-bold text-[#b7c6c2] tracking-wider">Uploaded Clearance Documents</h4>
-                        <div className="flex flex-wrap gap-4">
-                          <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                            📄 PROPOSAL DOCUMENT PDF
-                          </a>
-                          <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                            📄 DOSW PERMISSION LETTER PDF
-                          </a>
-                          <a href={event.councilPermissionLetterUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                            📄 COUNCIL APPROVAL LETTER PDF
-                          </a>
-                          {event.venuePermissionApplicable && event.venuePermissionLetterUrl && (
-                            <a href={event.venuePermissionLetterUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                              📄 VENUE BOOKING SLIP PDF
-                            </a>
-                          )}
-                          {event.attendanceWaiverApplicable && event.attendanceWaiverUrl && (
-                            <a href={event.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="text-[#171e19] hover:underline">
-                              📄 WAIVER REQUEST LIST PDF
-                            </a>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Safety & infrastructure details */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-satoshi pt-2">
-                        {event.resourcesNeeded && (
-                          <div>
-                            <span className="font-bold uppercase text-[#b7c6c2] block text-[9px] mb-1">Resources Requested:</span>
-                            <p className="text-[#171e19] leading-relaxed italic font-medium">"{event.resourcesNeeded.toUpperCase()}"</p>
+                            {/* Documents */}
+                            <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
+                              <h4 className="text-[9px] uppercase font-bold text-[#b7c6c2] tracking-wider">Uploaded Files</h4>
+                              <div className="flex flex-wrap gap-4">
+                                <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                  <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
+                                </a>
+                                {event.attendanceWaiverUrl && (
+                                  <a href={event.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> WAIVER REQUEST LIST PDF
+                                  </a>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        )}
-                        {event.safetyArrangementNeeded && (
-                          <div>
-                            <span className="font-bold uppercase text-red-500 block text-[9px] mb-1">Security / Safety Plan:</span>
-                            <p className="text-red-950 leading-relaxed italic font-semibold">"{event.safetyArrangementDetails.toUpperCase()}"</p>
-                          </div>
-                        )}
+                        ))}
                       </div>
                     </div>
-                  ))}
+                  )}
+
+                  {/* Stage 2 Queue */}
+                  {pendingPermissions.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 border-b border-[#171e19]/10 pb-2 pt-4">
+                        <span className="w-2.5 h-2.5 bg-blue-900 border border-[#171e19]" />
+                        <h3 className="font-anton text-lg text-[#171e19] tracking-tight uppercase">Stage 2: Clearance & Permissions Review Queue ({pendingPermissions.length})</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        {pendingPermissions.map(event => (
+                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#171e19]/10 pb-4">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-anton text-xl text-[#171e19] tracking-tight">
+                                    {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
+                                  </h3>
+                                  <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
+                                    {event.eventId}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap mt-1">
+                                  <p className="font-satoshi text-xs text-white bg-[#171e19] px-2.5 py-1 inline-block uppercase font-bold tracking-wider">{event.councilName}</p>
+                                  {(() => {
+                                    const stage = getEventStage(event.status);
+                                    return (
+                                      <span className={`px-2 py-0.5 font-satoshi text-[9px] font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
+                                        {stage.label}
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
+                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#b7c6c2] mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                              </div>
+                              
+                              <div className="flex gap-2 sm:self-start flex-wrap">
+                                <button
+                                  onClick={() => openReviewDialog(event, 'approved')}
+                                  className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                >
+                                  Approve Permissions
+                                </button>
+                                <button
+                                  onClick={() => openReviewDialog(event, 'permissions_revision_needed')}
+                                  className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                >
+                                  Request Letters Revision
+                                </button>
+                                <button
+                                  onClick={() => openReviewDialog(event, 'rejected')}
+                                  className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Logistical Grid */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Start Date</span>
+                                <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue</span>
+                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Expected Crowd</span>
+                                <span className="text-[11px]">{event.expectedFootfall} ATTENDEES</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#b7c6c2] text-[9px] mb-1">Venue slip status</span>
+                                <span className="text-[11px] uppercase font-bold text-[#171e19]">
+                                  {event.venuePermissionApplicable ? 'REQUIRED' : 'NOT APPLICABLE'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Clearance letters */}
+                            <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
+                              <h4 className="text-[9px] uppercase font-bold text-[#b7c6c2] tracking-wider">Uploaded Clearance Letters</h4>
+                              <div className="flex flex-wrap gap-4">
+                                <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                  <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
+                                </a>
+                                {event.doswPermissionLetterUrl && (
+                                  <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> DOSW CLEARANCE PDF
+                                  </a>
+                                )}
+                                {event.councilPermissionLetterUrl && (
+                                  <a href={event.councilPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> COUNCIL APPROVAL PDF
+                                  </a>
+                                )}
+                                {event.venuePermissionLetterUrl && (
+                                  <a href={event.venuePermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> VENUE BOOKING SLIP PDF
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -1281,7 +1675,7 @@ export default function AdminPanel() {
                     
                     // Filter approved/upcoming/closed events occurring on this day
                     const dayEvents = day ? allEvents.filter(event => {
-                      if (event.status !== 'approved' && event.status !== 'report_pending' && event.status !== 'closed') return false;
+                      if (!isProposalAccepted(event.status)) return false;
                       const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
                       const eventEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
                       
@@ -1317,7 +1711,7 @@ export default function AdminPanel() {
                                     title={`${event.eventName} @ ${event.venue} (${clash ? 'CONFLICT DETECTED!' : 'Scheduled'})`}
                                   >
                                     {event.eventName} @ {event.venue}
-                                    {clash && <span className="ml-1 text-red-500">⚠️</span>}
+                                    {clash && <span className="ml-1 text-red-500 inline-flex"><IconWarning className="w-2.5 h-2.5" /></span>}
                                   </div>
                                 );
                               })}

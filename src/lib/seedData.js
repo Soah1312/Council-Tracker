@@ -1,87 +1,186 @@
 /**
  * seedData.js
- * Seeds Firestore with 34 demo events across all 18 councils.
+ * Seeds Firestore with clean 3-stage flow events.
  */
 
 import { db } from './firebase';
-import { collection, doc, setDoc, Timestamp } from 'firebase/firestore';
+import { collection, doc, writeBatch, Timestamp } from 'firebase/firestore';
 
 const ts = (year, month, day, hour = 9, min = 0) =>
   Timestamp.fromDate(new Date(year, month - 1, day, hour, min));
 
 const now = Timestamp.now();
 
+const DUMMY_PDF = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
+const DUMMY_IMG_1 = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
+const DUMMY_IMG_2 = 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800';
+
 export const SEED_EVENTS = [
-  // IEEE & WIE
-  { eventId: 'EVT-2026-001', councilId: 'ieee-wie', councilName: 'IEEE & WIE', eventName: 'Circuit Design Bootcamp', category: 'workshop', status: 'approved', startDate: ts(2026,7,18,9), endDate: ts(2026,7,18,17), venue: 'Electronics Lab, Block A', expectedFootfall: 60, studentContactName: 'Riya Sharma', studentContactPhone: '9876543210', facultyCoordinatorName: 'Prof. Archana Lopes', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 100, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 15, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,7,25), createdAt: now },
-  { eventId: 'EVT-2026-002', councilId: 'ieee-wie', councilName: 'IEEE & WIE', eventName: 'Women in STEM Panel 2026', category: 'guest_lecture', status: 'submitted', startDate: ts(2026,8,5,10), endDate: ts(2026,8,5,13), venue: 'Seminar Hall 2', expectedFootfall: 120, studentContactName: 'Aisha Khan', studentContactPhone: '9812345678', facultyCoordinatorName: 'Prof. Archana Lopes', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Dr. Priya Nair', guestDesignation: 'Principal Scientist, ISRO', externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  { eventId: 'EVT-2026-003', councilId: 'ieee-wie', councilName: 'IEEE & WIE', eventName: 'Embedded Systems Hackathon', category: 'competition', status: 'closed', startDate: ts(2026,6,10,9), endDate: ts(2026,6,11,18), venue: 'Main Auditorium', expectedFootfall: 200, studentContactName: 'Dev Mehta', studentContactPhone: '9988776655', facultyCoordinatorName: 'Prof. Archana Lopes', prizeMoneyApplicable: true, prizeMoneyAmount: 25000, prizeMoneySource: 'IEEE Grant', registrationFeeApplicable: true, registrationFeeAmount: 200, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 80, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Fire extinguisher stations and first-aid kit at entry', reportDueDate: ts(2026,6,18), reportSubmittedAt: ts(2026,6,17), createdAt: now },
-  // CSI
-  { eventId: 'EVT-2026-004', councilId: 'csi', councilName: 'CSI', eventName: 'Code Sprint 2026', category: 'competition', status: 'approved', startDate: ts(2026,7,22,10), endDate: ts(2026,7,22,18), venue: 'Computer Lab 3', expectedFootfall: 90, studentContactName: 'Ankit Verma', studentContactPhone: '9123456780', facultyCoordinatorName: 'Prof. Prajakta Dhamanskar', prizeMoneyApplicable: true, prizeMoneyAmount: 15000, prizeMoneySource: 'CSI Chapter Fund', registrationFeeApplicable: true, registrationFeeAmount: 150, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 30, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,7,29), createdAt: now },
-  { eventId: 'EVT-2026-005', councilId: 'csi', councilName: 'CSI', eventName: 'Python for Data Science Workshop', category: 'workshop', status: 'revision_needed', startDate: ts(2026,8,12,9,30), endDate: ts(2026,8,12,16,30), venue: 'Computer Lab 1', expectedFootfall: 50, studentContactName: 'Sneha Patil', studentContactPhone: '9234567891', facultyCoordinatorName: 'Prof. Prajakta Dhamanskar', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 50, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, reviewNotes: 'Please clarify the resource requirements and add an outline of the curriculum.', createdAt: now },
-  // ACM
-  { eventId: 'EVT-2026-006', councilId: 'acm', councilName: 'ACM', eventName: 'Algorithm Arena', category: 'competition', status: 'approved', startDate: ts(2026,7,26,9), endDate: ts(2026,7,26,17), venue: 'Computer Lab 2', expectedFootfall: 80, studentContactName: 'Rahul Sinkar', studentContactPhone: '9345678902', facultyCoordinatorName: 'Prof. Sarika Davare', prizeMoneyApplicable: true, prizeMoneyAmount: 10000, prizeMoneySource: 'ACM Student Chapter', registrationFeeApplicable: true, registrationFeeAmount: 100, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 25, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,8,2), createdAt: now },
-  { eventId: 'EVT-2026-007', councilId: 'acm', councilName: 'ACM', eventName: 'Open Source Day', category: 'technical', status: 'submitted', startDate: ts(2026,9,6,10), endDate: ts(2026,9,6,16), venue: 'Seminar Hall 1', expectedFootfall: 100, studentContactName: 'Priya Dhok', studentContactPhone: '9456789013', facultyCoordinatorName: 'Prof. Sarika Davare', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Mr. Kunal Shah', guestDesignation: 'Open Source Maintainer, Google', externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // ASME
-  { eventId: 'EVT-2026-008', councilId: 'asme', councilName: 'ASME', eventName: '3D Printing & Rapid Prototyping', category: 'workshop', status: 'approved', startDate: ts(2026,7,30,10), endDate: ts(2026,7,30,16), venue: 'Mechanical Workshop, Block C', expectedFootfall: 45, studentContactName: 'Akshay Gupta', studentContactPhone: '9567890124', facultyCoordinatorName: 'Dr. Dipali Bhise', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 200, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'PPE kits mandatory; safety briefing at start', reportDueDate: ts(2026,8,6), createdAt: now },
-  { eventId: 'EVT-2026-009', councilId: 'asme', councilName: 'ASME', eventName: 'Design Thinking Challenge', category: 'competition', status: 'report_pending', startDate: ts(2026,7,5,9), endDate: ts(2026,7,6,17), venue: 'Innovation Lab', expectedFootfall: 70, studentContactName: 'Nisha Jain', studentContactPhone: '9678901235', facultyCoordinatorName: 'Dr. Dipali Bhise', prizeMoneyApplicable: true, prizeMoneyAmount: 8000, prizeMoneySource: 'ASME Chapter Budget', registrationFeeApplicable: true, registrationFeeAmount: 100, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 20, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,7,13), createdAt: now },
-  // E-Cell
-  { eventId: 'EVT-2026-010', councilId: 'e-cell', councilName: 'E-Cell', eventName: 'Startup Pitch Day 2026', category: 'competition', status: 'approved', startDate: ts(2026,8,15,10), endDate: ts(2026,8,15,18), venue: 'Main Auditorium', expectedFootfall: 300, studentContactName: 'Varun Kale', studentContactPhone: '9789012346', facultyCoordinatorName: 'Dr. Prajakta Bhangale', prizeMoneyApplicable: true, prizeMoneyAmount: 50000, prizeMoneySource: 'Industry Sponsorship', registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Mr. Vivek Wadhwa', guestDesignation: 'Tech Entrepreneur & Author', externalParticipantsApplicable: true, externalParticipantsExpected: 100, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Security personnel at entry/exit', reportDueDate: ts(2026,8,22), createdAt: now },
-  { eventId: 'EVT-2026-011', councilId: 'e-cell', councilName: 'E-Cell', eventName: 'Lean Startup Masterclass', category: 'workshop', status: 'submitted', startDate: ts(2026,9,20,9), endDate: ts(2026,9,20,13), venue: 'Seminar Hall 1', expectedFootfall: 80, studentContactName: 'Meera Pillai', studentContactPhone: '9890123457', facultyCoordinatorName: 'Dr. Prajakta Bhangale', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 75, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Ms. Neha Rathi', guestDesignation: 'Co-founder, PaySense', externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // FSAI
-  { eventId: 'EVT-2026-012', councilId: 'fsai', councilName: 'FSAI', eventName: 'Formula Student Design Seminar', category: 'technical', status: 'approved', startDate: ts(2026,7,24,11), endDate: ts(2026,7,24,15), venue: 'Lecture Hall LH-5', expectedFootfall: 55, studentContactName: 'Yash Kadam', studentContactPhone: '9901234568', facultyCoordinatorName: 'Dr. Swapnali Makdey', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,7,31), createdAt: now },
-  // Team Robix
-  { eventId: 'EVT-2026-013', councilId: 'team-robix', councilName: 'Team Robix', eventName: 'RoboWars 2026', category: 'competition', status: 'approved', startDate: ts(2026,8,2,9), endDate: ts(2026,8,3,18), venue: 'Open Ground, North Campus', expectedFootfall: 500, studentContactName: 'Suresh Rao', studentContactPhone: '9012345679', facultyCoordinatorName: 'Dr. K. Sailakshmi Parvathi', prizeMoneyApplicable: true, prizeMoneyAmount: 75000, prizeMoneySource: 'Sponsorship + Registrations', registrationFeeApplicable: true, registrationFeeAmount: 500, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 200, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Protective barriers, first-aid station, trained marshals', reportDueDate: ts(2026,8,10), createdAt: now },
-  { eventId: 'EVT-2026-014', councilId: 'team-robix', councilName: 'Team Robix', eventName: 'Autonomous Navigation Workshop', category: 'workshop', status: 'submitted', startDate: ts(2026,9,10,10), endDate: ts(2026,9,10,16), venue: 'Robotics Lab, Block B', expectedFootfall: 35, studentContactName: 'Kavita Nair', studentContactPhone: '9123456780', facultyCoordinatorName: 'Dr. K. Sailakshmi Parvathi', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 150, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // Team Abadha
-  { eventId: 'EVT-2026-015', councilId: 'team-abadha', councilName: 'Team Abadha', eventName: 'BAJA SAE Preparation Symposium', category: 'technical', status: 'rejected', startDate: ts(2026,7,15,9), endDate: ts(2026,7,15,17), venue: 'Mechanical Workshop, Block C', expectedFootfall: 40, studentContactName: 'Arun Deshmukh', studentContactPhone: '9234567891', facultyCoordinatorName: 'Dr. V.B. Rao', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'PPE required in workshop area', reviewNotes: 'Venue is already booked by ASME on this date. Please reschedule.', createdAt: now },
-  { eventId: 'EVT-2026-016', councilId: 'team-abadha', councilName: 'Team Abadha', eventName: 'Off-Road Vehicle Design Workshop', category: 'workshop', status: 'approved', startDate: ts(2026,8,20,10), endDate: ts(2026,8,20,15), venue: 'Engineering Yard', expectedFootfall: 50, studentContactName: 'Priti More', studentContactPhone: '9345678902', facultyCoordinatorName: 'Dr. V.B. Rao', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: true, safetyArrangementDetails: 'Protective gear provided; safety drill before start', reportDueDate: ts(2026,8,27), createdAt: now },
-  // Team CFR
-  { eventId: 'EVT-2026-017', councilId: 'team-cfr', councilName: 'Team CFR', eventName: 'Clean Fuel Research Expo', category: 'technical', status: 'submitted', startDate: ts(2026,8,28,9), endDate: ts(2026,8,28,17), venue: 'Exhibition Hall', expectedFootfall: 150, studentContactName: 'Dhruv Shetty', studentContactPhone: '9456789013', facultyCoordinatorName: 'Dr. Graham Koyeerath', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Dr. R. Suresh', guestDesignation: 'Director, National Institute of Solar Energy', externalParticipantsApplicable: true, externalParticipantsExpected: 60, venuePermissionApplicable: true, safetyArrangementNeeded: false, createdAt: now },
-  // Team Vaayushastra
-  { eventId: 'EVT-2026-018', councilId: 'team-vaayushastra', councilName: 'Team Vaayushastra', eventName: 'Drone Racing League – Campus Edition', category: 'competition', status: 'approved', startDate: ts(2026,7,19,8), endDate: ts(2026,7,19,18), venue: 'Sports Ground', expectedFootfall: 400, studentContactName: 'Shreya Kulkarni', studentContactPhone: '9567890124', facultyCoordinatorName: 'Dr. Deepali Bhise', prizeMoneyApplicable: true, prizeMoneyAmount: 20000, prizeMoneySource: 'Drone Companies Sponsorship', registrationFeeApplicable: true, registrationFeeAmount: 300, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 120, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Drone exclusion zone, safety nets, observer positions marked', reportDueDate: ts(2026,7,26), createdAt: now },
-  // Team Mavericks
-  { eventId: 'EVT-2026-019', councilId: 'team-mavericks', councilName: 'Team Mavericks', eventName: 'Go-Kart Build & Race Day', category: 'competition', status: 'revision_needed', startDate: ts(2026,9,3,8), endDate: ts(2026,9,3,18), venue: 'Campus Driveway', expectedFootfall: 200, studentContactName: 'Karan Rane', studentContactPhone: '9678901235', facultyCoordinatorName: 'Prof. Saurabh Kulkarni', prizeMoneyApplicable: true, prizeMoneyAmount: 30000, prizeMoneySource: 'Automotive Club Fund', registrationFeeApplicable: true, registrationFeeAmount: 400, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 80, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Racing helmets, fire suppression, medical standby', reviewNotes: 'Detailed safety plan from a qualified professional required before approval.', createdAt: now },
-  // Project Cell
-  { eventId: 'EVT-2026-020', councilId: 'project-cell', councilName: 'Project Cell', eventName: 'Final Year Project Expo', category: 'technical', status: 'approved', startDate: ts(2026,8,7,9), endDate: ts(2026,8,8,17), venue: 'Main Lobby & Exhibition Area', expectedFootfall: 800, studentContactName: 'Tejal Vaidya', studentContactPhone: '9789012346', facultyCoordinatorName: 'Prof. Vaibhav Godbole', prizeMoneyApplicable: true, prizeMoneyAmount: 40000, prizeMoneySource: 'Alumni Fund', registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Mr. Rahul Daware', guestDesignation: 'VP Engineering, TCS', externalParticipantsApplicable: true, externalParticipantsExpected: 300, venuePermissionApplicable: true, safetyArrangementNeeded: false, reportDueDate: ts(2026,8,15), createdAt: now },
-  // Mozilla & Codelabs
-  { eventId: 'EVT-2026-021', councilId: 'mozilla-codelabs', councilName: 'Mozilla & Codelabs', eventName: 'Web Dev Fundamentals Bootcamp', category: 'workshop', status: 'approved', startDate: ts(2026,7,25,9,30), endDate: ts(2026,7,25,17,30), venue: 'Computer Lab 4', expectedFootfall: 55, studentContactName: 'Pooja Bhatt', studentContactPhone: '9890123457', facultyCoordinatorName: 'Dr. Roshni Padate', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 50, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,8,1), createdAt: now },
-  { eventId: 'EVT-2026-022', councilId: 'mozilla-codelabs', councilName: 'Mozilla & Codelabs', eventName: 'Firefox Reality AR Showcase', category: 'technical', status: 'submitted', startDate: ts(2026,9,14,11), endDate: ts(2026,9,14,15), venue: 'Seminar Hall 2', expectedFootfall: 75, studentContactName: 'Rohit Joshi', studentContactPhone: '9901234568', facultyCoordinatorName: 'Dr. Roshni Padate', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // GDSC
-  { eventId: 'EVT-2026-023', councilId: 'gdsc', councilName: 'GDSC', eventName: 'Google Solution Challenge Info Session', category: 'technical', status: 'approved', startDate: ts(2026,7,17,15), endDate: ts(2026,7,17,17), venue: 'Lecture Hall LH-3', expectedFootfall: 90, studentContactName: 'Aditya Jain', studentContactPhone: '9012345679', facultyCoordinatorName: 'Dr. Kalpana Deorukhkar', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,7,24), createdAt: now },
-  { eventId: 'EVT-2026-024', councilId: 'gdsc', councilName: 'GDSC', eventName: 'Android Dev with Jetpack Compose', category: 'workshop', status: 'submitted', startDate: ts(2026,8,24,9), endDate: ts(2026,8,24,17), venue: 'Computer Lab 3', expectedFootfall: 60, studentContactName: 'Shruti Kulkarni', studentContactPhone: '9123456780', facultyCoordinatorName: 'Dr. Kalpana Deorukhkar', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 100, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // GDA
-  { eventId: 'EVT-2026-025', councilId: 'gda', councilName: 'GDA', eventName: 'Game Design Jam 48Hr', category: 'competition', status: 'approved', startDate: ts(2026,8,9,10), endDate: ts(2026,8,11,10), venue: 'Computer Lab 2 & 3', expectedFootfall: 100, studentContactName: 'Mihir Kapoor', studentContactPhone: '9234567891', facultyCoordinatorName: 'Prof. Heenakausar Pendhari', prizeMoneyApplicable: true, prizeMoneyAmount: 12000, prizeMoneySource: 'Gaming Company Sponsor', registrationFeeApplicable: true, registrationFeeAmount: 200, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: true, externalParticipantsExpected: 40, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,8,18), createdAt: now },
-  // NSS
-  { eventId: 'EVT-2026-026', councilId: 'nss', councilName: 'NSS', eventName: 'Blood Donation Camp', category: 'cultural', status: 'approved', startDate: ts(2026,7,20,9), endDate: ts(2026,7,20,16), venue: 'Ground Floor Lobby', expectedFootfall: 200, studentContactName: 'Anjali Desai', studentContactPhone: '9345678902', facultyCoordinatorName: 'Prof. Pradeep Singh', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: true, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Medical team from KEM Hospital on-site; sterile equipment', reportDueDate: ts(2026,7,27), createdAt: now },
-  { eventId: 'EVT-2026-027', councilId: 'nss', councilName: 'NSS', eventName: 'Clean Campus Drive', category: 'cultural', status: 'closed', startDate: ts(2026,6,28,7), endDate: ts(2026,6,28,11), venue: 'Entire Campus', expectedFootfall: 300, studentContactName: 'Raj Kamble', studentContactPhone: '9456789013', facultyCoordinatorName: 'Prof. Pradeep Singh', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportSubmittedAt: ts(2026,7,1), createdAt: now },
-  { eventId: 'EVT-2026-028', councilId: 'nss', councilName: 'NSS', eventName: 'Tree Plantation Drive – Monsoon Edition', category: 'cultural', status: 'submitted', startDate: ts(2026,8,18,7,30), endDate: ts(2026,8,18,11), venue: 'College Garden & Surroundings', expectedFootfall: 150, studentContactName: 'Divya Menon', studentContactPhone: '9567890124', facultyCoordinatorName: 'Prof. Pradeep Singh', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // Rotaract Club
-  { eventId: 'EVT-2026-029', councilId: 'rotaract-club', councilName: 'Rotaract Club', eventName: 'Leadership & Community Service Conclave', category: 'cultural', status: 'approved', startDate: ts(2026,8,1,10), endDate: ts(2026,8,1,16), venue: 'Seminar Hall 1', expectedFootfall: 100, studentContactName: 'Snehal Jog', studentContactPhone: '9678901235', facultyCoordinatorName: 'Dr. Ketaki Joshi', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Rtn. Ashish Tiwari', guestDesignation: 'District Governor, Rotary District 3141', externalParticipantsApplicable: true, externalParticipantsExpected: 40, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,8,8), createdAt: now },
-  { eventId: 'EVT-2026-030', councilId: 'rotaract-club', councilName: 'Rotaract Club', eventName: 'Mental Health Awareness Week', category: 'cultural', status: 'submitted', startDate: ts(2026,9,22,9), endDate: ts(2026,9,26,17), venue: 'Various Locations, Campus', expectedFootfall: 500, studentContactName: 'Harsha Dixit', studentContactPhone: '9789012346', facultyCoordinatorName: 'Dr. Ketaki Joshi', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Dr. Sonal Mehta', guestDesignation: 'Psychiatrist, Hinduja Hospital', externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // TEDx
-  { eventId: 'EVT-2026-031', councilId: 'tedx', councilName: 'TEDx', eventName: 'TEDxCouncilTrack 2026 – Reimagine', category: 'cultural', status: 'approved', startDate: ts(2026,8,23,9), endDate: ts(2026,8,23,19), venue: 'Main Auditorium', expectedFootfall: 600, studentContactName: 'Noel Pinto', studentContactPhone: '9890123457', facultyCoordinatorName: 'Prof. Savita Borole', prizeMoneyApplicable: false, registrationFeeApplicable: true, registrationFeeAmount: 250, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Multiple Speakers', guestDesignation: 'Entrepreneurs, Scientists, Artists', externalParticipantsApplicable: true, externalParticipantsExpected: 400, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Security team, fire exits marked, emergency protocol briefed', reportDueDate: ts(2026,8,30), createdAt: now },
-  { eventId: 'EVT-2026-032', councilId: 'tedx', councilName: 'TEDx', eventName: 'TED-Ed Campus Club Salon', category: 'cultural', status: 'submitted', startDate: ts(2026,7,28,14), endDate: ts(2026,7,28,17), venue: 'Seminar Hall 1', expectedFootfall: 80, studentContactName: 'Simone Fernandes', studentContactPhone: '9901234568', facultyCoordinatorName: 'Prof. Savita Borole', prizeMoneyApplicable: false, registrationFeeApplicable: false, attendanceWaiverApplicable: false, guestApplicable: false, externalParticipantsApplicable: false, venuePermissionApplicable: false, safetyArrangementNeeded: false, createdAt: now },
-  // Joint Events
-  { eventId: 'EVT-2026-033', councilId: 'gdsc', councilName: 'GDSC', jointWith: 'Mozilla & Codelabs', eventName: 'Full Stack Fest 2026', category: 'technical', status: 'approved', startDate: ts(2026,9,5,9), endDate: ts(2026,9,7,17), venue: 'Innovation Hub', expectedFootfall: 200, studentContactName: 'Akash Pandey', studentContactPhone: '9012345679', facultyCoordinatorName: 'Dr. Kalpana Deorukhkar', prizeMoneyApplicable: true, prizeMoneyAmount: 20000, prizeMoneySource: 'Joint Budget + Sponsorships', registrationFeeApplicable: true, registrationFeeAmount: 175, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Mr. Arjun Nair', guestDesignation: 'Staff Software Engineer, Google', externalParticipantsApplicable: true, externalParticipantsExpected: 75, venuePermissionApplicable: false, safetyArrangementNeeded: false, reportDueDate: ts(2026,9,14), createdAt: now },
-  { eventId: 'EVT-2026-034', councilId: 'ieee-wie', councilName: 'IEEE & WIE', jointWith: 'ACM', eventName: 'TechFusion Inter-Council Summit', category: 'technical', status: 'submitted', startDate: ts(2026,9,27,9), endDate: ts(2026,9,28,17), venue: 'Conference Center, Block D', expectedFootfall: 350, studentContactName: 'Manali Joshi', studentContactPhone: '9123456780', facultyCoordinatorName: 'Prof. Archana Lopes', prizeMoneyApplicable: true, prizeMoneyAmount: 30000, prizeMoneySource: 'Joint Chapter Funds + Industry', registrationFeeApplicable: true, registrationFeeAmount: 200, attendanceWaiverApplicable: false, guestApplicable: true, guestName: 'Multiple Keynote Speakers', guestDesignation: 'Industry Leaders & Academics', externalParticipantsApplicable: true, externalParticipantsExpected: 150, venuePermissionApplicable: true, safetyArrangementNeeded: true, safetyArrangementDetails: 'Standard event safety protocol', createdAt: now },
+  {
+    eventId: 'EVT-2026-001',
+    councilId: 'gdsc',
+    councilName: 'GDSC',
+    eventName: 'NextJS Architecture & AI Workshop',
+    category: 'workshop',
+    status: 'closed',
+    startDate: ts(2026, 7, 10, 9),
+    endDate: ts(2026, 7, 10, 17),
+    eventDescriptionUrl: DUMMY_PDF,
+    doswPermissionLetterUrl: DUMMY_PDF,
+    councilPermissionLetterUrl: DUMMY_PDF,
+    venuePermissionLetterUrl: DUMMY_PDF,
+    permissionsSubmittedAt: ts(2026, 7, 2, 10),
+    venue: 'Seminar Hall 1',
+    reportDueDate: ts(2026, 7, 15),
+    reportPdfUrl: DUMMY_PDF,
+    reportSubmittedAt: ts(2026, 7, 11, 14),
+    reportImageUrls: [DUMMY_IMG_1, DUMMY_IMG_2],
+    createdAt: ts(2026, 7, 1, 9)
+  },
+  {
+    eventId: 'EVT-2026-002',
+    councilId: 'ieee-wie',
+    councilName: 'IEEE & WIE',
+    eventName: 'IoT Hackathon 2026',
+    category: 'competition',
+    status: 'approved',
+    startDate: ts(2026, 7, 20, 9),
+    endDate: ts(2026, 7, 20, 18),
+    eventDescriptionUrl: DUMMY_PDF,
+    doswPermissionLetterUrl: DUMMY_PDF,
+    councilPermissionLetterUrl: DUMMY_PDF,
+    venuePermissionLetterUrl: DUMMY_PDF,
+    permissionsSubmittedAt: ts(2026, 7, 12, 14),
+    venue: 'Electronics Lab',
+    reportDueDate: ts(2026, 7, 25),
+    createdAt: ts(2026, 7, 5, 9)
+  },
+  {
+    eventId: 'EVT-2026-003',
+    councilId: 'csi',
+    councilName: 'CSI',
+    eventName: 'National Code Sprint',
+    category: 'competition',
+    status: 'permissions_submitted',
+    startDate: ts(2026, 7, 28, 10),
+    endDate: ts(2026, 7, 28, 18),
+    eventDescriptionUrl: DUMMY_PDF,
+    doswPermissionLetterUrl: DUMMY_PDF,
+    councilPermissionLetterUrl: DUMMY_PDF,
+    venuePermissionLetterUrl: DUMMY_PDF,
+    permissionsSubmittedAt: ts(2026, 7, 14, 11),
+    createdAt: ts(2026, 7, 6, 12)
+  },
+  {
+    eventId: 'EVT-2026-004',
+    councilId: 'acm',
+    councilName: 'ACM',
+    eventName: 'Quantum Computing Seminar',
+    category: 'guest_lecture',
+    status: 'proposal_approved',
+    startDate: ts(2026, 8, 5, 11),
+    endDate: ts(2026, 8, 5, 14),
+    eventDescriptionUrl: DUMMY_PDF,
+    createdAt: ts(2026, 7, 10, 15)
+  },
+  {
+    eventId: 'EVT-2026-005',
+    councilId: 'asme',
+    councilName: 'ASME',
+    eventName: 'Robo-Design Challenge',
+    category: 'competition',
+    status: 'submitted',
+    startDate: ts(2026, 8, 12, 9),
+    endDate: ts(2026, 8, 12, 17),
+    eventDescriptionUrl: DUMMY_PDF,
+    createdAt: ts(2026, 7, 14, 10)
+  },
+  {
+    eventId: 'EVT-2026-006',
+    councilId: 'nss',
+    councilName: 'NSS',
+    eventName: 'Blood Donation Camp',
+    category: 'cultural',
+    status: 'revision_needed',
+    startDate: ts(2026, 8, 20, 9),
+    endDate: ts(2026, 8, 20, 16),
+    eventDescriptionUrl: DUMMY_PDF,
+    reviewNotes: 'Please attach a detailed list of collaborating hospitals in the description PDF.',
+    createdAt: ts(2026, 7, 12, 8)
+  },
+  {
+    eventId: 'EVT-2026-007',
+    councilId: 'tedx',
+    councilName: 'TEDx',
+    eventName: 'TEDxCRCE 2026: Infinite Horizons',
+    category: 'cultural',
+    status: 'permissions_revision_needed',
+    startDate: ts(2026, 8, 30, 9),
+    endDate: ts(2026, 8, 30, 19),
+    eventDescriptionUrl: DUMMY_PDF,
+    doswPermissionLetterUrl: DUMMY_PDF,
+    councilPermissionLetterUrl: DUMMY_PDF,
+    venuePermissionLetterUrl: DUMMY_PDF,
+    permissionsSubmittedAt: ts(2026, 7, 14, 16),
+    reviewNotes: 'The venue booking slip is missing the principal\'s signature. Please re-upload with correct signature.',
+    createdAt: ts(2026, 7, 8, 11)
+  },
+  {
+    eventId: 'EVT-2026-008',
+    councilId: 'e-cell',
+    councilName: 'E-Cell',
+    eventName: 'E-Summit Startup Expo',
+    category: 'competition',
+    status: 'closed',
+    startDate: ts(2026, 6, 15, 10),
+    endDate: ts(2026, 6, 15, 18),
+    eventDescriptionUrl: DUMMY_PDF,
+    doswPermissionLetterUrl: DUMMY_PDF,
+    councilPermissionLetterUrl: DUMMY_PDF,
+    venuePermissionLetterUrl: DUMMY_PDF,
+    permissionsSubmittedAt: ts(2026, 6, 8, 9),
+    venue: 'Main Auditorium',
+    reportDueDate: ts(2026, 6, 20),
+    reportPdfUrl: DUMMY_PDF,
+    reportSubmittedAt: ts(2026, 6, 16, 11),
+    reportImageUrls: [DUMMY_IMG_1],
+    createdAt: ts(2026, 6, 1, 9)
+  },
+  {
+    eventId: 'EVT-2026-009',
+    councilId: 'team-vaayushastra',
+    councilName: 'Team Vaayushastra',
+    eventName: 'Aero-Modeling Championship',
+    category: 'competition',
+    status: 'approved',
+    startDate: ts(2026, 7, 15, 9),
+    endDate: ts(2026, 7, 15, 17),
+    eventDescriptionUrl: DUMMY_PDF,
+    doswPermissionLetterUrl: DUMMY_PDF,
+    councilPermissionLetterUrl: DUMMY_PDF,
+    venuePermissionLetterUrl: DUMMY_PDF,
+    permissionsSubmittedAt: ts(2026, 7, 8, 14),
+    venue: 'Sports Ground',
+    reportDueDate: ts(2026, 7, 24),
+    createdAt: ts(2026, 7, 4, 10)
+  }
 ];
 
 export async function seedAllEvents() {
-  console.log(`🌱 Starting seed: ${SEED_EVENTS.length} events...`);
+  console.log(`🌱 Starting batched seed: ${SEED_EVENTS.length} events...`);
   const eventsRef = collection(db, 'events');
-  let success = 0;
-  let errors = 0;
-  for (const event of SEED_EVENTS) {
-    try {
-      await setDoc(doc(eventsRef, event.eventId), event);
-      console.log(`  ✅ ${event.eventId}: ${event.eventName}`);
-      success++;
-    } catch (err) {
-      console.error(`  ❌ ${event.eventId}: ${err.message}`);
-      errors++;
-    }
+  const batch = writeBatch(db);
+  
+  SEED_EVENTS.forEach((event) => {
+    batch.set(doc(eventsRef, event.eventId), event);
+  });
+
+  try {
+    await batch.commit();
+    console.log(`\n🎉 Batched seed complete! ${SEED_EVENTS.length} events seeded in 1 write transaction.`);
+    return { success: SEED_EVENTS.length, errors: 0 };
+  } catch (err) {
+    console.error('Batched seed error:', err);
+    throw err;
   }
-  console.log(`\n🎉 Seed complete! ${success} succeeded, ${errors} failed.`);
-  return { success, errors };
 }
