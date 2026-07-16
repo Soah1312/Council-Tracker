@@ -64,18 +64,6 @@ const CustomToolbar = (toolbar) => {
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
-      <div className="flex items-center gap-2">
-        <button onClick={goToBack} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition-all">
-          <ChevronLeft size={18} />
-        </button>
-        <button onClick={goToCurrent} className="px-4 py-2 h-10 rounded-full bg-white/5 border border-white/10 text-xs font-bold uppercase tracking-wider text-white/70 hover:bg-white/10 hover:text-white transition-all">
-          Today
-        </button>
-        <button onClick={goToNext} className="w-10 h-10 flex items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white transition-all">
-          <ChevronRight size={18} />
-        </button>
-      </div>
-
       <h2 className="text-2xl md:text-3xl font-anton text-white tracking-wide">
         {toolbar.label}
       </h2>
@@ -156,7 +144,9 @@ export default function LandingPage() {
   const allCouncilIds = [...new Set(allEvents.map(e => e.councilId))].filter(Boolean);
 
   // Map to format required by react-big-calendar
-  const calendarEvents = filteredEvents.map(e => {
+  const calendarEvents = filteredEvents
+    .filter(e => ['approved', 'report_pending', 'closed'].includes(e._status))
+    .map(e => {
     const start = e._startDate;
     const fallbackEnd = new Date(start.getTime() + 2 * 60 * 60 * 1000); // 2 hours default
     const end = toDate(e.endDate) || fallbackEnd;
