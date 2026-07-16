@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers } from '../lib/members';
-import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, registerWithEmail } from '../lib/auth';
+import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
@@ -517,28 +517,10 @@ export default function CouncilPortal() {
       showNotification('AUTHENTICATED SUCCESSFULLY!');
     } catch (err) {
       console.error('Login error:', err);
-      // In local development, if authentication fails, attempt to register the user.
-      // This solves the problem where the account does not exist in the local/development Firebase project.
-      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-      if (isLocalhost && (err.code === 'auth/invalid-credential' || err.code === 'auth/user-not-found')) {
-        try {
-          await registerWithEmail(authEmail, authPassword);
-          showNotification('USER CREATED AND AUTHENTICATED SUCCESSFULLY!');
-          return;
-        } catch (regErr) {
-          console.error('Auto-registration error:', regErr);
-          if (regErr.code === 'auth/email-already-in-use') {
-            setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
-          } else {
-            setAuthError(regErr.message || 'AUTHENTICATION FAILED.');
-          }
-        }
+      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+        setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
       } else {
-        if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-          setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
-        } else {
-          setAuthError(err.message || 'AUTHENTICATION FAILED.');
-        }
+        setAuthError(err.message || 'AUTHENTICATION FAILED.');
       }
     } finally {
       setAuthSubmitting(false);

@@ -1042,9 +1042,6 @@ export default function AdminPanel() {
             }`}
           >
             <span>Council Directory</span>
-            <span className="bg-[#ffe17c] text-[#171e19] border border-[#171e19] px-2 py-0.5 rounded-full text-[10px] font-anton">
-              {allCouncilMembers.length}
-            </span>
           </button>
 
           {/* Developer Seeding Utility */}
@@ -1098,42 +1095,74 @@ export default function AdminPanel() {
           {activeSubTab === 'dashboard' && (
             <div className="space-y-8">
               {/* Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
-                {/* Card 1 */}
-                <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
-                  <p className="font-anton text-7xl text-white">{countPendingReview}</p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Pending Review</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                {/* Card 1: Pending Review */}
+                <div className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-[#171e19]/60">Stage 1</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#ffe17c] border border-[#171e19]" />
+                  </div>
+                  <div className="mt-2">
+                    <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countPendingReview}</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Pending Review</p>
+                  </div>
                 </div>
                 
                 {/* Card 2 — Stage 2: Awaiting council documents */}
-                <div className={`border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm border-l-4 ${
-                  countAwaitingDocs > 0 ? 'bg-indigo-950 border-l-indigo-400' : 'bg-[#272727] border-l-[#272727]'
+                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
+                  countAwaitingDocs > 0 ? 'bg-indigo-50/60 border-indigo-900' : ''
                 }`}>
-                  <p className={`font-anton text-7xl ${countAwaitingDocs > 0 ? 'text-indigo-300' : 'text-white'}`}>
-                    {countAwaitingDocs}
-                  </p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Awaiting Council Docs</p>
-                  <p className="font-satoshi text-[10px] text-[#171e19]/60/70 uppercase">Stage 2 — letters not yet uploaded</p>
+                  <div className="flex items-center justify-between">
+                    <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-indigo-900">Stage 2</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 border border-[#171e19]" />
+                  </div>
+                  <div className="mt-2">
+                    <p className={`font-anton text-5xl tracking-tight ${countAwaitingDocs > 0 ? 'text-indigo-900' : 'text-[#171e19]'}`}>
+                      {countAwaitingDocs}
+                    </p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Awaiting Council Docs</p>
+                    <p className="font-satoshi text-[10px] text-[#171e19]/70 font-semibold uppercase mt-0.5">Clearance letters pending</p>
+                  </div>
                 </div>
 
-                {/* Card 3 */}
-                <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
-                  <p className="font-anton text-7xl text-white">{countApprovedUpcoming}</p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Approved Upcoming</p>
+                {/* Card 3: Approved Upcoming */}
+                <div className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-[#171e19]/60">Stage 3</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#171e19]" />
+                  </div>
+                  <div className="mt-2">
+                    <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countApprovedUpcoming}</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Approved Upcoming</p>
+                  </div>
                 </div>
 
-                {/* Card 4 */}
-                <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm">
-                  <p className="font-anton text-7xl text-white">{countReportPending}</p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Report Pending</p>
+                {/* Card 4: Report Pending */}
+                <div className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
+                  <div className="flex items-center justify-between">
+                    <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-[#171e19]/60">Post-Event</span>
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-[#171e19]" />
+                  </div>
+                  <div className="mt-2">
+                    <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countReportPending}</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Report Pending</p>
+                  </div>
                 </div>
 
-                {/* Card 5 - Overdue reports with a yellow left border accent */}
-                <div className="bg-[#272727] border border-[#b7c6c2]/10 p-5 rounded-none space-y-1 shadow-sm border-l-4 border-l-[#ffe17c]">
-                  <p className={`font-anton text-7xl ${countOverdueReports > 0 ? 'text-[#ffe17c] animate-pulse' : 'text-white'}`}>
-                    {countOverdueReports}
-                  </p>
-                  <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Overdue Reports</p>
+                {/* Card 5: Overdue Reports */}
+                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
+                  countOverdueReports > 0 ? 'bg-red-50/70 border-red-600' : ''
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-red-700">Action Required</span>
+                    <span className={`w-2.5 h-2.5 rounded-full bg-red-600 border border-[#171e19] ${countOverdueReports > 0 ? 'animate-ping' : ''}`} />
+                  </div>
+                  <div className="mt-2">
+                    <p className={`font-anton text-5xl tracking-tight ${countOverdueReports > 0 ? 'text-red-600 animate-pulse' : 'text-[#171e19]'}`}>
+                      {countOverdueReports}
+                    </p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Overdue Reports</p>
+                  </div>
                 </div>
               </div>
 

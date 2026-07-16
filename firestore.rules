@@ -25,8 +25,18 @@ service cloud.firestore {
     
     // Council Members Collection (Per-council directory)
     match /councilMembers/{memberId} {
+      // Anyone can read council executive contacts
       allow read: if true;
-      allow create, update, delete: if true;
+
+      // Only authenticated council users can create member records with valid fields
+      allow create: if request.auth != null
+                    && request.resource.data.name is string
+                    && request.resource.data.designation is string
+                    && request.resource.data.contactNumber is string
+                    && request.resource.data.councilId is string;
+
+      // Only authenticated council users can update or delete member records
+      allow update, delete: if request.auth != null;
     }
 
     // Events Collection (Audit trail preserved, strict auth & schema checks)
@@ -44,8 +54,8 @@ service cloud.firestore {
       allow update: if request.auth != null
                     && isValidStatus(request.resource.data.status);
 
-      // Allow deletion for admin database clearance and reseeding
-      allow delete: if true;
+      // Only authenticated users can perform event deletions
+      allow delete: if request.auth != null;
     }
   }
 }
