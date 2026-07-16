@@ -4,6 +4,7 @@ import { getAllEvents, updateEventStatus, subscribeToAllEvents } from '../lib/ev
 import { COUNCILS } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened } from '../lib/emailService';
+import { subscribeToAllCouncilMembers } from '../lib/members';
 import { seedAllEvents } from '../lib/seedData';
 import { clearAllEvents } from '../lib/clearData';
 import { IconFile, IconCheck, IconX, IconWarning, IconDownload, IconPhoto } from '../lib/icons';
@@ -16,8 +17,9 @@ export default function AdminPanel() {
   const [passcode, setPasscode] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
 
-  const [activeSubTab, setActiveSubTab] = useState('dashboard'); // 'dashboard' | 'review' | 'logbook' | 'calendar'
+  const [activeSubTab, setActiveSubTab] = useState('dashboard'); // 'dashboard' | 'review' | 'logbook' | 'calendar' | 'councils'
   const [allEvents, setAllEvents] = useState([]);
+  const [allCouncilMembers, setAllCouncilMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(null); // ID of event being reviewed
   const [notification, setNotification] = useState(null);
@@ -60,6 +62,15 @@ export default function AdminPanel() {
       setLoading(false);
     });
 
+    return () => unsubscribe();
+  }, [authenticated]);
+
+  // Real-time Council Members Subscription for Admin Panel
+  useEffect(() => {
+    if (!authenticated) return;
+    const unsubscribe = subscribeToAllCouncilMembers((data) => {
+      setAllCouncilMembers(data);
+    });
     return () => unsubscribe();
   }, [authenticated]);
 
@@ -1015,11 +1026,25 @@ export default function AdminPanel() {
             onClick={() => setActiveSubTab('calendar')}
             className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
               activeSubTab === 'calendar'
-                ? 'bg-[#171e19] border-[#171e19] text-white'
+                ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
             }`}
           >
             <span>Calendar View</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('councils')}
+            className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
+              activeSubTab === 'councils'
+                ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
+                : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
+            }`}
+          >
+            <span>Council Directory</span>
+            <span className="bg-[#ffe17c] text-[#171e19] border border-[#171e19] px-2 py-0.5 rounded-full text-[10px] font-anton">
+              {allCouncilMembers.length}
+            </span>
           </button>
 
           {/* Developer Seeding Utility */}
@@ -1767,8 +1792,123 @@ export default function AdminPanel() {
                     );
                   })}
                 </div>
-
               </div>
+            </div>
+          )}
+
+          {/* TAB: COUNCIL DIRECTORY / ROSTER */}
+          {activeSubTab === 'councils' && (
+            <div className="bg-white border-2 border-[#171e19] p-6 space-y-6 rounded-none shadow-[4px_4px_0px_0px_#ffe17c] animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#171e19]/10 pb-4 gap-4">
+                <div>
+                  <h2 className="font-anton text-3xl text-[#171e19] tracking-tight uppercase">COUNCIL DIRECTORY & ROSTER</h2>
+                  <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase">
+                    Centralized roster of student council executives, designations, and contact phone numbers across all councils.
+                  </p>
+                </div>
+              </div>
+
+              {allCouncilMembers.length === 0 ? (
+                <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none shadow-[4px_4px_0px_0px_#ffe17c] space-y-3">
+                  <div className="w-12 h-12 bg-[#ffe17c]/30 border-2 border-[#171e19] rounded-full flex items-center justify-center mx-auto text-xl font-bold">
+                    👥
+                  </div>
+                  <h3 className="font-anton text-xl text-[#171e19] uppercase">NO COUNCIL MEMBERS REGISTERED YET</h3>
+                  <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider">
+                    Council members will appear here as each student council populates their roster tab in the Council Portal.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Filter controls */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#b7c6c2]/10 border border-[#171e19]/15 p-4">
+                    <div>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block mb-1">
+                        Search Member or Designation
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Search by name, role, or phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-bold text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block mb-1">
+                        Filter by Council
+                      </label>
+                      <select
+                        value={councilFilter}
+                        onChange={(e) => setCouncilFilter(e.target.value)}
+                        className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none uppercase font-satoshi"
+                      >
+                        <option value="All">All Student Councils ({COUNCILS.length})</option>
+                        {COUNCILS.map(c => (
+                          <option key={c.id} value={c.id}>{c.name.toUpperCase()}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Members Cards Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {allCouncilMembers
+                      .filter(m => {
+                        if (councilFilter !== 'All' && m.councilId !== councilFilter) return false;
+                        if (searchTerm) {
+                          const term = searchTerm.toLowerCase();
+                          const matches = (m.name && m.name.toLowerCase().includes(term)) ||
+                                          (m.designation && m.designation.toLowerCase().includes(term)) ||
+                                          (m.contactNumber && m.contactNumber.toLowerCase().includes(term)) ||
+                                          (m.councilName && m.councilName.toLowerCase().includes(term));
+                          if (!matches) return false;
+                        }
+                        return true;
+                      })
+                      .map((member) => {
+                        const initials = member.name
+                          ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                          : 'CM';
+                        return (
+                          <div
+                            key={member.id}
+                            className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] space-y-3 flex flex-col justify-between"
+                          >
+                            <div className="flex items-start gap-4">
+                              <div className="w-12 h-12 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-lg flex items-center justify-center text-[#171e19]">
+                                {initials}
+                              </div>
+                              <div className="space-y-1 overflow-hidden">
+                                <h3 className="font-anton text-lg text-[#171e19] tracking-tight truncate">
+                                  {member.name.toUpperCase()}
+                                </h3>
+                                <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
+                                  {member.designation}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-[#171e19]/10 space-y-1.5 font-satoshi text-xs font-semibold">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Council:</span>
+                                <span className="text-[#171e19] font-bold uppercase text-[11px] bg-[#ffe17c]/30 px-2 py-0.5 border border-[#171e19]/20">
+                                  {member.councilName || member.councilId}
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Phone:</span>
+                                <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline">
+                                  {member.contactNumber}
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
