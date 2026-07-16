@@ -174,20 +174,7 @@ export default function LandingPage() {
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-[#ffe17c]/5 rounded-full blur-[150px] pointer-events-none transform-gpu -z-10" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-500/5 rounded-full blur-[120px] pointer-events-none transform-gpu -z-10" />
 
-      {/* ── TOP NAVBAR ─────────────────────────────────────────────────── */}
-      <nav className="sticky top-0 z-50 bg-[#050505]/70 backdrop-blur-xl border-b border-white/[0.05] transform-gpu">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="Fr.CRCE Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]" />
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/portal" className="text-sm font-semibold text-white/60 hover:text-white transition-colors">Portal</Link>
-            <Link to="/admin" className="px-4 py-2 text-xs font-bold uppercase tracking-widest bg-white text-black rounded-full hover:bg-[#ffe17c] hover:shadow-[0_0_20px_rgba(255,225,124,0.4)] transition-all duration-300">
-              Admin
-            </Link>
-          </div>
-        </div>
-      </nav>
+
 
       <div className="max-w-7xl mx-auto px-6 pt-12 pb-24 relative z-10">
         {/* ── HERO SPOTLIGHT ───────────────────────────────────────────── */}
@@ -294,6 +281,14 @@ export default function LandingPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── FOOTER LINKS ─────────────────────────────────────────────── */}
+        <div className="mt-12 mb-4 flex items-center justify-center gap-6">
+          <Link to="/portal" className="text-sm font-semibold text-white/60 hover:text-white transition-colors">Council Login</Link>
+          <Link to="/admin" className="px-6 py-2.5 text-xs font-bold uppercase tracking-widest bg-white text-black rounded-full hover:bg-[#ffe17c] hover:shadow-[0_0_20px_rgba(255,225,124,0.4)] transition-all duration-300">
+            Admin Login
+          </Link>
         </div>
       </div>
 
