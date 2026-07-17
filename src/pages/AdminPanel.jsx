@@ -992,12 +992,10 @@ export default function AdminPanel() {
                         <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">End Date</span>
                         <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.endDate)}</span>
                       </div>
-                      {selectedEventDetail.venue && (
-                        <div className="col-span-2">
-                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
-                          <span className="font-bold text-sm">{String(selectedEventDetail.venue).toUpperCase()}</span>
-                        </div>
-                      )}
+                      <div className="col-span-2">
+                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
+                        <span className="font-bold text-sm">{selectedEventDetail.venue ? String(selectedEventDetail.venue).toUpperCase() : 'TBD'}</span>
+                      </div>
                       {selectedEventDetail.expectedFootfall > 0 && (
                         <div>
                           <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Expected Footfall</span>

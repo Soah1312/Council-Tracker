@@ -87,13 +87,12 @@ function DragDropUpload({ id, label, accept, file, filesList, multiple, onChange
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        className={`border-2 border-dashed p-4 flex flex-col items-center justify-center transition-all cursor-pointer rounded-none relative ${
-          dragActive 
-            ? 'border-[#ffe17c] bg-[#ffe17c]/5' 
+        className={`border-2 border-dashed p-4 flex flex-col items-center justify-center transition-all cursor-pointer rounded-none relative ${dragActive
+            ? 'border-[#ffe17c] bg-[#ffe17c]/5'
             : (file || (filesList && filesList.length > 0))
-              ? 'border-emerald-600 bg-emerald-50/5' 
+              ? 'border-emerald-600 bg-emerald-50/5'
               : 'border-[#171e19]/30 hover:border-[#171e19] bg-white'
-        }`}
+          }`}
       >
         <input
           type="file"
@@ -105,12 +104,12 @@ function DragDropUpload({ id, label, accept, file, filesList, multiple, onChange
         />
         <div className="text-center space-y-1.5 pointer-events-none select-none">
           <p className="font-anton text-xs text-[#171e19] uppercase tracking-wider">
-            {multiple 
+            {multiple
               ? (filesList && filesList.length > 0 ? `✓ ${filesList.length} Files Selected` : "Drag & Drop Files Here")
               : (file ? "✓ File Ready" : "Drag & Drop File Here")}
           </p>
           <p className="font-satoshi text-[10px] text-[#b7c6c2] uppercase font-bold">
-            {multiple 
+            {multiple
               ? (filesList && filesList.length > 0 ? filesList.map(f => f.name).join(', ') : "or click to browse")
               : (file ? file.name : "or click to browse")}
           </p>
@@ -154,8 +153,8 @@ function SortableMemberCard({ member, openEditMemberModal, handleDeleteMember, I
       className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between space-y-4 hover:border-[#ffe17c] transition-colors relative ${isDragging ? 'border-[#ffe17c] scale-105 shadow-[8px_8px_0px_0px_#171e19]' : ''}`}
     >
       <div className="flex items-start gap-4">
-        <div 
-          {...attributes} 
+        <div
+          {...attributes}
           {...listeners}
           className="absolute -left-3 top-1/2 -translate-y-1/2 p-1 bg-white border-2 border-[#171e19] cursor-grab active:cursor-grabbing hover:bg-[#ffe17c] transition-colors z-20"
         >
@@ -204,7 +203,7 @@ export default function CouncilPortal() {
     const saved = sessionStorage.getItem('active_council');
     return saved ? JSON.parse(saved) : null;
   });
-  
+
   const [notification, setNotification] = useState(null);
 
   // Firestore events state
@@ -225,7 +224,7 @@ export default function CouncilPortal() {
     studentContactPhone: '',
     facultyCoordinatorName: '',
     resourcesNeeded: '',
-    
+
     // Toggles
     venuePermissionApplicable: false,
     prizeMoneyApplicable: false,
@@ -337,7 +336,7 @@ export default function CouncilPortal() {
         const newIndex = items.findIndex(item => item.id === over.id);
 
         const newOrder = arrayMove(items, oldIndex, newIndex);
-        
+
         // Call backend to update order
         updateCouncilMembersOrder(newOrder).catch(err => {
           console.error("Failed to update order in DB", err);
@@ -533,7 +532,7 @@ export default function CouncilPortal() {
   const handleSplitDateTimeChange = (field, type, val) => {
     const current = getSplitDateTime(formData[field]);
     current[type] = val;
-    
+
     if (current.date) {
       const combined = `${current.date}T${current.time || '00:00'}`;
       if (field === 'startDate') {
@@ -549,7 +548,7 @@ export default function CouncilPortal() {
   const handleStartDateChange = (newStartStr) => {
     setFormData(prev => {
       const updates = { ...prev, startDate: newStartStr };
-      
+
       if (newStartStr) {
         const startJS = new Date(newStartStr);
         if (!isNaN(startJS.getTime())) {
@@ -576,25 +575,25 @@ export default function CouncilPortal() {
     if (isNaN(start.getTime()) || isNaN(end.getTime())) return null;
     const diffMs = end - start;
     if (diffMs < 0) return { isInvalid: true, text: 'End date/time must be after start date/time.' };
-    
+
     const diffMins = Math.round(diffMs / (1000 * 60));
     const days = Math.floor(diffMins / (24 * 60));
     const hours = Math.floor((diffMins % (24 * 60)) / 60);
     const minutes = diffMins % 60;
-    
+
     const parts = [];
     if (days > 0) parts.push(`${days} day${days > 1 ? 's' : ''}`);
     if (hours > 0) parts.push(`${hours} hour${hours > 1 ? 's' : ''}`);
     if (minutes > 0) parts.push(`${minutes} minute${minutes > 1 ? 's' : ''}`);
-    
+
     const durationStr = parts.join(', ') || '0 minutes';
-    
+
     const isSameDay = start.getFullYear() === end.getFullYear() &&
-                      start.getMonth() === end.getMonth() &&
-                      start.getDate() === end.getDate();
-                      
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate();
+
     const tagStr = isSameDay ? 'single day' : `${days + (hours > 0 || minutes > 0 ? 1 : 0)} days span`;
-    
+
     return { isInvalid: false, text: `${durationStr} (${tagStr})` };
   };
 
@@ -616,10 +615,10 @@ export default function CouncilPortal() {
     const start = new Date(startStr);
     const end = endStr ? new Date(endStr) : start;
     if (isNaN(start.getTime())) return null;
-    
+
     const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
     const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
-    
+
     return blockedDates.find(bd => {
       const bdStart = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
       const bdEnd = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
@@ -632,12 +631,12 @@ export default function CouncilPortal() {
     const year = dateObj.getFullYear();
     const month = String(dateObj.getMonth() + 1).padStart(2, '0');
     const day = String(dateObj.getDate()).padStart(2, '0');
-    
+
     const current = getSplitDateTime(formData[field]);
     const timePart = current.time || '09:00';
-    
+
     const combined = `${year}-${month}-${day}T${timePart}`;
-    
+
     if (field === 'startDate') {
       handleStartDateChange(combined);
     } else {
@@ -724,7 +723,7 @@ export default function CouncilPortal() {
   const renderDualApprovalBadges = (event) => {
     const isStage1Pending = event.status === 'submitted' || event.status === 'proposal_approved';
     const isStage2Pending = event.status === 'permissions_submitted' || event.status === 'approved';
-    
+
     if (!isStage1Pending && !isStage2Pending) return null;
 
     const stageNum = isStage1Pending ? 1 : 2;
@@ -742,24 +741,21 @@ export default function CouncilPortal() {
           <span className="font-bold text-[10px] uppercase tracking-wider text-[#171e19]/70">
             Stage {stageNum} Administrative Approvals ({count}/2):
           </span>
-          <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${
-            count === 2 ? 'bg-emerald-950 text-white border-emerald-900' : 'bg-[#ffe17c] text-[#171e19] border-[#171e19]'
-          }`}>
+          <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${count === 2 ? 'bg-emerald-950 text-white border-emerald-900' : 'bg-[#ffe17c] text-[#171e19] border-[#171e19]'
+            }`}>
             {count === 2 ? 'FULLY APPROVED' : '1/2 APPROVALS PENDING'}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold uppercase tracking-wide">
-          <div className={`p-2 border flex items-center justify-between ${
-            dosw ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
-          }`}>
+          <div className={`p-2 border flex items-center justify-between ${dosw ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+            }`}>
             <span>Dean of Students' Welfare (DOSW)</span>
             <span>{dosw ? '✓ Approved' : '⏳ Pending'}</span>
           </div>
 
-          <div className={`p-2 border flex items-center justify-between ${
-            stuco ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
-          }`}>
+          <div className={`p-2 border flex items-center justify-between ${stuco ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+            }`}>
             <span>Students' Council (StuCo)</span>
             <span>{stuco ? '✓ Approved' : '⏳ Pending'}</span>
           </div>
@@ -841,9 +837,8 @@ export default function CouncilPortal() {
             return (
               <div key={stg.num} className={`p-2.5 border-2 flex flex-col items-center text-center justify-between gap-1 transition-brutal ${bgColor}`}>
                 <div className="flex items-center gap-1.5 justify-center flex-wrap">
-                  <span className={`w-3.5 h-3.5 rounded-full text-[8px] flex items-center justify-center font-bold ${
-                    isCompleted ? 'bg-[#ffe17c] text-[#171e19]' : isActive ? 'bg-[#171e19] text-[#ffe17c]' : 'bg-[#171e19]/10 text-[#171e19]/50'
-                  }`}>
+                  <span className={`w-3.5 h-3.5 rounded-full text-[8px] flex items-center justify-center font-bold ${isCompleted ? 'bg-[#ffe17c] text-[#171e19]' : isActive ? 'bg-[#171e19] text-[#ffe17c]' : 'bg-[#171e19]/10 text-[#171e19]/50'
+                    }`}>
                     {isCompleted ? '✓' : stg.num}
                   </span>
                   <span className="font-anton text-[10px] uppercase tracking-wide">{stg.name}</span>
@@ -897,7 +892,7 @@ export default function CouncilPortal() {
   // Dynamic report pending and color calculations
   const getStatusDetails = (event) => {
     const status = event.status;
-    
+
     switch (status) {
       case 'submitted':
         return { label: 'proposal submitted', colorClass: 'bg-[#b7c6c2]/50 text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/20' };
@@ -908,8 +903,8 @@ export default function CouncilPortal() {
       case 'permissions_revision_needed':
         return { label: 'permissions revision needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
-        return { 
-          label: 'fully approved', 
+        return {
+          label: 'fully approved',
           colorClass: 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold',
           isReportPending: true
         };
@@ -967,11 +962,11 @@ export default function CouncilPortal() {
 
     setSubmitting(true);
     setUploadProgress(editingEventId ? 'Modifying event files...' : 'Generating Event ID...');
-    
+
     try {
       const eventId = editingEventId || await generateEventId();
       const uploadPath = `events/${eventId}/proposals`;
-      
+
       let eventDescriptionUrl = existingUrls.eventDescriptionUrl;
       if (files.eventDescription) {
         setUploadProgress('Uploading event proposal description PDF...');
@@ -979,7 +974,7 @@ export default function CouncilPortal() {
       }
 
       let eventOutcomeUrl = existingUrls.eventOutcomeUrl || null;
-      
+
       // Preserve existing permission letters if editing, otherwise null
       const doswPermissionLetterUrl = existingUrls.doswPermissionLetterUrl || null;
       const councilPermissionLetterUrl = existingUrls.councilPermissionLetterUrl || null;
@@ -1030,12 +1025,21 @@ export default function CouncilPortal() {
 
   const handleEditClick = (event, e) => {
     e.stopPropagation();
-    
+
     setFormData({
       eventName: event.eventName || '',
-      expectedFootfall: event.expectedFootfall ? String(event.expectedFootfall) : '',
+      category: event.category || 'technical',
       startDate: toDatetimeLocalString(event.startDate),
-      endDate: toDatetimeLocalString(event.endDate)
+      endDate: toDatetimeLocalString(event.endDate),
+      venue: event.venue || '',
+      venuePermissionApplicable: Boolean(event.venuePermissionApplicable),
+      expectedFootfall: event.expectedFootfall ? String(event.expectedFootfall) : '',
+      prizeMoneyApplicable: Boolean(event.prizeMoneyApplicable),
+      prizeMoneyAmount: event.prizeMoneyAmount ? String(event.prizeMoneyAmount) : '',
+      registrationFeeApplicable: Boolean(event.registrationFeeApplicable),
+      registrationFeeAmount: event.registrationFeeAmount ? String(event.registrationFeeAmount) : '',
+      attendanceWaiverApplicable: Boolean(event.attendanceWaiverApplicable),
+      collaborators: event.collaborators || ''
     });
 
     const startJS = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
@@ -1065,7 +1069,7 @@ export default function CouncilPortal() {
     e.stopPropagation();
     const eventId = typeof eventOrId === 'string' ? eventOrId : eventOrId?.eventId;
     const status = typeof eventOrId === 'object' ? eventOrId?.status : null;
-    
+
     if (status && !['submitted', 'revision_needed', 'rejected'].includes(status)) {
       showNotification('Deletion prohibited once Stage 1 has been approved.', 'error');
       return;
@@ -1086,9 +1090,18 @@ export default function CouncilPortal() {
   const handleResetForm = () => {
     setFormData({
       eventName: '',
-      expectedFootfall: '',
+      category: 'technical',
       startDate: '',
-      endDate: ''
+      endDate: '',
+      venue: '',
+      venuePermissionApplicable: false,
+      expectedFootfall: '',
+      prizeMoneyApplicable: false,
+      prizeMoneyAmount: '',
+      registrationFeeApplicable: false,
+      registrationFeeAmount: '',
+      attendanceWaiverApplicable: false,
+      collaborators: ''
     });
     setFiles({
       eventDescription: null,
@@ -1116,7 +1129,7 @@ export default function CouncilPortal() {
     try {
       const eventId = reportingEvent.eventId;
       const pdfUrl = await uploadFile(reportPdf, `events/${eventId}/report`);
-      
+
       const imageUrls = [];
       setUploadProgress('Uploading report images...');
       for (let i = 0; i < reportImages.length; i++) {
@@ -1129,7 +1142,7 @@ export default function CouncilPortal() {
       await submitReport(reportingEvent.id, pdfUrl, imageUrls);
       // Fire-and-forget email notification
       notifyReportSubmitted(reportingEvent, council.name).catch(console.error);
-      
+
       showNotification('Event report submitted successfully and status closed!');
       setReportingEvent(null);
       setReportPdf(null);
@@ -1160,10 +1173,10 @@ export default function CouncilPortal() {
     setUploadProgress('Uploading permission letters...');
     try {
       const uploadPath = `events/${permissionsUploadEvent.eventId}/permissions`;
-      
+
       setUploadProgress('Uploading DoSW clearance letter PDF...');
       const doswPermissionLetterUrl = await uploadFile(permissionsFiles.doswLetter, uploadPath);
-      
+
       const customPermissionLetters = [];
       for (let i = 0; i < customPermissionDocs.length; i++) {
         const item = customPermissionDocs[i];
@@ -1292,9 +1305,8 @@ export default function CouncilPortal() {
               </div>
 
               {resetMessage && (
-                <div className={`p-3 border-2 text-xs font-bold uppercase ${
-                  resetMessage.type === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-800'
-                }`}>
+                <div className={`p-3 border-2 text-xs font-bold uppercase ${resetMessage.type === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                  }`}>
                   {resetMessage.text}
                 </div>
               )}
@@ -1346,11 +1358,10 @@ export default function CouncilPortal() {
     <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${
-          notification.type === 'error' 
-            ? 'bg-red-50 border-red-500 text-red-800' 
+        <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${notification.type === 'error'
+            ? 'bg-red-50 border-red-500 text-red-800'
             : 'bg-emerald-50 border-emerald-500 text-emerald-800'
-        }`}>
+          }`}>
           <div className="font-satoshi text-xs font-bold uppercase tracking-wide">{notification.message}</div>
         </div>
       )}
@@ -1386,26 +1397,24 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] tracking-wider transition-brutal ${
-            activeTab === 'new-request'
+          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] tracking-wider transition-brutal ${activeTab === 'new-request'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
-          }`}
+            }`}
         >
           {editingEventId ? 'Edit Event Request' : 'New Event Request'}
         </button>
-        
+
         <button
           onClick={() => {
             setActiveTab('my-events');
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal ${
-            activeTab === 'my-events'
+          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal ${activeTab === 'my-events'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
-          }`}
+            }`}
         >
           My Events
         </button>
@@ -1416,11 +1425,10 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal ${
-            activeTab === 'members'
+          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal ${activeTab === 'members'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
-          }`}
+            }`}
         >
           Council Members ({councilMembers.length})
         </button>
@@ -1431,11 +1439,10 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal flex items-center gap-2 ${
-            activeTab === 'calendar'
+          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal flex items-center gap-2 ${activeTab === 'calendar'
               ? 'bg-[#171e19] text-[#ffe17c] border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
-          }`}
+            }`}
         >
           <IconCalendar className="w-5 h-5" /> Calendar
         </button>
@@ -1468,7 +1475,7 @@ export default function CouncilPortal() {
                   Your request has been queued in Firestore for administrative review.
                 </p>
               </div>
-              
+
               <div className="bg-white border-2 border-[#171e19] p-4 max-w-sm mx-auto space-y-1 rounded-none">
                 <p className="font-satoshi text-[9px] uppercase font-bold tracking-widest text-[#b7c6c2]">Event ID Reference</p>
                 <p className="font-satoshi text-xl font-bold tracking-widest text-[#171e19] select-all">{submittedEventId}</p>
@@ -1501,7 +1508,7 @@ export default function CouncilPortal() {
                     {editingEventId ? `EDIT PROPOSAL: ${editingEventId}` : 'PROPOSE NEW ACTIVITY'}
                   </h2>
                   <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider mt-1">
-                    {editingEventId 
+                    {editingEventId
                       ? 'Modify variables. Files not re-uploaded will reuse existing documents.'
                       : 'Provide activity details. All fields marked with * are required.'}
                   </p>
@@ -1598,7 +1605,7 @@ export default function CouncilPortal() {
                   <div className="bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c] relative" ref={popoverRef}>
                     {/* Compact 4-Field Row Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      
+
                       {/* 1. START DATE */}
                       <div className="flex flex-col gap-1.5 relative">
                         <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Start Date *</label>
@@ -1683,15 +1690,14 @@ export default function CouncilPortal() {
                                         handleSelectCalendarDate('startDate', currentDayObj);
                                         setActivePopover(null);
                                       }}
-                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${
-                                        blocked
+                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${blocked
                                           ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
                                           : isSelected
                                             ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
                                             : isToday
                                               ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
                                               : 'border-transparent hover:border-[#171e19] text-[#171e19]'
-                                      }`}
+                                        }`}
                                     >
                                       {i}
                                     </button>
@@ -1805,15 +1811,14 @@ export default function CouncilPortal() {
                                         handleSelectCalendarDate('endDate', currentDayObj);
                                         setActivePopover(null);
                                       }}
-                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${
-                                        blocked
+                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${blocked
                                           ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
                                           : isSelected
                                             ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
                                             : isToday
                                               ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
                                               : 'border-transparent hover:border-[#171e19] text-[#171e19]'
-                                      }`}
+                                        }`}
                                     >
                                       {i}
                                     </button>
@@ -1833,9 +1838,8 @@ export default function CouncilPortal() {
                         <select
                           value={getSplitDateTime(formData.endDate).time || '17:00'}
                           onChange={(e) => handleSplitDateTimeChange('endDate', 'time', e.target.value)}
-                          className={`w-full bg-white border-2 px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase ${
-                            getEventDuration()?.isInvalid ? 'border-red-500 bg-red-50/30' : 'border-[#171e19]'
-                          }`}
+                          className={`w-full bg-white border-2 px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase ${getEventDuration()?.isInvalid ? 'border-red-500 bg-red-50/30' : 'border-[#171e19]'
+                            }`}
                         >
                           {timeOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>
@@ -1874,7 +1878,7 @@ export default function CouncilPortal() {
                     <div className="w-3 h-7 bg-[#ffe17c] border border-[#171e19]" />
                     <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">REQUIRED DOCUMENTS</h3>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 gap-6">
                     {/* Single Comprehensive Description/Proposal PDF */}
                     <DragDropUpload
@@ -1949,40 +1953,38 @@ export default function CouncilPortal() {
                 {events.map((event) => {
                   const isExpanded = expandedEventId === event.eventId;
                   const statusInfo = getStatusDetails(event);
-                  
+
                   return (
                     <div
                       key={event.eventId}
                       onClick={() => expandedEventId === event.eventId ? setExpandedEventId(null) : setExpandedEventId(event.eventId)}
-                      className={`border-2 transition-brutal cursor-pointer rounded-none overflow-hidden ${
-                        (event.status === 'revision_needed' || event.status === 'permissions_revision_needed')
+                      className={`border-2 transition-brutal cursor-pointer rounded-none overflow-hidden ${(event.status === 'revision_needed' || event.status === 'permissions_revision_needed')
                           ? isExpanded
                             ? 'bg-red-50 border-red-500 shadow-[4px_4px_0px_0px_#ef4444]'
                             : 'bg-red-50 border-red-500 hover:shadow-[4px_4px_0px_0px_#ef4444]'
                           : event.status === 'rejected'
-                          ? isExpanded
-                            ? 'bg-white border-red-800 shadow-[4px_4px_0px_0px_#991b1b]'
-                            : 'bg-white border-red-800 hover:shadow-[4px_4px_0px_0px_#991b1b]'
-                          : isExpanded
-                          ? 'bg-white border-[#171e19] shadow-[4px_4px_0px_0px_#ffe17c]'
-                          : 'bg-white border-[#171e19] hover:shadow-[4px_4px_0px_0px_#171e19]'
-                      }`}
+                            ? isExpanded
+                              ? 'bg-white border-red-800 shadow-[4px_4px_0px_0px_#991b1b]'
+                              : 'bg-white border-red-800 hover:shadow-[4px_4px_0px_0px_#991b1b]'
+                            : isExpanded
+                              ? 'bg-white border-[#171e19] shadow-[4px_4px_0px_0px_#ffe17c]'
+                              : 'bg-white border-[#171e19] hover:shadow-[4px_4px_0px_0px_#171e19]'
+                        }`}
                     >
                       {/* ===== REVISION / REJECTION ALERT BANNER ===== */}
                       {(event.status === 'revision_needed' || event.status === 'permissions_revision_needed' || event.status === 'rejected') && (
-                        <div className={`flex flex-col gap-3 px-5 py-3 border-b-2 ${
-                          event.status === 'rejected'
+                        <div className={`flex flex-col gap-3 px-5 py-3 border-b-2 ${event.status === 'rejected'
                             ? 'bg-red-800 border-red-900'
                             : 'bg-red-500 border-red-600'
-                        }`} onClick={e => e.stopPropagation()}>
+                          }`} onClick={e => e.stopPropagation()}>
                           <div className="flex items-start justify-between gap-4 flex-wrap">
                             <div className="flex-1 min-w-0">
                               <span className="font-anton text-white text-sm uppercase tracking-wider block">
                                 {event.status === 'rejected'
                                   ? 'PROPOSAL REJECTED'
                                   : event.status === 'permissions_revision_needed'
-                                  ? 'ACTION REQUIRED — PERMISSION DOCUMENTS NEED CHANGES'
-                                  : 'ACTION REQUIRED — PROPOSAL REVISION REQUESTED'}
+                                    ? 'ACTION REQUIRED — PERMISSION DOCUMENTS NEED CHANGES'
+                                    : 'ACTION REQUIRED — PROPOSAL REVISION REQUESTED'}
                               </span>
                               {event.reviewNotes && (
                                 <p className="font-satoshi text-white/90 text-xs font-semibold mt-1 leading-relaxed">
@@ -2009,34 +2011,30 @@ export default function CouncilPortal() {
                         const isOverdue = diffDays < 0;
                         const isUrgent = !isOverdue && diffDays <= 3;
                         return (
-                          <div className={`flex items-center justify-between gap-3 px-5 py-3 border-b-2 border-[#171e19] flex-wrap ${
-                            isOverdue ? 'bg-red-600' : isUrgent ? 'bg-amber-400' : 'bg-emerald-800'
-                          }`} onClick={e => e.stopPropagation()}>
+                          <div className={`flex items-center justify-between gap-3 px-5 py-3 border-b-2 border-[#171e19] flex-wrap ${isOverdue ? 'bg-red-600' : isUrgent ? 'bg-amber-400' : 'bg-emerald-800'
+                            }`} onClick={e => e.stopPropagation()}>
                             <div className="flex items-center gap-3">
                               <span className="text-white text-lg leading-none shrink-0">
                                 {isOverdue ? '🚨' : isUrgent ? '⚠️' : '📋'}
                               </span>
                               <div>
-                                <span className={`font-anton text-sm uppercase tracking-wider block ${
-                                  isOverdue || isUrgent ? 'text-white' : 'text-emerald-100'
-                                }`}>
+                                <span className={`font-anton text-sm uppercase tracking-wider block ${isOverdue || isUrgent ? 'text-white' : 'text-emerald-100'
+                                  }`}>
                                   STAGE 3 — POST-EVENT REPORT {isOverdue ? 'OVERDUE' : 'DUE'}
                                 </span>
-                                <span className={`font-satoshi text-xs font-semibold block mt-0.5 ${
-                                  isOverdue || isUrgent ? 'text-white/90' : 'text-emerald-200'
-                                }`}>
+                                <span className={`font-satoshi text-xs font-semibold block mt-0.5 ${isOverdue || isUrgent ? 'text-white/90' : 'text-emerald-200'
+                                  }`}>
                                   Submit your post-event report by {due.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </span>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
-                              <span className={`font-mono text-sm font-bold px-3 py-1 border uppercase ${
-                                isOverdue
+                              <span className={`font-mono text-sm font-bold px-3 py-1 border uppercase ${isOverdue
                                   ? 'bg-red-900 border-red-950 text-red-100'
                                   : isUrgent
-                                  ? 'bg-amber-600 border-amber-700 text-white'
-                                  : 'bg-emerald-900 border-emerald-700 text-emerald-100'
-                              }`}>
+                                    ? 'bg-amber-600 border-amber-700 text-white'
+                                    : 'bg-emerald-900 border-emerald-700 text-emerald-100'
+                                }`}>
                                 {isOverdue ? `${Math.abs(diffDays)}d overdue` : diffDays === 0 ? 'Due Today!' : `${diffDays}d left`}
                               </span>
                               <button
@@ -2065,13 +2063,13 @@ export default function CouncilPortal() {
                                 ? `${(event.eventName || '').toUpperCase()} (${(council?.name || '').toUpperCase()} x ${(event.jointWith || '').toUpperCase()})`
                                 : (event.eventName || '').toUpperCase()}
                             </h3>
-                            
+
                             {/* Signature Element Event ID */}
                             <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
                               {event.eventId}
                             </span>
                           </div>
-                          
+
                           <div className="flex flex-wrap gap-x-5 gap-y-1 font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider">
                             <span className="flex items-center gap-1.5"><IconCalendar className="w-3 h-3" /> START: {formatEventDate(event.startDate)}</span>
                             {event.venue && <span className="flex items-center gap-1.5"><IconMapPin className="w-3 h-3" /> VENUE: {String(event.venue).toUpperCase()}</span>}
@@ -2127,69 +2125,69 @@ export default function CouncilPortal() {
                       {/* Expandable Details Drawer */}
                       {isExpanded && (
                         <div className="px-5 pb-6 pt-4 border-t-2 border-[#171e19] bg-[#b7c6c2]/5 space-y-5 text-xs text-[#171e19]/90 font-satoshi">
-                           {/* Event Progress Tracker */}
-                           {renderStageTracker(event.status)}
-                           
-                           {/* Dual Approval Status Badges */}
-                           {renderDualApprovalBadges(event)}
+                          {/* Event Progress Tracker */}
+                          {renderStageTracker(event.status)}
 
-                           {/* Review History Notes */}
-                           {renderReviewHistory(event)}
-                           
-                           {/* Report due date banner in expanded drawer — still shown for context */}
-                           {(event.status === 'approved' || event.status === 'report_pending') && event.reportDueDate && (
-                             <div className="bg-amber-50 border border-amber-300 p-4 text-amber-800 flex items-center justify-between gap-3 flex-wrap font-medium">
-                               <div>
-                                 <span className="font-bold text-xs uppercase tracking-wider text-amber-600 block mb-1">Report Submission Deadline</span>
-                                 <span className="text-sm uppercase">Submit your post-event report by {formatEventDate(event.reportDueDate)}.</span>
-                               </div>
-                               <span className="font-mono text-sm font-bold bg-amber-200 border border-amber-400 px-3 py-1 uppercase shrink-0">
-                                 {(() => {
-                                   const due = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
-                                   const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
-                                   if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
-                                   if (diffDays === 0) return 'Due Today!';
-                                   return `${diffDays} days remaining`;
-                                 })()}
-                               </span>
-                             </div>
-                           )}
+                          {/* Dual Approval Status Badges */}
+                          {renderDualApprovalBadges(event)}
 
-                           {/* Logistical Grid — only rendered when legacy metadata exists */}
-                           {(event.facultyCoordinatorName || event.venue || event.expectedFootfall) && (
-                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white border border-[#171e19]/10 p-4 rounded-none">
-                               {event.venue && (
-                                 <div>
-                                   <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Venue</span>
-                                   <span className="font-bold text-sm">{String(event.venue).toUpperCase()}</span>
-                                 </div>
-                               )}
-                               {event.facultyCoordinatorName && (
-                                 <div>
-                                   <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Faculty Coordinator</span>
-                                   <span className="font-bold text-sm">{String(event.facultyCoordinatorName).toUpperCase()}</span>
-                                 </div>
-                               )}
-                               {event.studentContactName && (
-                                 <div>
-                                   <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Student Lead</span>
-                                   <span className="font-bold text-sm">{String(event.studentContactName).toUpperCase()}</span>
-                                 </div>
-                               )}
-                               {event.studentContactPhone && (
-                                 <div>
-                                   <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Student Contact</span>
-                                   <span className="font-semibold">{event.studentContactPhone}</span>
-                                 </div>
-                               )}
-                               {event.expectedFootfall && (
-                                 <div>
-                                   <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Expected Footfall</span>
-                                   <span className="font-bold">{event.expectedFootfall} ATTENDEES</span>
-                                 </div>
-                               )}
-                             </div>
-                           )}
+                          {/* Review History Notes */}
+                          {renderReviewHistory(event)}
+
+                          {/* Report due date banner in expanded drawer — still shown for context */}
+                          {(event.status === 'approved' || event.status === 'report_pending') && event.reportDueDate && (
+                            <div className="bg-amber-50 border border-amber-300 p-4 text-amber-800 flex items-center justify-between gap-3 flex-wrap font-medium">
+                              <div>
+                                <span className="font-bold text-xs uppercase tracking-wider text-amber-600 block mb-1">Report Submission Deadline</span>
+                                <span className="text-sm uppercase">Submit your post-event report by {formatEventDate(event.reportDueDate)}.</span>
+                              </div>
+                              <span className="font-mono text-sm font-bold bg-amber-200 border border-amber-400 px-3 py-1 uppercase shrink-0">
+                                {(() => {
+                                  const due = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
+                                  const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+                                  if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
+                                  if (diffDays === 0) return 'Due Today!';
+                                  return `${diffDays} days remaining`;
+                                })()}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Logistical Grid — only rendered when legacy metadata exists */}
+                          {(event.facultyCoordinatorName || event.venue || event.expectedFootfall) && (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white border border-[#171e19]/10 p-4 rounded-none">
+                              {event.venue && (
+                                <div>
+                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Venue</span>
+                                  <span className="font-bold text-sm">{String(event.venue).toUpperCase()}</span>
+                                </div>
+                              )}
+                              {event.facultyCoordinatorName && (
+                                <div>
+                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Faculty Coordinator</span>
+                                  <span className="font-bold text-sm">{String(event.facultyCoordinatorName).toUpperCase()}</span>
+                                </div>
+                              )}
+                              {event.studentContactName && (
+                                <div>
+                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Student Lead</span>
+                                  <span className="font-bold text-sm">{String(event.studentContactName).toUpperCase()}</span>
+                                </div>
+                              )}
+                              {event.studentContactPhone && (
+                                <div>
+                                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Student Contact</span>
+                                  <span className="font-semibold">{event.studentContactPhone}</span>
+                                </div>
+                              )}
+                              {event.expectedFootfall && (
+                                <div>
+                                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Expected Footfall</span>
+                                  <span className="font-bold">{event.expectedFootfall} ATTENDEES</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {/* Documents grid */}
                           <div className="space-y-3">
@@ -2266,11 +2264,10 @@ export default function CouncilPortal() {
 
                           {/* Review Notes — shown in expanded details as secondary reference */}
                           {event.reviewNotes && (event.status === 'rejected' || event.status === 'revision_needed' || event.status === 'permissions_revision_needed') && (
-                            <div className={`rounded-none border-l-4 p-4 flex gap-3 items-start ${
-                              event.status === 'rejected'
+                            <div className={`rounded-none border-l-4 p-4 flex gap-3 items-start ${event.status === 'rejected'
                                 ? 'border-l-red-800 bg-red-900/10'
                                 : 'border-l-red-500 bg-red-500/10'
-                            }`}>
+                              }`}>
                               <span className="text-red-500 text-base mt-0.5 shrink-0">{event.status === 'rejected' ? '✕' : '⚠'}</span>
                               <div>
                                 <span className="font-bold text-red-600 uppercase tracking-widest block text-[9px] mb-1">
@@ -2471,9 +2468,8 @@ export default function CouncilPortal() {
                     return (
                       <div
                         key={idx}
-                        className={`min-h-[100px] p-1.5 border-r border-b border-[#171e19] flex flex-col font-satoshi relative ${
-                          !day ? 'bg-slate-50/70' : blockedInfo ? 'bg-red-50' : 'bg-white'
-                        } ${isToday ? 'ring-2 ring-inset ring-[#ffe17c]' : ''}`}
+                        className={`min-h-[100px] p-1.5 border-r border-b border-[#171e19] flex flex-col font-satoshi relative ${!day ? 'bg-slate-50/70' : blockedInfo ? 'bg-red-50' : 'bg-white'
+                          } ${isToday ? 'ring-2 ring-inset ring-[#ffe17c]' : ''}`}
                       >
                         {day && (
                           <>
@@ -2488,13 +2484,12 @@ export default function CouncilPortal() {
                               />
                             )}
 
-                            <span className={`text-[11px] font-bold z-10 relative shrink-0 mb-1 ${
-                              isToday
+                            <span className={`text-[11px] font-bold z-10 relative shrink-0 mb-1 ${isToday
                                 ? 'text-[#171e19] bg-[#ffe17c] px-1.5 py-0.5 font-anton tracking-wide self-start'
                                 : blockedInfo
                                   ? 'text-red-700'
                                   : 'text-[#171e19]'
-                            }`}>
+                              }`}>
                               {day.getDate()}
                             </span>
 
