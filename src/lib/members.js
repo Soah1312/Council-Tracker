@@ -11,7 +11,8 @@ import {
   updateDoc, 
   query, 
   onSnapshot,
-  Timestamp 
+  Timestamp,
+  writeBatch
 } from 'firebase/firestore';
 
 /**
@@ -80,7 +81,12 @@ export function subscribeToCouncilMembers(councilId, callback) {
       return mId === normalizedId;
     });
 
-    members.sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
+    members.sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+    });
     callback(members);
   }, (err) => {
     console.error('Error subscribing to council members:', err);
@@ -88,6 +94,23 @@ export function subscribeToCouncilMembers(councilId, callback) {
   });
 }
 
+/**
+ * Updates the order of multiple council members in a single transaction.
+ */
+export async function updateCouncilMembersOrder(orderedMembers) {
+  if (!orderedMembers || orderedMembers.length === 0) return;
+  
+  const batch = writeBatch(db);
+  orderedMembers.forEach((member, index) => {
+    const memberRef = doc(db, 'councilMembers', member.id);
+    batch.update(memberRef, { 
+      order: index, 
+      updatedAt: Timestamp.now() 
+    });
+  });
+  
+  await batch.commit();
+}
 /**
  * Subscribes to all council members across all councils for the Admin Panel.
  */
@@ -99,7 +122,15 @@ export function subscribeToAllCouncilMembers(callback) {
       id: docSnap.id,
       ...docSnap.data()
     }));
-    members.sort((a, b) => a.councilName.localeCompare(b.councilName));
+    members.sort((a, b) => {
+      const nameCompare = a.councilName.localeCompare(b.councilName);
+      if (nameCompare !== 0) return nameCompare;
+      
+      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+      if (orderA !== orderB) return orderA - orderB;
+      return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+    });
     callback(members);
   }, (err) => {
     console.error('Error subscribing to all council members:', err);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
-import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers } from '../lib/members';
+import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
 import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
@@ -8,6 +8,10 @@ import {
   IconFile, IconCalendar, IconMapPin, IconWarning,
   IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan
 } from '../lib/icons';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical } from 'lucide-react';
 
 
 
@@ -118,6 +122,78 @@ function DragDropUpload({ id, label, accept, file, filesList, multiple, onChange
       {error && (
         <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{error}</p>
       )}
+    </div>
+  );
+}
+
+function SortableMemberCard({ member, openEditMemberModal, handleDeleteMember, IconUser }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: member.id });
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.9 : 1,
+  };
+
+  const initials = member.name
+    ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'CM';
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between space-y-4 hover:border-[#ffe17c] transition-colors relative ${isDragging ? 'border-[#ffe17c] scale-105 shadow-[8px_8px_0px_0px_#171e19]' : ''}`}
+    >
+      <div className="flex items-start gap-4">
+        <div 
+          {...attributes} 
+          {...listeners}
+          className="absolute -left-3 top-1/2 -translate-y-1/2 p-1 bg-white border-2 border-[#171e19] cursor-grab active:cursor-grabbing hover:bg-[#ffe17c] transition-colors z-20"
+        >
+          <GripVertical className="w-4 h-4 text-[#171e19]" />
+        </div>
+        <div className="w-12 h-12 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-lg flex items-center justify-center text-[#171e19]">
+          {initials}
+        </div>
+        <div className="space-y-1 overflow-hidden">
+          <h3 className="font-anton text-lg text-[#171e19] tracking-tight truncate">
+            {member.name.toUpperCase()}
+          </h3>
+          <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
+            {member.designation}
+          </span>
+          <div className="flex items-center gap-1.5 font-satoshi text-xs font-semibold text-[#171e19]/80 pt-1">
+            <IconUser className="w-3.5 h-3.5 text-[#171e19]/60" />
+            <span>{member.contactNumber}</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#171e19]/10">
+        <button
+          type="button"
+          onClick={() => openEditMemberModal(member)}
+          className="px-3 py-1 bg-white border border-[#171e19] text-[#171e19] hover:bg-[#ffe17c] font-satoshi text-[11px] font-bold uppercase tracking-wider transition-colors"
+        >
+          Edit
+        </button>
+        <button
+          type="button"
+          onClick={() => handleDeleteMember(member.id)}
+          className="px-3 py-1 bg-red-50 border border-red-300 text-red-600 hover:bg-red-500 hover:text-white font-satoshi text-[11px] font-bold uppercase tracking-wider transition-colors"
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 }
@@ -244,6 +320,35 @@ export default function CouncilPortal() {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      setCouncilMembers((items) => {
+        const oldIndex = items.findIndex(item => item.id === active.id);
+        const newIndex = items.findIndex(item => item.id === over.id);
+
+        const newOrder = arrayMove(items, oldIndex, newIndex);
+        
+        // Call backend to update order
+        updateCouncilMembersOrder(newOrder).catch(err => {
+          console.error("Failed to update order in DB", err);
+          // Assuming showNotification is in scope (it's defined below in the file though)
+          // We can use alert if showNotification is not available yet or just log error.
+        });
+
+        return newOrder;
+      });
+    }
+  };
 
   // Real-time Council Members Subscription
   useEffect(() => {
@@ -2257,54 +2362,28 @@ export default function CouncilPortal() {
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {councilMembers.map((member) => {
-                  const initials = member.name
-                    ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                    : 'CM';
-                  return (
-                    <div
-                      key={member.id}
-                      className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between space-y-4 hover:border-[#ffe17c] transition-all"
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-lg flex items-center justify-center text-[#171e19]">
-                          {initials}
-                        </div>
-                        <div className="space-y-1 overflow-hidden">
-                          <h3 className="font-anton text-lg text-[#171e19] tracking-tight truncate">
-                            {member.name.toUpperCase()}
-                          </h3>
-                          <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
-                            {member.designation}
-                          </span>
-                          <div className="flex items-center gap-1.5 font-satoshi text-xs font-semibold text-[#171e19]/80 pt-1">
-                            <IconUser className="w-3.5 h-3.5 text-[#171e19]/60" />
-                            <span>{member.contactNumber}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#171e19]/10">
-                        <button
-                          type="button"
-                          onClick={() => openEditMemberModal(member)}
-                          className="px-3 py-1 bg-white border border-[#171e19] text-[#171e19] hover:bg-[#ffe17c] font-satoshi text-[11px] font-bold uppercase tracking-wider transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteMember(member.id)}
-                          className="px-3 py-1 bg-red-50 border border-red-300 text-red-600 hover:bg-red-500 hover:text-white font-satoshi text-[11px] font-bold uppercase tracking-wider transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pl-4">
+                  <SortableContext
+                    items={councilMembers.map(m => m.id)}
+                    strategy={rectSortingStrategy}
+                  >
+                    {councilMembers.map((member) => (
+                      <SortableMemberCard
+                        key={member.id}
+                        member={member}
+                        openEditMemberModal={openEditMemberModal}
+                        handleDeleteMember={handleDeleteMember}
+                        IconUser={IconUser}
+                      />
+                    ))}
+                  </SortableContext>
+                </div>
+              </DndContext>
             )}
           </div>
         )}
