@@ -826,7 +826,7 @@ export default function CouncilPortal() {
     return (
       <div className="border border-[#171e19]/10 bg-slate-50 p-4 rounded-none space-y-3 font-satoshi">
         <span className="font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] block">Event Progression Flow</span>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {stages.map((stg) => {
             const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
             const isActive = currentStage === stg.num && status !== 'closed';
@@ -2157,7 +2157,7 @@ export default function CouncilPortal() {
 
                            {/* Logistical Grid — only rendered when legacy metadata exists */}
                            {(event.facultyCoordinatorName || event.venue || event.expectedFootfall) && (
-                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-white border border-[#171e19]/10 p-4 rounded-none">
+                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white border border-[#171e19]/10 p-4 rounded-none">
                                {event.venue && (
                                  <div>
                                    <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Venue</span>
@@ -2542,7 +2542,7 @@ export default function CouncilPortal() {
             </div>
 
             {/* Stats Strip */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
                 <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Total Events This Month</p>
                 <p className="font-anton text-3xl text-[#171e19] mt-1">

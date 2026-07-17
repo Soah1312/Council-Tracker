@@ -523,7 +523,7 @@ export default function AdminPanel() {
     return (
       <div className="border border-[#171e19]/10 bg-slate-50 p-4 rounded-none space-y-3 font-satoshi">
         <span className="font-bold text-[9px] uppercase tracking-wider text-[#171e19]/60 block">Event Progression Flow</span>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {stages.map((stg) => {
             const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
             const isActive = currentStage === stg.num && status !== 'closed';
@@ -975,7 +975,7 @@ export default function AdminPanel() {
                   {/* Logistical Grid */}
                   <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Event Logistics</span>
-                    <div className="grid grid-cols-2 gap-4 text-[#171e19] font-satoshi">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[#171e19] font-satoshi">
                       <div>
                         <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Start Date</span>
                         <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.startDate)}</span>
@@ -1021,7 +1021,7 @@ export default function AdminPanel() {
                   {(selectedEventDetail.facultyCoordinatorName || selectedEventDetail.studentContactName) && (
                     <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
                       <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Contacts</span>
-                      <div className="grid grid-cols-2 gap-4 text-[#171e19] font-satoshi">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[#171e19] font-satoshi">
                         {selectedEventDetail.facultyCoordinatorName && (
                           <div>
                             <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Faculty Coordinator</span>
@@ -1666,7 +1666,7 @@ export default function AdminPanel() {
                             </div>
 
                             {/* Logistical Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Start Date</span>
                                 <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
@@ -1770,7 +1770,7 @@ export default function AdminPanel() {
                             </div>
 
                             {/* Logistical Grid */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Start Date</span>
                                 <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
@@ -2029,7 +2029,7 @@ export default function AdminPanel() {
                       <p className="font-satoshi text-xs text-[#171e19]/60 mt-1">Blocked dates are visible to all councils so they can plan around them.</p>
                     </div>
                     <form onSubmit={handleBlockDateSubmit} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="flex flex-col gap-1.5">
                           <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Start Date *</label>
                           <input
@@ -2121,7 +2121,9 @@ export default function AdminPanel() {
                 </div>
 
                 {/* Month Grid */}
-                <div className="border-t border-l border-[#171e19]">
+                <div className="overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0">
+                  <div className="min-w-[768px]">
+                    <div className="border-t border-l border-[#171e19]">
                   <div className="grid grid-cols-7 border-b border-[#171e19] bg-[#b7c6c2]/10 font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70 text-center py-2">
                     <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
                   </div>
@@ -2193,9 +2195,11 @@ export default function AdminPanel() {
                         </div>
                       );
                     })}
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
 
               {/* Blocked Dates Management Panel */}
               <div className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
