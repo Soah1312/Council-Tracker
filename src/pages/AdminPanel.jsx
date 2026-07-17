@@ -34,7 +34,11 @@ export default function AdminPanel() {
   const [allCouncilMembers, setAllCouncilMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
-  
+  const [openCouncilRosters, setOpenCouncilRosters] = useState({});
+  const toggleCouncilRoster = (id) => {
+    setOpenCouncilRosters(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
   // Search and date filters (applied client-side on allEvents)
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
@@ -2335,63 +2339,83 @@ export default function AdminPanel() {
                           if (councilMembersList.length === 0) return null;
 
                           return (
-                            <div key={c.id} className="border-2 border-[#171e19] bg-white p-5 space-y-4 shadow-[4px_4px_0px_0px_#ffe17c]">
-                              {/* Council Header */}
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[#171e19] pb-3 gap-2">
-                                <div className="flex items-center gap-2.5 flex-wrap">
-                                  <span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19] shrink-0" />
-                                  <h3 className="font-anton text-2xl text-[#171e19] tracking-tight uppercase">
-                                    {c.name}
-                                  </h3>
-                                  <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 rounded-none">
-                                    {c.category}
-                                  </span>
-                                  {c.coordinator && (
-                                    <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 border border-[#171e19]/20 px-2 py-0.5 bg-slate-50">
-                                      Coord: {c.coordinator}
-                                    </span>
-                                  )}
+                            <div key={c.id} className="border-2 border-[#171e19] bg-white space-y-0 shadow-[4px_4px_0px_0px_#ffe17c]">
+                              {/* Council Header (Accordion Toggle) */}
+                              <button 
+                                onClick={() => toggleCouncilRoster(c.id)}
+                                className="w-full flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-[#ffe17c]/10 transition-colors text-left"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                                  <div className="flex items-center gap-2.5">
+                                    <span className={`w-3 h-3 border border-[#171e19] shrink-0 transition-transform ${openCouncilRosters[c.id] ? 'bg-[#171e19]' : 'bg-[#ffe17c]'}`} />
+                                    <h3 className="font-anton text-2xl text-[#171e19] tracking-tight uppercase">
+                                      {c.name}
+                                    </h3>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-2 flex-wrap sm:ml-2">
+                                    {councilMembersList[0] && (
+                                      <span className="font-satoshi text-xs font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 rounded-none flex items-center gap-1.5">
+                                        <span className="text-[#ffe17c]">★</span> {councilMembersList[0].name} ({councilMembersList[0].designation})
+                                      </span>
+                                    )}
+                                    {c.coordinator && (
+                                      <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 border border-[#171e19]/20 px-2 py-0.5 bg-slate-50">
+                                        Coord: {c.coordinator}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <span className="font-anton text-xs uppercase tracking-widest px-3 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] self-start sm:self-auto shrink-0">
-                                  {councilMembersList.length} {councilMembersList.length === 1 ? 'MEMBER' : 'MEMBERS'}
-                                </span>
-                              </div>
+                                
+                                <div className="flex items-center gap-3 mt-3 sm:mt-0">
+                                  <span className="font-anton text-xs uppercase tracking-widest px-3 py-1 bg-white border border-[#171e19] text-[#171e19] shrink-0">
+                                    {councilMembersList.length} {councilMembersList.length === 1 ? 'MEMBER' : 'MEMBERS'}
+                                  </span>
+                                  <span className="text-xl font-bold font-satoshi text-[#171e19] w-6 text-center">
+                                    {openCouncilRosters[c.id] ? '−' : '+'}
+                                  </span>
+                                </div>
+                              </button>
 
-                              {/* Members Grid for this Council */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {councilMembersList.map((member) => {
-                                  const initials = member.name
-                                    ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                                    : 'CM';
-                                  return (
-                                    <div
-                                      key={member.id}
-                                      className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19] space-y-3 flex flex-col justify-between hover:bg-[#ffe17c]/5 transition-all"
-                                    >
-                                      <div className="flex items-start gap-3">
-                                        <div className="w-11 h-11 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-base flex items-center justify-center text-[#171e19]">
-                                          {initials}
-                                        </div>
-                                        <div className="space-y-1 overflow-hidden">
-                                          <h4 className="font-anton text-base text-[#171e19] tracking-tight truncate">
-                                            {member.name.toUpperCase()}
-                                          </h4>
-                                          <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
-                                            {member.designation}
-                                          </span>
-                                        </div>
-                                      </div>
+                              {/* Members Grid for this Council (Accordion Content) */}
+                              {openCouncilRosters[c.id] && (
+                                <div className="p-5 border-t-2 border-[#171e19] bg-slate-50/50">
+                                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {councilMembersList.map((member) => {
+                                      const initials = member.name
+                                        ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                                        : 'CM';
+                                      return (
+                                        <div
+                                          key={member.id}
+                                          className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19] space-y-3 flex flex-col justify-between hover:bg-[#ffe17c]/5 transition-all"
+                                        >
+                                          <div className="flex items-start gap-3">
+                                            <div className="w-11 h-11 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-base flex items-center justify-center text-[#171e19]">
+                                              {initials}
+                                            </div>
+                                            <div className="space-y-1 overflow-hidden">
+                                              <h4 className="font-anton text-base text-[#171e19] tracking-tight truncate">
+                                                {member.name.toUpperCase()}
+                                              </h4>
+                                              <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
+                                                {member.designation}
+                                              </span>
+                                            </div>
+                                          </div>
 
-                                      <div className="pt-2.5 border-t border-[#171e19]/10 flex items-center justify-between font-satoshi text-xs font-semibold">
-                                        <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Contact:</span>
-                                        <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline">
-                                          📞 {member.contactNumber}
-                                        </a>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
+                                          <div className="pt-2.5 border-t border-[#171e19]/10 flex items-center justify-between font-satoshi text-xs font-semibold">
+                                            <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Contact:</span>
+                                            <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline">
+                                              📞 {member.contactNumber}
+                                            </a>
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
