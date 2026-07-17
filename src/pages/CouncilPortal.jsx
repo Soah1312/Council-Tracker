@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
+import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
 import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
 import { format } from 'date-fns';
@@ -294,6 +294,69 @@ export default function CouncilPortal() {
   const [calMonth, setCalMonth] = useState(new Date());
   const [allCalEvents, setAllCalEvents] = useState([]);
   const [blockedDates, setBlockedDates] = useState([]);
+
+  // Calendar Event Detail Modal State
+  const [selectedCalEvent, setSelectedCalEvent] = useState(null);
+  const [isEditingCalEvent, setIsEditingCalEvent] = useState(false);
+  const [calEventForm, setCalEventForm] = useState({
+    registrationFeeApplicable: false,
+    registrationFeeAmount: '',
+    studentContactName: '',
+    studentContactPhone: '',
+    facultyCoordinatorName: '',
+    facultyCoordinatorPhone: '',
+    posterFile: null
+  });
+  const [calEventSaving, setCalEventSaving] = useState(false);
+
+  const handleOpenCalEventModal = (event) => {
+    setSelectedCalEvent(event);
+    setIsEditingCalEvent(false);
+    setCalEventForm({
+      registrationFeeApplicable: Boolean(event.registrationFeeApplicable),
+      registrationFeeAmount: event.registrationFeeAmount ? String(event.registrationFeeAmount) : '',
+      studentContactName: event.studentContactName || '',
+      studentContactPhone: event.studentContactPhone || '',
+      facultyCoordinatorName: event.facultyCoordinatorName || '',
+      facultyCoordinatorPhone: event.facultyCoordinatorPhone || '',
+      posterFile: null
+    });
+  };
+
+  const handleCalEventSave = async (e) => {
+    e.preventDefault();
+    if (!selectedCalEvent) return;
+    setCalEventSaving(true);
+    try {
+      let eventPosterUrl = selectedCalEvent.eventPosterUrl || null;
+      if (calEventForm.posterFile) {
+        const uploadPath = `events/${selectedCalEvent.eventId}/posters`;
+        eventPosterUrl = await uploadFile(calEventForm.posterFile, uploadPath);
+      }
+
+      const updates = {
+        registrationFeeApplicable: Boolean(calEventForm.registrationFeeApplicable),
+        registrationFeeAmount: calEventForm.registrationFeeApplicable && calEventForm.registrationFeeAmount ? Number(calEventForm.registrationFeeAmount) : null,
+        studentContactName: calEventForm.studentContactName.trim(),
+        studentContactPhone: calEventForm.studentContactPhone.trim(),
+        facultyCoordinatorName: calEventForm.facultyCoordinatorName.trim(),
+        facultyCoordinatorPhone: calEventForm.facultyCoordinatorPhone.trim(),
+        eventPosterUrl
+      };
+
+      await updateEventDetails(selectedCalEvent.eventId, updates);
+      
+      // Update local state for modal display
+      setSelectedCalEvent(prev => ({ ...prev, ...updates }));
+      setIsEditingCalEvent(false);
+      showNotification('Event details updated successfully!', 'success');
+    } catch (err) {
+      console.error(err);
+      showNotification('Failed to update event details.', 'error');
+    } finally {
+      setCalEventSaving(false);
+    }
+  };
 
   const [startCalMonth, setStartCalMonth] = useState(new Date());
   const [endCalMonth, setEndCalMonth] = useState(new Date());
@@ -2517,13 +2580,14 @@ export default function CouncilPortal() {
                                 if (isOwnCouncil) chipClass += ' ring-1 ring-offset-0 ring-[#171e19]';
 
                                 return (
-                                  <div
+                                  <button
                                     key={event.id || event.eventId}
-                                    className={`px-1 py-0.5 text-[8px] font-bold uppercase tracking-tight break-words whitespace-normal leading-tight ${chipClass}`}
+                                    onClick={() => handleOpenCalEventModal(event)}
+                                    className={`w-full text-left px-1 py-0.5 text-[8px] font-bold uppercase tracking-tight break-words whitespace-normal leading-tight cursor-pointer ${chipClass}`}
                                     title={`${event.councilName}: ${event.eventName} (${event.status.replace(/_/g, ' ')})`}
                                   >
                                     {isOwnCouncil ? '★ ' : ''}{event.councilName?.split(' ')[0]}: {event.eventName}
-                                  </div>
+                                  </button>
                                 );
                               })}
                             </div>
@@ -2782,6 +2846,193 @@ export default function CouncilPortal() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* CALENDAR EVENT DETAIL & EDIT MODAL */}
+        {selectedCalEvent && (
+          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19] max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start gap-4">
+                <div>
+                  <p className="font-satoshi text-[10px] uppercase font-bold text-[#171e19]/60">{selectedCalEvent.councilName} Event Details</p>
+                  <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                    {selectedCalEvent.eventName.toUpperCase()}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => { setSelectedCalEvent(null); setIsEditingCalEvent(false); }}
+                  className="w-8 h-8 border border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-sm"
+                >
+                  &times;
+                </button>
+              </div>
+
+              {!isEditingCalEvent ? (
+                <div className="space-y-4 font-satoshi text-xs text-[#171e19]">
+                  {/* Poster Preview */}
+                  {selectedCalEvent.eventPosterUrl ? (
+                    <div className="border border-[#171e19]/25 p-2 bg-[#b7c6c2]/10 flex justify-center">
+                      <img src={selectedCalEvent.eventPosterUrl} alt="Event Poster" className="max-h-60 object-contain" />
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-[#171e19]/25 p-6 text-center uppercase tracking-wide font-bold text-[#171e19]/50">
+                      No Poster Added
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-2 gap-4 border-t border-[#171e19]/10 pt-3">
+                    <div>
+                      <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Venue</span>
+                      <span className="font-bold">{selectedCalEvent.venue || 'TBD'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Status</span>
+                      <span className="font-bold uppercase">{selectedCalEvent.status.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Registration Fee</span>
+                      <span className="font-bold">
+                        {selectedCalEvent.registrationFeeApplicable && selectedCalEvent.registrationFeeAmount
+                          ? `₹${selectedCalEvent.registrationFeeAmount}`
+                          : 'FREE'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Student Coordinator</span>
+                      <span className="font-bold block">{selectedCalEvent.studentContactName || 'N/A'}</span>
+                      {selectedCalEvent.studentContactPhone && (
+                        <span className="text-[10px] block mt-0.5">📞 {selectedCalEvent.studentContactPhone}</span>
+                      )}
+                    </div>
+                    <div className="col-span-2">
+                      <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Faculty Coordinator</span>
+                      <span className="font-bold block">{selectedCalEvent.facultyCoordinatorName || 'N/A'}</span>
+                      {selectedCalEvent.facultyCoordinatorPhone && (
+                        <span className="text-[10px] block mt-0.5">📞 {selectedCalEvent.facultyCoordinatorPhone}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedCalEvent.councilId === council?.id && (
+                    <div className="pt-3 border-t border-[#171e19]/10">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingCalEvent(true)}
+                        className="w-full py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-xs uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal"
+                      >
+                        Edit Poster & Details
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleCalEventSave} className="space-y-4 font-satoshi text-xs text-[#171e19]">
+                  {/* Poster upload */}
+                  <DragDropUpload
+                    id="posterFile"
+                    label="Upload Event Poster (Image/PDF)"
+                    accept="image/*,application/pdf"
+                    file={calEventForm.posterFile}
+                    onChange={(file) => setCalEventForm(p => ({ ...p, posterFile: file }))}
+                    cachedUrl={selectedCalEvent.eventPosterUrl}
+                  />
+
+                  {/* Registration Fee */}
+                  <div className="space-y-2 border-t border-[#171e19]/10 pt-3">
+                    <label className="flex items-center gap-2 font-bold uppercase tracking-wider">
+                      <input
+                        type="checkbox"
+                        checked={calEventForm.registrationFeeApplicable}
+                        onChange={(e) => setCalEventForm(p => ({ ...p, registrationFeeApplicable: e.target.checked }))}
+                        className="w-4 h-4 border-2 border-[#171e19] focus:ring-0 accent-[#171e19]"
+                      />
+                      Registration Fee Applicable?
+                    </label>
+
+                    {calEventForm.registrationFeeApplicable && (
+                      <div className="flex flex-col gap-1">
+                        <span className="font-bold uppercase text-[9px] text-[#171e19]/60">Fee Amount (INR)</span>
+                        <input
+                          type="number"
+                          required
+                          value={calEventForm.registrationFeeAmount}
+                          onChange={(e) => setCalEventForm(p => ({ ...p, registrationFeeAmount: e.target.value }))}
+                          placeholder="e.g. 100"
+                          className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#ffe17c]"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Student Coordinator */}
+                  <div className="grid grid-cols-2 gap-3 border-t border-[#171e19]/10 pt-3">
+                    <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                      <span className="font-bold uppercase text-[9px] text-[#171e19]/60">Student Coordinator Name</span>
+                      <input
+                        type="text"
+                        value={calEventForm.studentContactName}
+                        onChange={(e) => setCalEventForm(p => ({ ...p, studentContactName: e.target.value }))}
+                        placeholder="e.g. Rahul Sharma"
+                        className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#ffe17c]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                      <span className="font-bold uppercase text-[9px] text-[#171e19]/60">Student Phone</span>
+                      <input
+                        type="tel"
+                        value={calEventForm.studentContactPhone}
+                        onChange={(e) => setCalEventForm(p => ({ ...p, studentContactPhone: e.target.value }))}
+                        placeholder="e.g. +91 9876543210"
+                        className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#ffe17c]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Faculty Coordinator */}
+                  <div className="grid grid-cols-2 gap-3 border-t border-[#171e19]/10 pt-3">
+                    <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                      <span className="font-bold uppercase text-[9px] text-[#171e19]/60">Faculty Coordinator Name</span>
+                      <input
+                        type="text"
+                        value={calEventForm.facultyCoordinatorName}
+                        onChange={(e) => setCalEventForm(p => ({ ...p, facultyCoordinatorName: e.target.value }))}
+                        placeholder="e.g. Prof. Mehta"
+                        className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#ffe17c]"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                      <span className="font-bold uppercase text-[9px] text-[#171e19]/60">Faculty Phone</span>
+                      <input
+                        type="tel"
+                        value={calEventForm.facultyCoordinatorPhone}
+                        onChange={(e) => setCalEventForm(p => ({ ...p, facultyCoordinatorPhone: e.target.value }))}
+                        placeholder="e.g. +91 9876543210"
+                        className="w-full bg-white border border-[#171e19] px-3 py-2 text-xs font-semibold focus:outline-none focus:border-[#ffe17c]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
+                    <button
+                      type="button"
+                      disabled={calEventSaving}
+                      onClick={() => setIsEditingCalEvent(false)}
+                      className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={calEventSaving}
+                      className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-xs uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
+                    >
+                      {calEventSaving ? 'SAVING...' : 'SAVE CHANGES'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}

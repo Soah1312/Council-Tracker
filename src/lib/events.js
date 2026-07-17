@@ -449,3 +449,11 @@ export async function addBlockedDate({ startDate, endDate, reason }) {
 export async function deleteBlockedDate(id) {
   await deleteDoc(doc(db, 'blockedDates', id));
 }
+
+/**
+ * Updates public event details (poster, registration fees, coordinators).
+ */
+export async function updateEventDetails(eventId, details) {
+  const eventRef = doc(db, 'events', eventId);
+  await updateDoc(eventRef, details);
+}

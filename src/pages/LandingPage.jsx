@@ -290,7 +290,7 @@ export default function LandingPage() {
     closed: events.filter(e => e._status === 'closed').length,
   };
   const next = events.find(e => e._status === 'approved' && e._startDate > new Date());
-  const calEvs = events.filter(e => ['approved', 'report_pending', 'closed'].includes(e._status) && e._startDate);
+  const calEvs = events.filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(e._status) && e._startDate);
 
   return (
     <div className="min-h-screen bg-[#000] text-white font-satoshi overflow-x-hidden selection:bg-[#ffe17c] selection:text-black">
