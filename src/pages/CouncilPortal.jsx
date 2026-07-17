@@ -2392,7 +2392,7 @@ export default function CouncilPortal() {
                     return (
                       <div
                         key={idx}
-                        className={`min-h-[100px] p-1.5 border-r border-b border-[#171e19] flex flex-col font-satoshi relative overflow-hidden ${
+                        className={`min-h-[100px] p-1.5 border-r border-b border-[#171e19] flex flex-col font-satoshi relative ${
                           !day ? 'bg-slate-50/70' : blockedInfo ? 'bg-red-50' : 'bg-white'
                         } ${isToday ? 'ring-2 ring-inset ring-[#ffe17c]' : ''}`}
                       >
@@ -2420,13 +2420,14 @@ export default function CouncilPortal() {
                             </span>
 
                             {blockedInfo && (
-                                <div className="z-10 relative mb-1">
-                                <span
-                                  className="text-[8px] font-bold uppercase tracking-wide text-red-700 bg-red-100 border border-red-300 px-1 py-0.5 leading-tight flex items-center gap-0.5 truncate"
+                              <div className="z-10 relative mt-1 mb-1">
+                                <div
+                                  className="text-[9px] font-bold uppercase tracking-tight text-red-900 bg-red-100 border border-red-400 p-1 leading-tight flex items-start gap-1 rounded-none shadow-xs whitespace-normal break-words"
                                   title={blockedInfo.reason}
                                 >
-                                  <IconBan className="w-2.5 h-2.5 shrink-0" /> {blockedInfo.reason}
-                                </span>
+                                  <IconBan className="w-3 h-3 shrink-0 text-red-600 mt-0.5" />
+                                  <span className="break-words font-extrabold">{blockedInfo.reason}</span>
+                                </div>
                               </div>
                             )}
 
@@ -2444,7 +2445,7 @@ export default function CouncilPortal() {
                                 return (
                                   <div
                                     key={event.id || event.eventId}
-                                    className={`px-1 py-0.5 text-[8px] font-bold uppercase tracking-tight truncate ${chipClass}`}
+                                    className={`px-1 py-0.5 text-[8px] font-bold uppercase tracking-tight break-words whitespace-normal leading-tight ${chipClass}`}
                                     title={`${event.councilName}: ${event.eventName} (${event.status.replace(/_/g, ' ')})`}
                                   >
                                     {isOwnCouncil ? '★ ' : ''}{event.councilName?.split(' ')[0]}: {event.eventName}

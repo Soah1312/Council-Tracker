@@ -44,7 +44,7 @@ export const COUNCILS = [
   
   // Additional Societies
   { id: 'nss', name: 'NSS', category: 'Societies & Clubs', email: 'crce.nss@gmail.com', coordinator: 'Prof. Pradeep Singh' },
-  { id: 'rotaract-club', name: 'Rotaract Club', category: 'Societies & Clubs', email: '', coordinator: 'Dr. Ketaki Joshi' },
+  { id: 'rotaract-club', name: 'Rotaract Club', category: 'Societies & Clubs', email: 'rotaractcrce@gmail.com', coordinator: 'Dr. Ketaki Joshi' },
   { id: 'tedx', name: 'TEDx', category: 'Societies & Clubs', email: '', coordinator: 'Prof. Savita Borole' }
 ];
 
@@ -52,6 +52,13 @@ export const COUNCILS = [
  * Centralized list of recognized Admin Accounts.
  */
 export const ADMIN_ACCOUNTS = [
+  {
+    email: 'superadmin@gmail.com',
+    role: 'super_admin',
+    name: 'Super Administrator',
+    badge: 'SUPER ADMIN',
+    readOnly: false
+  },
   {
     email: 'josephrodrigues@fragnel.edu.in',
     role: 'dosw',

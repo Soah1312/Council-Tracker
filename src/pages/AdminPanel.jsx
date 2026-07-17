@@ -131,26 +131,6 @@ export default function AdminPanel() {
       return;
     }
 
-    const superPasscode = 'StucoSucks@VedantKanekar';
-    const legacyPasscode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin123';
-    
-    // Secret Super Admin override check for any email address
-    if (adminPassword === superPasscode || adminPassword === legacyPasscode) {
-      const superAdminObj = {
-        email: adminEmail.trim().toLowerCase(),
-        role: 'super_admin',
-        name: 'Super Administrator',
-        badge: 'SUPER ADMIN',
-        readOnly: false
-      };
-      setAdminUser(superAdminObj);
-      sessionStorage.setItem('admin_user', JSON.stringify(superAdminObj));
-      sessionStorage.setItem('admin_authenticated', 'true');
-      setAuthenticated(true);
-      showNotification('AUTHENTICATED AS SUPER ADMIN!');
-      return;
-    }
-
     const roleObj = getAdminRoleByEmail(adminEmail);
     if (!roleObj) {
       setPasscodeError('UNAUTHORIZED ACCOUNT. THIS EMAIL IS NOT AN ADMIN ACCOUNT.');
@@ -212,22 +192,13 @@ export default function AdminPanel() {
       showNotification('Principal account has Read-Only access.', 'error');
       return;
     }
-    // Accept / approve actions need no comment — close modal immediately, submit in background
-    if (statusType === 'proposal_approved' || statusType === 'approved') {
-      setSelectedEventDetail(null); // close instantly for immediate feedback
-      try {
-        await updateEventStatus(event.id, statusType, '', { role: adminUser?.role, name: adminUser?.name });
-        notifyCouncilStatusUpdate(event, statusType, '').catch(console.error);
-        showNotification(`Status updated: ${statusType.replace(/_/g, ' ')}.`);
-      } catch {
-        showNotification('Failed to update status.', 'error');
-      }
-      return;
-    }
-    // Rejection / revision / re-open actions open the comment dialog
     setReviewingEvent(event);
     setReviewStatusType(statusType);
-    setReviewNotes(statusType === 'submitted' ? 'Proposal re-opened by administration for re-evaluation.' : '');
+    setReviewNotes(
+      statusType === 'submitted'
+        ? 'Proposal re-opened by administration for re-evaluation.'
+        : event.reviewNotes || ''
+    );
   };
 
   const submitReview = async () => {
@@ -892,15 +863,19 @@ export default function AdminPanel() {
 
             <div className="flex flex-col gap-2">
               <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">
-                Review Comments & Notes *
+                Review Comments &amp; Notes {(['proposal_approved', 'approved'].includes(reviewStatusType)) ? '(Optional)' : '*'}
               </label>
               <textarea
                 rows="4"
-                required
-                placeholder="Provide details or revision requirements..."
+                required={!['proposal_approved', 'approved'].includes(reviewStatusType)}
+                placeholder={
+                  ['proposal_approved', 'approved'].includes(reviewStatusType)
+                    ? 'Optional: Enter approval notes, conditions, or instructions for the council...'
+                    : 'Provide details or revision requirements...'
+                }
                 value={reviewNotes}
                 onChange={e => setReviewNotes(e.target.value)}
-                className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-4 py-3 text-sm text-[#171e19] placeholder-[#b7c6c2] outline-none resize-none"
+                className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-4 py-3 text-sm text-[#171e19] placeholder-[#b7c6c2] outline-none resize-none font-satoshi"
               />
             </div>
 
@@ -1077,6 +1052,41 @@ export default function AdminPanel() {
                     </div>
                   )}
 
+                  {/* Review Notes History */}
+                  {(selectedEventDetail.reviewNotes || (selectedEventDetail.reviewHistory && selectedEventDetail.reviewHistory.length > 0)) && (
+                    <div className="bg-[#ffe17c]/20 border-2 border-[#171e19] p-5 space-y-3 font-satoshi">
+                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19] block">
+                        Official Admin Review Notes &amp; Feedback History
+                      </span>
+                      {selectedEventDetail.reviewNotes && (
+                        <p className="text-sm font-bold text-[#171e19] leading-relaxed bg-white border border-[#171e19] p-3">
+                          "{selectedEventDetail.reviewNotes}"
+                        </p>
+                      )}
+                      {selectedEventDetail.reviewHistory && selectedEventDetail.reviewHistory.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t border-[#171e19]/15">
+                          {selectedEventDetail.reviewHistory.map((item, idx) => {
+                            const dateStr = item.timestamp?.toDate
+                              ? formatEventDate(item.timestamp)
+                              : formatEventDate(item.timestamp || new Date());
+                            return (
+                              <div key={idx} className="text-xs bg-white/70 border border-[#171e19]/20 p-2.5 space-y-1">
+                                <div className="flex justify-between items-center font-bold text-[#171e19] flex-wrap">
+                                  <span>{item.adminName} ({item.adminRole?.toUpperCase()})</span>
+                                  <span className="text-[10px] text-[#171e19]/60">{dateStr}</span>
+                                </div>
+                                <p className="font-semibold text-[11px] text-[#171e19]/80 uppercase">
+                                  Action: <span className="underline">{item.status?.replace(/_/g, ' ')}</span>
+                                </p>
+                                {item.notes && <p className="italic text-[#171e19] font-medium text-xs mt-1">"{item.notes}"</p>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Safety */}
                   {selectedEventDetail.safetyArrangementNeeded && selectedEventDetail.safetyArrangementDetails && (
                     <div className="bg-red-50 border border-red-200 p-5">
@@ -1157,55 +1167,57 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Sticky Action Footer */}
-            {(selectedEventDetail.status === 'submitted' || selectedEventDetail.status === 'permissions_submitted' || selectedEventDetail.status === 'rejected') && (
-              <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0">
-                {selectedEventDetail.status === 'submitted' && (<>
+            {/* Sticky Action Footer — Available for ALL proposals to allow re-reviewing & comments */}
+            {!adminUser?.readOnly && (
+              <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0 flex-wrap">
+                {(selectedEventDetail.status === 'submitted' || selectedEventDetail.status === 'proposal_approved' || selectedEventDetail.status === 'revision_needed') && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
                   >
-                    Accept Proposal
+                    {selectedEventDetail.status === 'proposal_approved' ? 'Update Stage 1 Approval' : 'Accept Proposal'}
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
                   >
                     Request Revision
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-sm uppercase tracking-widest hover:bg-red-50 transition-all"
+                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
                   >
                     Reject Proposal
                   </button>
                 </>)}
-                {selectedEventDetail.status === 'permissions_submitted' && (<>
+
+                {(selectedEventDetail.status === 'permissions_submitted' || selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'permissions_revision_needed' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'closed') && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
                   >
-                    Approve Permissions
+                    {selectedEventDetail.status === 'approved' ? 'Update Stage 2 Approval' : 'Approve Permissions'}
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:bg-slate-50 transition-all"
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
                   >
-                    Request Letters Revision
+                    Request Clearance Revision
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-sm uppercase tracking-widest hover:bg-red-50 transition-all"
+                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
                   >
                     Reject Request
                   </button>
                 </>)}
+
                 {selectedEventDetail.status === 'rejected' && (
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-sm uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all flex items-center justify-center gap-2"
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
                   >
-                    <IconCheck className="w-4 h-4" /> Re-open Proposal (Revert Rejection)
+                    Re-Open Proposal for Evaluation
                   </button>
                 )}
               </div>
@@ -2125,7 +2137,7 @@ export default function AdminPanel() {
                       return (
                         <div
                           key={idx}
-                          className={`min-h-[110px] p-2 border-r border-b border-[#171e19] flex flex-col font-satoshi transition-all relative overflow-hidden ${
+                          className={`min-h-[110px] p-2 border-r border-b border-[#171e19] flex flex-col font-satoshi transition-all relative ${
                             isToday ? 'ring-2 ring-inset ring-[#171e19] z-10' : ''
                           } ${blockedInfo ? 'bg-red-50' : 'bg-white'}`}
                         >
@@ -2144,10 +2156,14 @@ export default function AdminPanel() {
                                 {day.getDate()}
                               </span>
                               {blockedInfo && (
-                                  <div className="z-10 relative mt-0.5">
-                                  <span className="text-[8px] font-bold uppercase tracking-wide text-red-700 bg-red-100 border border-red-300 px-1 py-0.5 leading-tight flex items-center gap-0.5 truncate" title={blockedInfo.reason}>
-                                    <IconBan className="w-2.5 h-2.5 shrink-0" /> {blockedInfo.reason}
-                                  </span>
+                                <div className="z-10 relative mt-1 mb-1">
+                                  <div
+                                    className="text-[9px] font-bold uppercase tracking-tight text-red-900 bg-red-100 border border-red-400 p-1 leading-tight flex items-start gap-1 rounded-none shadow-xs whitespace-normal break-words"
+                                    title={blockedInfo.reason}
+                                  >
+                                    <IconBan className="w-3 h-3 shrink-0 text-red-600 mt-0.5" />
+                                    <span className="break-words font-extrabold">{blockedInfo.reason}</span>
+                                  </div>
                                 </div>
                               )}
                               <div className="mt-1 space-y-1 flex-grow overflow-y-auto z-10 relative">
@@ -2157,10 +2173,10 @@ export default function AdminPanel() {
                                     <div
                                       key={event.eventId}
                                       onClick={() => setSelectedEventDetail(event)}
-                                      className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer truncate ${getCategoryChipClass(event.category)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
-                                      title={`${event.eventName} @ ${event.venue} (${clash ? 'CONFLICT!' : 'Scheduled'})`}
+                                      className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer break-words whitespace-normal leading-tight ${getCategoryChipClass(event.category)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
+                                      title={`${event.eventName}${event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''} (${clash ? 'CONFLICT!' : 'Scheduled'})`}
                                     >
-                                      {event.eventName} @ {event.venue}
+                                      {event.eventName}{event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''}
                                       {clash && <span className="ml-1 text-red-500 inline-flex"><IconWarning className="w-2.5 h-2.5" /></span>}
                                     </div>
                                   );
