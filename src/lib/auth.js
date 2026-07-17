@@ -43,19 +43,63 @@ export const COUNCILS = [
   { id: 'gda', name: 'GDA', category: 'Technical Student Clubs', email: '', coordinator: 'Prof. Heenakausar Pendhari' },
   
   // Additional Societies
-  { id: 'nss', name: 'NSS', category: 'Societies & Clubs', email: '', coordinator: 'Prof. Pradeep Singh' },
+  { id: 'nss', name: 'NSS', category: 'Societies & Clubs', email: 'crce.nss@gmail.com', coordinator: 'Prof. Pradeep Singh' },
   { id: 'rotaract-club', name: 'Rotaract Club', category: 'Societies & Clubs', email: '', coordinator: 'Dr. Ketaki Joshi' },
   { id: 'tedx', name: 'TEDx', category: 'Societies & Clubs', email: '', coordinator: 'Prof. Savita Borole' }
 ];
 
 /**
+ * Centralized list of recognized Admin Accounts.
+ */
+export const ADMIN_ACCOUNTS = [
+  {
+    email: 'josephrodrigues@fragnel.edu.in',
+    role: 'dosw',
+    name: "Dean of Students' Welfare (DOSW)",
+    badge: 'DOSW DEAN',
+    readOnly: false
+  },
+  {
+    email: 'frcrce.stuco@gmail.com',
+    role: 'stuco',
+    name: "Students' Council (StuCo)",
+    badge: 'STUCO MAIN',
+    readOnly: false
+  },
+  {
+    email: 'principal.crce@fragnel.edu.in',
+    role: 'principal',
+    name: 'Principal CRCE',
+    badge: 'PRINCIPAL',
+    readOnly: true
+  }
+];
+
+/**
+ * Maps an admin email address to their role configuration object.
+ */
+export function getAdminRoleByEmail(email) {
+  if (!email) return null;
+  const cleanEmail = email.trim().toLowerCase();
+  return ADMIN_ACCOUNTS.find(a => a.email.toLowerCase() === cleanEmail) || null;
+}
+
+/**
  * Finds the exact council object mapped to an email address.
- * Returns null if the email is not explicitly assigned to any council.
+ * Falls back to matching council ID within email handle (e.g. crce.nss@gmail.com -> nss).
  */
 export function getCouncilByEmail(email) {
   if (!email) return null;
   const cleanEmail = email.trim().toLowerCase();
-  return COUNCILS.find(c => c.email && c.email.trim().toLowerCase() === cleanEmail) || null;
+  
+  // 1. Explicit email match
+  const matched = COUNCILS.find(c => c.email && c.email.trim().toLowerCase() === cleanEmail);
+  if (matched) return matched;
+
+  // 2. Smart fallback: match council ID in email username (e.g. crce.nss@gmail.com -> nss)
+  const username = cleanEmail.split('@')[0];
+  const parts = username.split(/[._-]/);
+  return COUNCILS.find(c => parts.includes(c.id) || parts.includes(c.id.replace(/-/g, ''))) || null;
 }
 
 /**

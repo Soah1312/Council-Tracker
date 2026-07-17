@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import {
   Calendar as CalendarIcon, MapPin, Users, Trophy, Ticket, X,
-  Activity, CheckCircle, Clock, AlertCircle, ChevronLeft, ChevronRight
+  Activity, CheckCircle, Clock, AlertCircle
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
@@ -58,10 +58,6 @@ const resolveStatus = (event) => {
 
 // Custom Toolbar for the Calendar to match our Glassmorphism UI
 const CustomToolbar = (toolbar) => {
-  const goToBack = () => toolbar.onNavigate('PREV');
-  const goToNext = () => toolbar.onNavigate('NEXT');
-  const goToCurrent = () => toolbar.onNavigate('TODAY');
-
   return (
     <div className="flex flex-col md:flex-row items-center justify-between mb-6 gap-4">
       <h2 className="text-2xl md:text-3xl font-anton text-white tracking-wide">
@@ -88,7 +84,6 @@ const CustomToolbar = (toolbar) => {
 
 // Custom Event Rendering in the Calendar
 const CustomEvent = ({ event }) => {
-  const rawEvent = event.resource;
   return (
     <div className="flex items-center gap-1.5 px-2 overflow-hidden w-full h-full" title={event.title}>
       <span className="text-[10px] font-bold leading-tight truncate text-white/90 drop-shadow-sm">{event.title}</span>
@@ -103,8 +98,8 @@ export default function LandingPage() {
 
   const [allEvents, setAllEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [councilFilter, setCouncilFilter] = useState('all');
+  const [statusFilter] = useState('all');
+  const [councilFilter] = useState('all');
   const [detailEvent, setDetailEvent] = useState(null);
 
   // Calendar state
@@ -141,7 +136,6 @@ export default function LandingPage() {
   });
 
   const nextMajorEvent = allEvents.find(e => e._status === 'approved' && e._startDate > new Date());
-  const allCouncilIds = [...new Set(allEvents.map(e => e.councilId))].filter(Boolean);
 
   // Map to format required by react-big-calendar
   const calendarEvents = filteredEvents

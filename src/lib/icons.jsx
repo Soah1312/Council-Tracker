@@ -120,3 +120,10 @@ export const IconMail = ({ className = 'w-4 h-4' }) => (
     <polyline points="22,6 12,13 2,6" />
   </svg>
 );
+
+export const IconBan = ({ className = 'w-4 h-4' }) => (
+  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+  </svg>
+);

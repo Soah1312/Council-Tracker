@@ -1,13 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Link } from 'react-router-dom';
-import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
+import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers } from '../lib/members';
-import { COUNCILS, loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
+import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
-  IconFile, IconCalendar, IconMapPin, IconWarning, IconX, IconCheck,
-  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconMail
+  IconFile, IconCalendar, IconMapPin, IconWarning,
+  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan
 } from '../lib/icons';
 
 
@@ -215,6 +214,12 @@ export default function CouncilPortal() {
   const [memberForm, setMemberForm] = useState({ name: '', designation: '', contactNumber: '' });
   const [memberErrors, setMemberErrors] = useState({});
   const [memberSubmitting, setMemberSubmitting] = useState(false);
+
+  // Calendar State
+  const [calMonth, setCalMonth] = useState(new Date());
+  const [allCalEvents, setAllCalEvents] = useState([]);
+  const [blockedDates, setBlockedDates] = useState([]);
+
   const [startCalMonth, setStartCalMonth] = useState(new Date());
   const [endCalMonth, setEndCalMonth] = useState(new Date());
   const [activePopover, setActivePopover] = useState(null); // 'startDate' | 'endDate' | null
@@ -248,6 +253,22 @@ export default function CouncilPortal() {
     });
     return () => unsubscribe();
   }, [council?.id]);
+
+  // Real-time All-Events Subscription for Calendar (all councils, read-only)
+  useEffect(() => {
+    const unsubscribe = subscribeToAllEvents((data) => {
+      setAllCalEvents(data);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Real-time Blocked Dates Subscription
+  useEffect(() => {
+    const unsubscribe = subscribeToBlockedDates((data) => {
+      setBlockedDates(data);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const openAddMemberModal = () => {
     setEditingMember(null);
@@ -472,6 +493,35 @@ export default function CouncilPortal() {
     return { isInvalid: false, text: `${durationStr} (${tagStr})` };
   };
 
+  // Helper: check if a specific day is blocked by admin
+  const isDateBlocked = (dateObj) => {
+    if (!dateObj) return null;
+    const dStart = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 0, 0, 0);
+    const dEnd = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 23, 59, 59);
+    return blockedDates.find(bd => {
+      const bdStart = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
+      const bdEnd = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
+      return bdStart <= dEnd && bdEnd >= dStart;
+    }) || null;
+  };
+
+  // Helper: check if a date range overlaps with any admin-blocked period
+  const getBlockedOverlap = (startStr, endStr) => {
+    if (!startStr) return null;
+    const start = new Date(startStr);
+    const end = endStr ? new Date(endStr) : start;
+    if (isNaN(start.getTime())) return null;
+    
+    const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
+    const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
+    
+    return blockedDates.find(bd => {
+      const bdStart = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
+      const bdEnd = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
+      return startDay <= bdEnd && endDay >= bdStart;
+    }) || null;
+  };
+
   const handleSelectCalendarDate = (field, dateObj) => {
     if (!dateObj) return;
     const year = dateObj.getFullYear();
@@ -482,19 +532,6 @@ export default function CouncilPortal() {
     const timePart = current.time || '09:00';
     
     const combined = `${year}-${month}-${day}T${timePart}`;
-    
-    if (field === 'startDate') {
-      handleStartDateChange(combined);
-    } else {
-      setFormData(prev => ({ ...prev, endDate: combined }));
-    }
-  };
-
-  const handleSelectTimeSlot = (field, timeVal) => {
-    const current = getSplitDateTime(formData[field]);
-    const datePart = current.date || format(new Date(), 'yyyy-MM-dd');
-    
-    const combined = `${datePart}T${timeVal}`;
     
     if (field === 'startDate') {
       handleStartDateChange(combined);
@@ -579,6 +616,94 @@ export default function CouncilPortal() {
     }
   };
 
+  const renderDualApprovalBadges = (event) => {
+    const isStage1Pending = event.status === 'submitted' || event.status === 'proposal_approved';
+    const isStage2Pending = event.status === 'permissions_submitted' || event.status === 'approved';
+    
+    if (!isStage1Pending && !isStage2Pending) return null;
+
+    const stageNum = isStage1Pending ? 1 : 2;
+    const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
+    const dosw = approvals.dosw?.approved;
+    const stuco = approvals.stuco?.approved;
+
+    let count = 0;
+    if (dosw) count++;
+    if (stuco) count++;
+
+    return (
+      <div className="p-3 bg-[#171e19]/5 border border-[#171e19]/20 rounded-none space-y-1.5 font-satoshi">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <span className="font-bold text-[10px] uppercase tracking-wider text-[#171e19]/70">
+            Stage {stageNum} Administrative Approvals ({count}/2):
+          </span>
+          <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${
+            count === 2 ? 'bg-emerald-950 text-white border-emerald-900' : 'bg-[#ffe17c] text-[#171e19] border-[#171e19]'
+          }`}>
+            {count === 2 ? 'FULLY APPROVED' : '1/2 APPROVALS PENDING'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold uppercase tracking-wide">
+          <div className={`p-2 border flex items-center justify-between ${
+            dosw ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+          }`}>
+            <span>Dean of Students' Welfare (DOSW)</span>
+            <span>{dosw ? '✓ Approved' : '⏳ Pending'}</span>
+          </div>
+
+          <div className={`p-2 border flex items-center justify-between ${
+            stuco ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+          }`}>
+            <span>Students' Council (StuCo)</span>
+            <span>{stuco ? '✓ Approved' : '⏳ Pending'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderReviewHistory = (event) => {
+    if (!event.reviewHistory || event.reviewHistory.length === 0) return null;
+
+    return (
+      <div className="space-y-2 border-t-2 border-dashed border-[#171e19] pt-3 mt-3">
+        <span className="font-satoshi text-[10px] font-bold uppercase tracking-widest text-[#171e19]/70 block">
+          Admin Review Comments &amp; Suggestions ({event.reviewHistory.length}):
+        </span>
+        <div className="space-y-2">
+          {event.reviewHistory.slice().reverse().map((rev, idx) => (
+            <div key={idx} className="p-3 bg-white border-2 border-[#171e19] text-xs font-satoshi space-y-1.5 shadow-[2px_2px_0px_0px_#171e19]">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="font-anton text-sm text-[#171e19] tracking-tight uppercase">
+                    {rev.adminName}
+                  </span>
+                  <span className="font-satoshi text-[9px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5">
+                    {rev.adminRole?.toUpperCase() || 'ADMIN'}
+                  </span>
+                </div>
+                <span className="text-[9px] font-bold uppercase px-2 py-0.5 bg-[#ffe17c] text-[#171e19] border border-[#171e19]">
+                  {rev.status?.replace(/_/g, ' ')}
+                </span>
+              </div>
+              {rev.notes && (
+                <p className="text-[#171e19] font-semibold text-xs bg-[#ffe17c]/20 p-2.5 border border-[#171e19]/20 leading-relaxed">
+                  &ldquo;{rev.notes}&rdquo;
+                </p>
+              )}
+              {rev.timestamp && (
+                <p className="text-[9px] text-[#171e19]/50 font-bold uppercase tracking-wide">
+                  {formatEventDate(rev.timestamp)}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderStageTracker = (status) => {
     let currentStage = 1;
     if (['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status)) {
@@ -600,7 +725,6 @@ export default function CouncilPortal() {
           {stages.map((stg) => {
             const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
             const isActive = currentStage === stg.num && status !== 'closed';
-            const isFuture = !isCompleted && !isActive;
 
             let bgColor = 'bg-white border-[#171e19]/15 text-[#171e19]/40';
             if (isActive) {
@@ -628,24 +752,6 @@ export default function CouncilPortal() {
     );
   };
 
-  const handleFileChange = (e, field) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        showNotification('File exceeds the 10MB size limit.', 'error');
-        e.target.value = null;
-        return;
-      }
-      if (file.type !== 'application/pdf') {
-        showNotification('Only PDF uploads are permitted.', 'error');
-        e.target.value = null;
-        return;
-      }
-      setFiles(p => ({ ...p, [field]: file }));
-      setErrors(p => ({ ...p, [field]: null }));
-    }
-  };
-
   // Date local string generator for editing pre-fills
   const toDatetimeLocalString = (dateField) => {
     if (!dateField) return '';
@@ -660,7 +766,7 @@ export default function CouncilPortal() {
     try {
       const tzOffset = dateJS.getTimezoneOffset() * 60000;
       return (new Date(dateJS.getTime() - tzOffset)).toISOString().slice(0, 16);
-    } catch (err) {
+    } catch {
       return '';
     }
   };
@@ -678,7 +784,7 @@ export default function CouncilPortal() {
     }
     try {
       return format(dateJS, 'MMM dd, yyyy hh:mm a');
-    } catch (err) {
+    } catch {
       return String(dateField);
     }
   };
@@ -729,6 +835,14 @@ export default function CouncilPortal() {
     if (!formData.endDate) newErrors.endDate = 'End date and time is required.';
     if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
       newErrors.endDate = 'End date must be after the start date.';
+    }
+
+    // Admin-blocked date range validation
+    const blockedConflict = getBlockedOverlap(formData.startDate, formData.endDate);
+    if (blockedConflict) {
+      const msg = `Selected date(s) fall within an Admin-Blocked period (${blockedConflict.reason}). Proposing events on blocked dates is restricted.`;
+      newErrors.startDate = msg;
+      newErrors.endDate = msg;
     }
     // File description validation - Single required PDF
     if (!files.eventDescription && !existingUrls.eventDescriptionUrl) {
@@ -985,7 +1099,7 @@ export default function CouncilPortal() {
         <div className="bg-white border-4 border-[#171e19] p-8 md:p-10 max-w-md w-full space-y-6 shadow-[8px_8px_0px_0px_#ffe17c] rounded-none">
           <div className="text-center space-y-2">
             <h1 className="font-anton text-5xl md:text-6xl text-[#171e19] tracking-tight">
-              COUNCILTRACK<span className="text-[#ffe17c]">.</span>
+              CRCE COUNCILS<span className="text-[#ffe17c]">.</span>
             </h1>
             <p className="font-satoshi text-xs uppercase tracking-widest text-[#b7c6c2] font-bold">
               Council Authentication Portal
@@ -1007,7 +1121,7 @@ export default function CouncilPortal() {
               <input
                 type="email"
                 required
-                placeholder="e.g. frcrce.stuco@gmail.com"
+                placeholder="Enter your official email address"
                 value={authEmail}
                 onChange={(e) => {
                   setAuthEmail(e.target.value);
@@ -1056,11 +1170,6 @@ export default function CouncilPortal() {
             </button>
           </form>
 
-          <div className="text-center pt-4 border-t border-[#171e19]/10">
-            <Link to="/admin" className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:underline">
-              DOSW / DEAN LOGIN &rarr;
-            </Link>
-          </div>
         </div>
 
         {/* FORGOT PASSWORD MODAL OVERLAY */}
@@ -1093,7 +1202,7 @@ export default function CouncilPortal() {
                   <input
                     type="email"
                     required
-                    placeholder="frcrce.stuco@gmail.com"
+                    placeholder="Enter your official email address"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
                     className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
@@ -1155,12 +1264,6 @@ export default function CouncilPortal() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Link
-            to="/admin"
-            className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
-          >
-            Admin Panel &rarr;
-          </Link>
           <button
             onClick={handleLogout}
             className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
@@ -1215,6 +1318,21 @@ export default function CouncilPortal() {
           }`}
         >
           Council Members ({councilMembers.length})
+        </button>
+
+        <button
+          onClick={() => {
+            setActiveTab('calendar');
+            setSubmittedEventId(null);
+            setReportingEvent(null);
+          }}
+          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal flex items-center gap-2 ${
+            activeTab === 'calendar'
+              ? 'bg-[#171e19] text-[#ffe17c] border-b-transparent'
+              : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
+          }`}
+        >
+          <IconCalendar className="w-5 h-5" /> Calendar
         </button>
 
         {reportingEvent && (
@@ -1360,6 +1478,18 @@ export default function CouncilPortal() {
                     <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">SCHEDULE & TIMINGS</h3>
                   </div>
 
+                  {/* Overlap Error Alert */}
+                  {(() => {
+                    const overlap = getBlockedOverlap(formData.startDate, formData.endDate);
+                    if (!overlap) return null;
+                    return (
+                      <div className="p-3.5 bg-red-100 border-2 border-red-500 text-red-900 font-satoshi text-xs font-bold uppercase tracking-wide flex items-center gap-2.5">
+                        <IconBan className="w-5 h-5 text-red-600 shrink-0" />
+                        <span>DATE RESTRICTED: Selected timing overlaps with Admin-Blocked period "{overlap.reason}". You cannot submit proposals for blocked dates.</span>
+                      </div>
+                    );
+                  })()}
+
                   <div className="bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c] relative" ref={popoverRef}>
                     {/* Compact 4-Field Row Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -1430,26 +1560,32 @@ export default function CouncilPortal() {
 
                                 const selectedDateStr = getSplitDateTime(formData.startDate).date;
                                 for (let i = 1; i <= totalDays; i++) {
+                                  const currentDayObj = new Date(year, month, i);
                                   const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                                   const isSelected = selectedDateStr === currentDayStr;
-                                  const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
+                                  const isToday = currentDayObj.toDateString() === new Date().toDateString();
+                                  const blocked = isDateBlocked(currentDayObj);
 
                                   dayButtons.push(
                                     <button
                                       type="button"
                                       key={`day-${i}`}
+                                      disabled={!!blocked}
+                                      title={blocked ? `BLOCKED BY ADMIN: ${blocked.reason}` : undefined}
                                       onClick={(e) => {
+                                        if (blocked) return;
                                         e.stopPropagation();
-                                        const newDateObj = new Date(year, month, i);
-                                        handleSelectCalendarDate('startDate', newDateObj);
+                                        handleSelectCalendarDate('startDate', currentDayObj);
                                         setActivePopover(null);
                                       }}
                                       className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${
-                                        isSelected
-                                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
-                                          : isToday
-                                            ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
-                                            : 'border-transparent hover:border-[#171e19] text-[#171e19]'
+                                        blocked
+                                          ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
+                                          : isSelected
+                                            ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
+                                            : isToday
+                                              ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
+                                              : 'border-transparent hover:border-[#171e19] text-[#171e19]'
                                       }`}
                                     >
                                       {i}
@@ -1546,26 +1682,32 @@ export default function CouncilPortal() {
 
                                 const selectedDateStr = getSplitDateTime(formData.endDate).date;
                                 for (let i = 1; i <= totalDays; i++) {
+                                  const currentDayObj = new Date(year, month, i);
                                   const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
                                   const isSelected = selectedDateStr === currentDayStr;
-                                  const isToday = new Date(year, month, i).toDateString() === new Date().toDateString();
+                                  const isToday = currentDayObj.toDateString() === new Date().toDateString();
+                                  const blocked = isDateBlocked(currentDayObj);
 
                                   dayButtons.push(
                                     <button
                                       type="button"
                                       key={`day-${i}`}
+                                      disabled={!!blocked}
+                                      title={blocked ? `BLOCKED BY ADMIN: ${blocked.reason}` : undefined}
                                       onClick={(e) => {
+                                        if (blocked) return;
                                         e.stopPropagation();
-                                        const newDateObj = new Date(year, month, i);
-                                        handleSelectCalendarDate('endDate', newDateObj);
+                                        handleSelectCalendarDate('endDate', currentDayObj);
                                         setActivePopover(null);
                                       }}
                                       className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${
-                                        isSelected
-                                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
-                                          : isToday
-                                            ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
-                                            : 'border-transparent hover:border-[#171e19] text-[#171e19]'
+                                        blocked
+                                          ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
+                                          : isSelected
+                                            ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
+                                            : isToday
+                                              ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
+                                              : 'border-transparent hover:border-[#171e19] text-[#171e19]'
                                       }`}
                                     >
                                       {i}
@@ -1723,36 +1865,36 @@ export default function CouncilPortal() {
                     >
                       {/* ===== REVISION / REJECTION ALERT BANNER ===== */}
                       {(event.status === 'revision_needed' || event.status === 'permissions_revision_needed' || event.status === 'rejected') && (
-                        <div className={`flex items-start gap-3 px-5 py-3 border-b-2 ${
+                        <div className={`flex flex-col gap-3 px-5 py-3 border-b-2 ${
                           event.status === 'rejected'
                             ? 'bg-red-800 border-red-900'
                             : 'bg-red-500 border-red-600'
                         }`} onClick={e => e.stopPropagation()}>
-                          <span className="text-white text-lg leading-none mt-0.5 shrink-0">
-                            {event.status === 'rejected' ? '✕' : '⚠'}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <span className="font-anton text-white text-sm uppercase tracking-wider block">
-                              {event.status === 'rejected'
-                                ? 'PROPOSAL REJECTED'
-                                : event.status === 'permissions_revision_needed'
-                                ? 'ACTION REQUIRED — PERMISSION DOCUMENTS NEED CHANGES'
-                                : 'ACTION REQUIRED — PROPOSAL REVISION REQUESTED'}
-                            </span>
-                            {event.reviewNotes && (
-                              <p className="font-satoshi text-white/90 text-xs font-semibold mt-1 leading-relaxed">
-                                Admin note: &ldquo;{event.reviewNotes}&rdquo;
-                              </p>
+                          <div className="flex items-start justify-between gap-4 flex-wrap">
+                            <div className="flex-1 min-w-0">
+                              <span className="font-anton text-white text-sm uppercase tracking-wider block">
+                                {event.status === 'rejected'
+                                  ? 'PROPOSAL REJECTED'
+                                  : event.status === 'permissions_revision_needed'
+                                  ? 'ACTION REQUIRED — PERMISSION DOCUMENTS NEED CHANGES'
+                                  : 'ACTION REQUIRED — PROPOSAL REVISION REQUESTED'}
+                              </span>
+                              {event.reviewNotes && (
+                                <p className="font-satoshi text-white/90 text-xs font-semibold mt-1 leading-relaxed">
+                                  Latest note: &ldquo;{event.reviewNotes}&rdquo;
+                                </p>
+                              )}
+                            </div>
+                            {(event.status === 'revision_needed') && (
+                              <button
+                                onClick={(e) => handleEditClick(event, e)}
+                                className="shrink-0 px-3 py-1.5 bg-white text-red-600 border-2 border-white hover:bg-red-50 font-anton text-[10px] uppercase tracking-wider transition-brutal rounded-none"
+                              >
+                                Edit &amp; Resubmit
+                              </button>
                             )}
                           </div>
-                          {(event.status === 'revision_needed') && (
-                            <button
-                              onClick={(e) => handleEditClick(event, e)}
-                              className="shrink-0 px-3 py-1.5 bg-white text-red-600 border-2 border-white hover:bg-red-50 font-anton text-[10px] uppercase tracking-wider transition-brutal rounded-none"
-                            >
-                              Edit &amp; Resubmit
-                            </button>
-                          )}
+                          {renderReviewHistory(event)}
                         </div>
                       )}
                       {/* Stage 3 — Report Due Banner (always visible when approved) */}
@@ -1882,6 +2024,12 @@ export default function CouncilPortal() {
                         <div className="px-5 pb-6 pt-4 border-t-2 border-[#171e19] bg-[#b7c6c2]/5 space-y-5 text-xs text-[#171e19]/90 font-satoshi">
                            {/* Event Progress Tracker */}
                            {renderStageTracker(event.status)}
+                           
+                           {/* Dual Approval Status Badges */}
+                           {renderDualApprovalBadges(event)}
+
+                           {/* Review History Notes */}
+                           {renderReviewHistory(event)}
                            
                            {/* Report due date banner in expanded drawer — still shown for context */}
                            {(event.status === 'approved' || event.status === 'report_pending') && event.reportDueDate && (
@@ -2156,6 +2304,217 @@ export default function CouncilPortal() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB: COUNCIL CALENDAR */}
+        {activeTab === 'calendar' && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b-2 border-[#171e19] pb-4">
+              <div>
+                <h2 className="font-anton text-3xl text-[#171e19] tracking-tight uppercase">Event Calendar</h2>
+                <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider mt-0.5">
+                  All councils' approved & pending events. Use this to pick available dates for your next proposal.
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1))}
+                  className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal rounded-none"
+                >
+                  &larr; Prev
+                </button>
+                <span className="font-anton text-xl text-[#171e19] select-none tracking-wide">
+                  {format(calMonth, 'MMMM yyyy').toUpperCase()}
+                </span>
+                <button
+                  onClick={() => setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1))}
+                  className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal rounded-none"
+                >
+                  Next &rarr;
+                </button>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Approved</div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/25"></span> Pending / Under Review</div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#b7c6c2] border border-[#171e19]/20"></span> Your Council's Event</div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
+            </div>
+
+            {/* Calendar Grid */}
+            <div className="bg-white border-2 border-[#171e19] overflow-hidden shadow-[4px_4px_0px_0px_#ffe17c]">
+              {/* Weekday Headers */}
+              <div className="grid grid-cols-7 bg-[#171e19] font-satoshi text-[10px] font-bold uppercase tracking-wider text-white text-center py-2.5">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                  <div key={d}>{d}</div>
+                ))}
+              </div>
+
+              {/* Days Grid */}
+              <div className="grid grid-cols-7 border-t border-l border-[#171e19]">
+                {(() => {
+                  const year = calMonth.getFullYear();
+                  const month = calMonth.getMonth();
+                  const firstDayIdx = new Date(year, month, 1).getDay();
+                  const totalDays = new Date(year, month + 1, 0).getDate();
+                  const days = [];
+                  for (let i = 0; i < firstDayIdx; i++) days.push(null);
+                  for (let i = 1; i <= totalDays; i++) days.push(new Date(year, month, i));
+
+                  return days.map((day, idx) => {
+                    const isToday = day && day.toDateString() === new Date().toDateString();
+
+                    // Check if admin-blocked
+                    const blockedInfo = day ? blockedDates.find(bd => {
+                      const bdStart = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
+                      const bdEnd = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
+                      const dStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
+                      const dEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
+                      return bdStart <= dEnd && bdEnd >= dStart;
+                    }) : null;
+
+                    // All events (all councils) occurring on this day — include all statuses from Stage 1
+                    const dayEvents = day ? allCalEvents.filter(event => {
+                      const relevantStatuses = ['submitted', 'revision_needed', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'];
+                      if (!relevantStatuses.includes(event.status)) return false;
+                      const eStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+                      const eEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
+                      const dStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
+                      const dEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
+                      return eStart <= dEnd && eEnd >= dStart;
+                    }) : [];
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`min-h-[100px] p-1.5 border-r border-b border-[#171e19] flex flex-col font-satoshi relative overflow-hidden ${
+                          !day ? 'bg-slate-50/70' : blockedInfo ? 'bg-red-50' : 'bg-white'
+                        } ${isToday ? 'ring-2 ring-inset ring-[#ffe17c]' : ''}`}
+                      >
+                        {day && (
+                          <>
+                            {/* Blocked diagonal stripes */}
+                            {blockedInfo && (
+                              <div
+                                className="absolute inset-0 pointer-events-none opacity-15"
+                                style={{
+                                  backgroundImage: 'repeating-linear-gradient(45deg, #ef4444 0, #ef4444 2px, transparent 0, transparent 50%)',
+                                  backgroundSize: '10px 10px'
+                                }}
+                              />
+                            )}
+
+                            <span className={`text-[11px] font-bold z-10 relative shrink-0 mb-1 ${
+                              isToday
+                                ? 'text-[#171e19] bg-[#ffe17c] px-1.5 py-0.5 font-anton tracking-wide self-start'
+                                : blockedInfo
+                                  ? 'text-red-700'
+                                  : 'text-[#171e19]'
+                            }`}>
+                              {day.getDate()}
+                            </span>
+
+                            {blockedInfo && (
+                                <div className="z-10 relative mb-1">
+                                <span
+                                  className="text-[8px] font-bold uppercase tracking-wide text-red-700 bg-red-100 border border-red-300 px-1 py-0.5 leading-tight flex items-center gap-0.5 truncate"
+                                  title={blockedInfo.reason}
+                                >
+                                  <IconBan className="w-2.5 h-2.5 shrink-0" /> {blockedInfo.reason}
+                                </span>
+                              </div>
+                            )}
+
+                            <div className="space-y-0.5 flex-grow overflow-y-auto z-10 relative">
+                              {dayEvents.map(event => {
+                                const isOwnCouncil = event.councilId === council?.id;
+                                const isApproved = ['approved', 'report_pending', 'closed'].includes(event.status);
+                                const isStage2 = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(event.status);
+
+                                let chipClass = 'bg-[#ffe17c] text-[#171e19]'; // pending
+                                if (isApproved) chipClass = 'bg-emerald-600 text-white';
+                                else if (isStage2) chipClass = 'bg-indigo-700 text-white';
+                                if (isOwnCouncil) chipClass += ' ring-1 ring-offset-0 ring-[#171e19]';
+
+                                return (
+                                  <div
+                                    key={event.id || event.eventId}
+                                    className={`px-1 py-0.5 text-[8px] font-bold uppercase tracking-tight truncate ${chipClass}`}
+                                    title={`${event.councilName}: ${event.eventName} (${event.status.replace(/_/g, ' ')})`}
+                                  >
+                                    {isOwnCouncil ? '★ ' : ''}{event.councilName?.split(' ')[0]}: {event.eventName}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* Stats Strip */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
+                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Total Events This Month</p>
+                <p className="font-anton text-3xl text-[#171e19] mt-1">
+                  {allCalEvents.filter(ev => {
+                    const eStart = ev.startDate?.toDate ? ev.startDate.toDate() : new Date(ev.startDate);
+                    return eStart.getMonth() === calMonth.getMonth() && eStart.getFullYear() === calMonth.getFullYear();
+                  }).length}
+                </p>
+              </div>
+              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#ffe17c]">
+                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Your Council's Events</p>
+                <p className="font-anton text-3xl text-[#171e19] mt-1">
+                  {events.length}
+                </p>
+              </div>
+              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
+                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Blocked Periods</p>
+                <p className="font-anton text-3xl text-red-600 mt-1">{blockedDates.length}</p>
+              </div>
+              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
+                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Pending Proposals (All)</p>
+                <p className="font-anton text-3xl text-[#171e19] mt-1">
+                  {allCalEvents.filter(ev => ev.status === 'submitted').length}
+                </p>
+              </div>
+            </div>
+
+            {/* Blocked Dates Info Panel */}
+            {blockedDates.length > 0 && (
+              <div className="bg-red-50 border-2 border-red-400 p-5 space-y-3 rounded-none">
+                <h3 className="font-anton text-lg text-red-800 uppercase tracking-tight flex items-center gap-2"><IconBan className="w-5 h-5" /> Admin-Blocked Periods</h3>
+                <p className="font-satoshi text-xs text-red-700 font-semibold uppercase tracking-wide">Avoid proposing events on these dates.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {blockedDates.map(bd => {
+                    const start = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
+                    const end = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
+                    const isSameDay = format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd');
+                    return (
+                      <div key={bd.id} className="flex items-start gap-3 p-3 bg-white border border-red-300 rounded-none">
+                        <IconBan className="text-red-500 w-4 h-4 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-anton text-sm text-[#171e19] tracking-tight">{bd.reason}</p>
+                          <p className="font-satoshi text-[10px] text-red-700 font-bold uppercase mt-0.5">
+                            {isSameDay
+                              ? format(start, 'MMM dd, yyyy')
+                              : `${format(start, 'MMM dd')} – ${format(end, 'MMM dd, yyyy')}`}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>

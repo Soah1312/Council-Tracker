@@ -9,8 +9,6 @@ import { collection, doc, writeBatch, Timestamp } from 'firebase/firestore';
 const ts = (year, month, day, hour = 9, min = 0) =>
   Timestamp.fromDate(new Date(year, month - 1, day, hour, min));
 
-const now = Timestamp.now();
-
 const DUMMY_PDF = 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf';
 const DUMMY_IMG_1 = 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
 const DUMMY_IMG_2 = 'https://images.unsplash.com/photo-1511578314322-379afb476865?w=800';

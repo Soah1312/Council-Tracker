@@ -13,6 +13,7 @@
  */
 
 import emailjs from '@emailjs/browser';
+import { COUNCILS, getCouncilByEmail } from './auth';
 
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -44,7 +45,7 @@ function formatDate(value) {
 const recentDispatches = new Set();
 
 /**
- * Core dispatcher — sends a single email notification covering all configured recipients.
+ * Core dispatcher — sends a single email notification covering configured recipients.
  * Implements deduplication to ensure rapid consecutive triggers for the same event stage are ignored.
  *
  * @param {Object} params  - Template variables forwarded to EmailJS
@@ -54,13 +55,15 @@ async function dispatch(params) {
     console.warn('[EmailJS] Missing configuration — skipping email notification.');
     return;
   }
-  if (RECIPIENTS.length === 0) {
+
+  const toEmailString = params.to_email || RECIPIENTS.join(', ');
+  if (!toEmailString) {
     console.warn('[EmailJS] No recipient addresses configured.');
     return;
   }
 
-  // Create a unique key for deduplication (Event ID + Stage)
-  const lockKey = `${params.event_id || ''}:${params.stage_label || ''}:${params.subject || ''}`;
+  // Create a unique key for deduplication (Event ID + Stage + Recipient)
+  const lockKey = `${params.event_id || ''}:${params.stage_label || ''}:${toEmailString}:${params.subject || ''}`;
   if (recentDispatches.has(lockKey)) {
     console.warn(`[EmailJS] Duplicate notification dispatch prevented for key: ${lockKey}`);
     return;
@@ -70,15 +73,16 @@ async function dispatch(params) {
   recentDispatches.add(lockKey);
   setTimeout(() => recentDispatches.delete(lockKey), 5000);
 
-  // Join all configured recipients into a single comma-separated string
-  // so EmailJS handles delivery in ONE single API call instead of multiple loops.
-  const toEmailString = RECIPIENTS.join(', ');
+  const action_url = params.action_url || params.portal_url || params.admin_url || `${window.location.origin}/admin`;
+  const button_text = params.button_text || (params.portal_url ? 'OPEN COUNCIL PORTAL →' : 'OPEN ADMIN PANEL →');
+
+  const targetTemplateId = params.template_id || import.meta.env.VITE_EMAILJS_COUNCIL_TEMPLATE_ID || TEMPLATE_ID;
 
   try {
     await emailjs.send(
       SERVICE_ID,
-      TEMPLATE_ID,
-      { ...params, to_email: toEmailString },
+      targetTemplateId,
+      { ...params, action_url, button_text, admin_url: action_url, to_email: toEmailString },
       { publicKey: PUBLIC_KEY }
     );
     console.log(`[EmailJS] Notification successfully sent to ${toEmailString} for ${params.event_id}`);
@@ -180,3 +184,72 @@ export async function notifyReportSubmitted(event, councilName) {
     admin_url:      `${window.location.origin}/admin`,
   });
 }
+
+/**
+ * Admin Review Action — Sends email directly to the respective council (and admin recipients)
+ * whenever admin approves, rejects, requests revision, or reopens an event proposal/clearance.
+ */
+export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes = '') {
+  // Look up council email address
+  const councilObj = COUNCILS.find(c => c.id === event.councilId) || getCouncilByEmail(event.councilId);
+  const councilEmail = councilObj?.email || event.councilEmail || '';
+
+  const recipientList = [councilEmail, ...RECIPIENTS].filter(Boolean);
+  const uniqueRecipients = [...new Set(recipientList)].join(', ');
+
+  let stageLabel = 'Status Updated';
+  let actionType = `Your event request status has been updated to ${statusType.replace(/_/g, ' ')}.`;
+  let subject = `[Status Update] ${event.eventName}: ${statusType.replace(/_/g, ' ').toUpperCase()}`;
+
+  switch (statusType) {
+    case 'proposal_approved':
+      stageLabel = 'Stage 1 — Proposal Accepted';
+      actionType = 'Your event proposal has been accepted by the administration. You may now proceed to Stage 2 (Upload Clearances/Permission Letters).';
+      subject = `[Stage 1 Accepted] Proposal Approved: ${event.eventName}`;
+      break;
+    case 'revision_needed':
+      stageLabel = 'Stage 1 — Revision Requested';
+      actionType = 'The administration requested revisions on your event proposal. Please review comments and update.';
+      subject = `[Action Required] Proposal Revision Needed: ${event.eventName}`;
+      break;
+    case 'rejected':
+      stageLabel = 'Stage 1 / 2 — Request Rejected';
+      actionType = 'Your event request has been rejected by administration. See review notes below.';
+      subject = `[Status Update] Event Request Rejected: ${event.eventName}`;
+      break;
+    case 'approved':
+      stageLabel = 'Stage 2 — Fully Approved';
+      actionType = 'All clearances have been verified and your event is fully approved! You may conduct the event.';
+      subject = `[Stage 2 Approved] Event Fully Approved: ${event.eventName}`;
+      break;
+    case 'permissions_revision_needed':
+      stageLabel = 'Stage 2 — Clearance Revision Needed';
+      actionType = 'Revisions requested on uploaded clearance/permission documents. Please re-upload corrected documents.';
+      subject = `[Action Required] Clearance Revisions Needed: ${event.eventName}`;
+      break;
+    case 'submitted':
+      stageLabel = 'Stage 1 — Proposal Re-opened';
+      actionType = 'Your event proposal has been re-opened by administration for re-evaluation.';
+      subject = `[Status Update] Proposal Re-opened: ${event.eventName}`;
+      break;
+    default:
+      break;
+  }
+
+  await dispatch({
+    to_email:       uniqueRecipients,
+    subject:        subject,
+    stage_label:    stageLabel,
+    action_type:    actionType,
+    event_id:       event.eventId || event.id,
+    event_name:     event.eventName,
+    council_name:   event.councilName,
+    start_date:     formatDate(event.startDate),
+    end_date:       formatDate(event.endDate),
+    extra_notes:    reviewNotes ? `Admin Review Notes: ${reviewNotes}` : 'No additional notes provided.',
+    portal_url:     `${window.location.origin}/portal`,
+    admin_url:      `${window.location.origin}/admin`,
+    template_id:    import.meta.env.VITE_EMAILJS_COUNCIL_TEMPLATE_ID || TEMPLATE_ID,
+  });
+}
+

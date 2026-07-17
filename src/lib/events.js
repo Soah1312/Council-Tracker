@@ -105,6 +105,9 @@ export async function createEventRequest(data) {
     venuePermissionApplicable: Boolean(data.venuePermissionApplicable),
     safetyArrangementNeeded: Boolean(data.safetyArrangementNeeded),
     status: 'submitted',
+    stage1Approvals: {},
+    stage2Approvals: {},
+    reviewHistory: [],
     createdAt: serverTimestamp()
   };
 
@@ -218,18 +221,16 @@ export async function getAllEvents(filters = {}) {
   if (filters.startDate) {
     const filterStart = new Date(filters.startDate).getTime();
     results = results.filter(e => {
-      if (!e.startDate) return false;
-      const eventStart = e.startDate.toMillis ? e.startDate.toMillis() : new Date(e.startDate).getTime();
-      return eventStart >= filterStart;
+      const start = e.startDate?.toDate ? e.startDate.toDate().getTime() : new Date(e.startDate).getTime();
+      return start >= filterStart;
     });
   }
   
   if (filters.endDate) {
     const filterEnd = new Date(filters.endDate).getTime();
     results = results.filter(e => {
-      if (!e.endDate) return false;
-      const eventEnd = e.endDate.toMillis ? e.endDate.toMillis() : new Date(e.endDate).getTime();
-      return eventEnd <= filterEnd;
+      const end = e.endDate?.toDate ? e.endDate.toDate().getTime() : new Date(e.endDate).getTime();
+      return end <= filterEnd;
     });
   }
   
@@ -242,24 +243,92 @@ export async function getAllEvents(filters = {}) {
 }
 
 /**
- * Updates status and notes for an event proposal.
- * If status becomes 'approved', sets the reportDueDate to event.endDate + 7 days.
+ * Updates status and notes for an event proposal with dual approval tracking.
+ * Stage 1 or Stage 2 transitions to fully approved ONLY when both DOSW and StuCo approve.
  */
-export async function updateEventStatus(eventId, status, reviewNotes = '') {
+export async function updateEventStatus(eventId, actionStatus, reviewNotes = '', adminInfo = {}) {
   const eventRef = doc(db, 'events', eventId);
-  
-  const updates = {
-    status,
-    reviewNotes: reviewNotes || null,
-    reviewedAt: Timestamp.fromDate(new Date())
+  const snap = await getDoc(eventRef);
+  if (!snap.exists()) throw new Error('Event not found.');
+
+  const currentData = snap.data();
+  const role = adminInfo.role || 'super_admin';
+  const adminName = adminInfo.name || (role === 'dosw' ? "Dean of Students' Welfare" : role === 'stuco' ? "Students' Council" : "Super Admin");
+
+  const nowTs = Timestamp.fromDate(new Date());
+
+  const currentHistory = Array.isArray(currentData.reviewHistory) ? currentData.reviewHistory : [];
+  const currentStage1Approvals = currentData.stage1Approvals || {};
+  const currentStage2Approvals = currentData.stage2Approvals || {};
+
+  const newHistoryEntry = {
+    adminRole: role,
+    adminName: adminName,
+    status: actionStatus,
+    notes: reviewNotes || null,
+    timestamp: nowTs
   };
-  
-  if (status === 'approved') {
-    const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000); // 10 days from approval
-    updates.reportDueDate = Timestamp.fromDate(dueDateJS);
+
+  const updates = {
+    reviewNotes: reviewNotes || null,
+    reviewedByRole: role,
+    reviewedByName: adminName,
+    reviewedAt: nowTs,
+    reviewHistory: [...currentHistory, newHistoryEntry]
+  };
+
+  if (actionStatus === 'proposal_approved') {
+    // Stage 1 Approval
+    const updatedStage1 = {
+      ...currentStage1Approvals,
+      [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
+    };
+    updates.stage1Approvals = updatedStage1;
+
+    const doswApproved = updatedStage1.dosw?.approved || role === 'super_admin';
+    const stucoApproved = updatedStage1.stuco?.approved || role === 'super_admin';
+
+    if (doswApproved && stucoApproved) {
+      updates.status = 'proposal_approved';
+    } else {
+      updates.status = 'submitted';
+    }
+  } else if (actionStatus === 'approved') {
+    // Stage 2 Approval (Clearances Approved)
+    const updatedStage2 = {
+      ...currentStage2Approvals,
+      [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
+    };
+    updates.stage2Approvals = updatedStage2;
+
+    const doswApproved = updatedStage2.dosw?.approved || role === 'super_admin';
+    const stucoApproved = updatedStage2.stuco?.approved || role === 'super_admin';
+
+    if (doswApproved && stucoApproved) {
+      updates.status = 'approved';
+      const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+      updates.reportDueDate = Timestamp.fromDate(dueDateJS);
+    } else {
+      updates.status = 'permissions_submitted';
+    }
+  } else if (actionStatus === 'revision_needed') {
+    updates.status = 'revision_needed';
+    updates.stage1Approvals = {};
+  } else if (actionStatus === 'permissions_revision_needed') {
+    updates.status = 'permissions_revision_needed';
+    updates.stage2Approvals = {};
+  } else if (actionStatus === 'rejected') {
+    updates.status = 'rejected';
+  } else if (actionStatus === 'submitted') {
+    updates.status = 'submitted';
+    updates.stage1Approvals = {};
+    updates.stage2Approvals = {};
+  } else {
+    updates.status = actionStatus;
   }
-  
+
   await updateDoc(eventRef, updates);
+  return { ...currentData, ...updates };
 }
 
 /**
@@ -338,3 +407,45 @@ export async function uploadFile(file, folder) {
 }
 
 
+// ─── BLOCKED DATES ────────────────────────────────────────────────────────────
+
+/**
+ * Real-time subscription for all admin-blocked date ranges.
+ * Publicly readable — councils use this to see unavailable dates.
+ */
+export function subscribeToBlockedDates(callback) {
+  const q = query(
+    collection(db, 'blockedDates'),
+    orderBy('startDate', 'asc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const results = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+    callback(results);
+  }, (err) => {
+    console.error('Error in subscribeToBlockedDates:', err);
+  });
+}
+
+/**
+ * Creates a new blocked date range in Firestore.
+ * Only called from the admin panel (passcode-gated UI).
+ */
+export async function addBlockedDate({ startDate, endDate, reason }) {
+  const ref = doc(collection(db, 'blockedDates'));
+  await setDoc(ref, {
+    startDate: toTimestamp(startDate),
+    endDate: toTimestamp(endDate),
+    reason: reason || 'Blocked by Administration',
+    blockedBy: 'admin',
+    createdAt: serverTimestamp()
+  });
+  return ref.id;
+}
+
+/**
+ * Deletes a blocked date range document.
+ */
+export async function deleteBlockedDate(id) {
+  await deleteDoc(doc(db, 'blockedDates', id));
+}

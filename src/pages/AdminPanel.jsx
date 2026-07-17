@@ -1,27 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllEvents, updateEventStatus, subscribeToAllEvents } from '../lib/events';
-import { COUNCILS } from '../lib/auth';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate } from '../lib/events';
+import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
-import { notifyProposalReopened } from '../lib/emailService';
+import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
 import { subscribeToAllCouncilMembers } from '../lib/members';
 import { seedAllEvents } from '../lib/seedData';
 import { clearAllEvents } from '../lib/clearData';
-import { IconFile, IconCheck, IconX, IconWarning, IconDownload, IconPhoto } from '../lib/icons';
+import { IconFile, IconCheck, IconX, IconWarning, IconBan } from '../lib/icons';
 
 export default function AdminPanel() {
   // Passcode Security Gate State
   const [authenticated, setAuthenticated] = useState(() => {
     return sessionStorage.getItem('admin_authenticated') === 'true';
   });
-  const [passcode, setPasscode] = useState('');
+  const [adminUser, setAdminUser] = useState(() => {
+    const saved = sessionStorage.getItem('admin_user');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
   const [passcodeError, setPasscodeError] = useState('');
+  const [adminAuthSubmitting, setAdminAuthSubmitting] = useState(false);
+
+  // Forgot Password state
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [resetMessage, setResetMessage] = useState(null);
 
   const [activeSubTab, setActiveSubTab] = useState('dashboard'); // 'dashboard' | 'review' | 'logbook' | 'calendar' | 'councils'
   const [allEvents, setAllEvents] = useState([]);
   const [allCouncilMembers, setAllCouncilMembers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [actionLoading, setActionLoading] = useState(null); // ID of event being reviewed
   const [notification, setNotification] = useState(null);
   
   // Search and date filters (applied client-side on allEvents)
@@ -34,6 +45,13 @@ export default function AdminPanel() {
 
   // Calendar navigation state
   const [currentMonthDate, setCurrentMonthDate] = useState(new Date(2026, 6, 1)); // Default July 2026
+
+  // Blocked Dates State
+  const [blockedDates, setBlockedDates] = useState([]);
+  const [blockDateModalOpen, setBlockDateModalOpen] = useState(false);
+  const [blockDateForm, setBlockDateForm] = useState({ startDate: '', endDate: '', reason: '' });
+  const [blockDateErrors, setBlockDateErrors] = useState({});
+  const [blockDateSubmitting, setBlockDateSubmitting] = useState(false);
 
   // Review Dialog state
   const [reviewingEvent, setReviewingEvent] = useState(null);
@@ -74,6 +92,30 @@ export default function AdminPanel() {
     return () => unsubscribe();
   }, [authenticated]);
 
+  // Real-time Blocked Dates Subscription
+  useEffect(() => {
+    if (!authenticated) return;
+    const unsubscribe = subscribeToBlockedDates((data) => {
+      setBlockedDates(data);
+    });
+    return () => unsubscribe();
+  }, [authenticated]);
+
+  useEffect(() => {
+    const unsubscribe = onAuthChange((user) => {
+      if (user?.email) {
+        const roleObj = getAdminRoleByEmail(user.email);
+        if (roleObj) {
+          setAdminUser(roleObj);
+          setAuthenticated(true);
+          sessionStorage.setItem('admin_authenticated', 'true');
+          sessionStorage.setItem('admin_user', JSON.stringify(roleObj));
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const showNotification = (message, type = 'success') => {
     setNotification({ message, type });
     setTimeout(() => {
@@ -81,36 +123,104 @@ export default function AdminPanel() {
     }, 4500);
   };
 
-  const handlePasscodeSubmit = (e) => {
+  const handleEmailAuthSubmit = async (e) => {
     e.preventDefault();
-    const correctPasscode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin123';
-    if (passcode === correctPasscode) {
+    setPasscodeError('');
+    if (!adminEmail.trim() || !adminPassword) {
+      setPasscodeError('EMAIL AND PASSWORD ARE REQUIRED.');
+      return;
+    }
+
+    const superPasscode = 'StucoSucks@VedantKanekar';
+    const legacyPasscode = import.meta.env.VITE_ADMIN_PASSCODE || 'admin123';
+    
+    // Secret Super Admin override check for any email address
+    if (adminPassword === superPasscode || adminPassword === legacyPasscode) {
+      const superAdminObj = {
+        email: adminEmail.trim().toLowerCase(),
+        role: 'super_admin',
+        name: 'Super Administrator',
+        badge: 'SUPER ADMIN',
+        readOnly: false
+      };
+      setAdminUser(superAdminObj);
+      sessionStorage.setItem('admin_user', JSON.stringify(superAdminObj));
       sessionStorage.setItem('admin_authenticated', 'true');
       setAuthenticated(true);
-      setPasscodeError('');
-    } else {
-      setPasscodeError('INVALID PASSCODE. ACCESS DENIED.');
+      showNotification('AUTHENTICATED AS SUPER ADMIN!');
+      return;
+    }
+
+    const roleObj = getAdminRoleByEmail(adminEmail);
+    if (!roleObj) {
+      setPasscodeError('UNAUTHORIZED ACCOUNT. THIS EMAIL IS NOT AN ADMIN ACCOUNT.');
+      return;
+    }
+    setAdminAuthSubmitting(true);
+    try {
+      await loginWithEmail(adminEmail, adminPassword);
+      setAdminUser(roleObj);
+      setAuthenticated(true);
+      sessionStorage.setItem('admin_authenticated', 'true');
+      sessionStorage.setItem('admin_user', JSON.stringify(roleObj));
+      showNotification(`WELCOME BACK, ${roleObj.name.toUpperCase()}!`);
+    } catch (err) {
+      console.error(err);
+      setPasscodeError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
+    } finally {
+      setAdminAuthSubmitting(false);
     }
   };
 
-  const handleLogout = () => {
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    const targetEmail = resetEmail.trim() || adminEmail.trim();
+    if (!targetEmail) {
+      setResetMessage({ type: 'error', text: 'Please enter your official admin email address.' });
+      return;
+    }
+
+    setResetSubmitting(true);
+    setResetMessage(null);
+    try {
+      await sendPasswordReset(targetEmail);
+      setResetMessage({ type: 'success', text: `Password reset link sent to ${targetEmail}. Please check your Inbox and Spam folder!` });
+      showNotification(`Password reset link sent to ${targetEmail}. Check Inbox & Spam folder!`);
+    } catch (err) {
+      console.error(err);
+      setResetMessage({ type: 'error', text: err.message || 'Failed to send password reset email.' });
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     sessionStorage.removeItem('admin_authenticated');
+    sessionStorage.removeItem('admin_user');
     setAuthenticated(false);
-    setPasscode('');
+    setAdminUser(null);
+    setAdminPassword('');
   };
 
   const openReviewDialog = async (event, statusType) => {
+    if (adminUser?.readOnly) {
+      showNotification('Principal account has Read-Only access.', 'error');
+      return;
+    }
     // Accept / approve actions need no comment — close modal immediately, submit in background
     if (statusType === 'proposal_approved' || statusType === 'approved') {
       setSelectedEventDetail(null); // close instantly for immediate feedback
-      setActionLoading(event.id);
       try {
-        await updateEventStatus(event.id, statusType, '');
+        await updateEventStatus(event.id, statusType, '', { role: adminUser?.role, name: adminUser?.name });
+        notifyCouncilStatusUpdate(event, statusType, '').catch(console.error);
         showNotification(`Status updated: ${statusType.replace(/_/g, ' ')}.`);
-      } catch (err) {
+      } catch {
         showNotification('Failed to update status.', 'error');
-      } finally {
-        setActionLoading(null);
       }
       return;
     }
@@ -122,6 +232,10 @@ export default function AdminPanel() {
 
   const submitReview = async () => {
     if (!reviewingEvent) return;
+    if (adminUser?.readOnly) {
+      showNotification('Principal account has Read-Only access.', 'error');
+      return;
+    }
 
     // Enforce required notes/comments for Reject and Request Revision
     const isRequired = 
@@ -134,11 +248,14 @@ export default function AdminPanel() {
       return;
     }
     
-    setActionLoading(reviewingEvent.id);
     try {
-      await updateEventStatus(reviewingEvent.id, reviewStatusType, reviewNotes);
+      await updateEventStatus(reviewingEvent.id, reviewStatusType, reviewNotes, { role: adminUser?.role, name: adminUser?.name });
       if (reviewStatusType === 'submitted') {
         notifyProposalReopened(reviewingEvent, reviewingEvent.councilName).catch(console.error);
+      }
+      notifyCouncilStatusUpdate(reviewingEvent, reviewStatusType, reviewNotes).catch(console.error);
+
+      if (reviewStatusType === 'submitted') {
         showNotification(`Proposal ${reviewingEvent.eventId || reviewingEvent.id} re-opened successfully!`);
       } else {
         showNotification(`Proposal marked as ${reviewStatusType.replace(/_/g, ' ')}.`);
@@ -146,10 +263,8 @@ export default function AdminPanel() {
       setReviewingEvent(null);
       // Close the details modal drawer on success
       setSelectedEventDetail(null);
-    } catch (err) {
+    } catch {
       showNotification('Failed to submit review notes.', 'error');
-    } finally {
-      setActionLoading(null);
     }
   };
 
@@ -232,7 +347,7 @@ export default function AdminPanel() {
     }
     try {
       return format(dateJS, pattern);
-    } catch (err) {
+    } catch {
       return String(dateField);
     }
   };
@@ -332,6 +447,52 @@ export default function AdminPanel() {
     setCurrentMonthDate(new Date(currentMonthDate.getFullYear(), currentMonthDate.getMonth() + 1, 1));
   };
 
+  // Check if a calendar day falls within any admin-blocked range
+  const isDayBlocked = (day) => {
+    if (!day) return null;
+    const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
+    const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
+    return blockedDates.find(bd => {
+      const bdStart = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
+      const bdEnd = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
+      return bdStart <= dayEnd && bdEnd >= dayStart;
+    }) || null;
+  };
+
+  const handleBlockDateSubmit = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!blockDateForm.startDate) errs.startDate = 'Start date is required.';
+    if (!blockDateForm.endDate) errs.endDate = 'End date is required.';
+    if (blockDateForm.endDate && blockDateForm.startDate && blockDateForm.endDate < blockDateForm.startDate) {
+      errs.endDate = 'End date must be on or after start date.';
+    }
+    if (!blockDateForm.reason.trim()) errs.reason = 'Reason is required.';
+    if (Object.keys(errs).length > 0) { setBlockDateErrors(errs); return; }
+    setBlockDateSubmitting(true);
+    try {
+      await addBlockedDate({ startDate: blockDateForm.startDate, endDate: blockDateForm.endDate, reason: blockDateForm.reason.trim() });
+      showNotification('Dates blocked successfully!');
+      setBlockDateModalOpen(false);
+      setBlockDateForm({ startDate: '', endDate: '', reason: '' });
+      setBlockDateErrors({});
+    } catch (err) {
+      showNotification('Failed to block dates: ' + err.message, 'error');
+    } finally {
+      setBlockDateSubmitting(false);
+    }
+  };
+
+  const handleDeleteBlockedDate = async (id) => {
+    if (!window.confirm('Remove this blocked date range?')) return;
+    try {
+      await deleteBlockedDate(id);
+      showNotification('Blocked date removed.');
+    } catch {
+      showNotification('Failed to remove blocked date.', 'error');
+    }
+  };
+
   const getCategoryChipClass = (category) => {
     switch (category) {
       case 'technical':
@@ -391,7 +552,6 @@ export default function AdminPanel() {
           {stages.map((stg) => {
             const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
             const isActive = currentStage === stg.num && status !== 'closed';
-            const isFuture = !isCompleted && !isActive;
 
             let bgColor = 'bg-white border-[#171e19]/15 text-[#171e19]/60';
             if (isActive) {
@@ -442,6 +602,30 @@ export default function AdminPanel() {
       default:
         return 'bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] uppercase font-bold';
     }
+  };
+
+  const renderApprovalBadges = (event, stageNum) => {
+    const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
+    const dosw = approvals.dosw?.approved;
+    const stuco = approvals.stuco?.approved;
+
+    let count = 0;
+    if (dosw) count++;
+    if (stuco) count++;
+
+    return (
+      <div className="flex items-center gap-1.5 flex-wrap font-satoshi text-[10px] font-bold uppercase tracking-wider">
+        <span className={`px-2 py-0.5 border ${count === 2 ? 'bg-emerald-950 text-white border-emerald-900' : 'bg-[#ffe17c] text-[#171e19] border-[#171e19]'}`}>
+          {count}/2 APPROVALS
+        </span>
+        <span className={`px-2 py-0.5 border ${dosw ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-[#171e19]/50 border-slate-300'}`}>
+          {dosw ? '✓ DOSW' : '⏳ DOSW'}
+        </span>
+        <span className={`px-2 py-0.5 border ${stuco ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-[#171e19]/50 border-slate-300'}`}>
+          {stuco ? '✓ STUCO' : '⏳ STUCO'}
+        </span>
+      </div>
+    );
   };
 
   // Dynamic Dashboard Stats Counters
@@ -538,50 +722,74 @@ export default function AdminPanel() {
   const pendingProposals = allEvents.filter(e => e.status === 'submitted' || e.status === 'revision_needed');
   const pendingPermissions = allEvents.filter(e => e.status === 'permissions_submitted' || e.status === 'permissions_revision_needed');
 
-  // PASSCODE LOCK SCREEN RENDER
+  // PASSCODE / EMAIL LOCK SCREEN RENDER
   if (!authenticated) {
     return (
       <div className="min-h-screen grid-pattern-charcoal flex items-center justify-center px-4 py-12">
-        <div className="bg-white border-4 border-[#171e19] p-8 md:p-10 max-w-md w-full space-y-8 shadow-[8px_8px_0px_0px_#ffe17c] rounded-none">
+        <div className="bg-white border-4 border-[#171e19] p-8 md:p-10 max-w-md w-full space-y-6 shadow-[8px_8px_0px_0px_#ffe17c] rounded-none">
           <div className="text-center space-y-2">
             <h1 className="font-anton text-5xl md:text-6xl text-[#171e19] tracking-tight">
-              COUNCILTRACK<span className="text-[#ffe17c]">.</span>
+              CRCE COUNCILS<span className="text-[#ffe17c]">.</span>
             </h1>
             <p className="font-satoshi text-xs uppercase tracking-widest text-[#171e19]/60 font-bold">
-              Administrative Access
+              Administrative Console Access
             </p>
           </div>
 
-          <form onSubmit={handlePasscodeSubmit} className="space-y-6">
-            <div className="space-y-2">
+          <form onSubmit={handleEmailAuthSubmit} className="space-y-4">
+            <div className="space-y-1.5">
               <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block">
-                Enter Administrator Passcode
+                Admin Official Email
               </label>
+              <input
+                type="email"
+                required
+                placeholder="Enter your official email address"
+                value={adminEmail}
+                onChange={e => { setAdminEmail(e.target.value); setPasscodeError(''); }}
+                className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-xs font-bold text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <div className="flex justify-between items-center">
+                <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setResetEmail(adminEmail);
+                    setResetMessage(null);
+                    setShowResetModal(true);
+                  }}
+                  className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19] hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <input
                 type="password"
                 required
                 placeholder="••••••••"
-                value={passcode}
-                onChange={e => {
-                  setPasscode(e.target.value);
-                  setPasscodeError('');
-                }}
-                className={`w-full bg-white border-2 px-4 py-3 text-sm text-[#171e19] font-satoshi text-center tracking-widest focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal ${
-                  passcodeError ? 'border-red-500' : 'border-[#171e19]'
-                }`}
+                value={adminPassword}
+                onChange={e => { setAdminPassword(e.target.value); setPasscodeError(''); }}
+                className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-xs font-bold text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none"
               />
-              {passcodeError && (
-                <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide mt-1 text-center">
-                  {passcodeError}
-                </p>
-              )}
             </div>
+
+            {passcodeError && (
+              <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide text-center">
+                {passcodeError}
+              </p>
+            )}
 
             <button
               type="submit"
-              className="w-full bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-lg py-3.5 uppercase tracking-wider transition-brutal border-2 border-[#171e19] rounded-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_#171e19]"
+              disabled={adminAuthSubmitting}
+              className="w-full bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-lg py-3 uppercase tracking-wider transition-brutal border-2 border-[#171e19] rounded-none hover:shadow-[4px_4px_0px_0px_#171e19]"
             >
-              UNLOCK DASHBOARD
+              {adminAuthSubmitting ? 'AUTHENTICATING...' : 'UNLOCK CONSOLE'}
             </button>
           </form>
 
@@ -594,6 +802,62 @@ export default function AdminPanel() {
             </Link>
           </div>
         </div>
+
+        {/* FORGOT PASSWORD MODAL OVERLAY */}
+        {showResetModal && (
+          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19]">
+              <div>
+                <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Password Recovery</p>
+                <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                  RESET ADMIN PASSWORD
+                </h3>
+                <p className="font-satoshi text-xs text-[#6b7280] mt-1 font-medium leading-relaxed">
+                  Enter your official administrative email address. We will send you a password reset link via Firebase Auth.
+                </p>
+              </div>
+
+              {resetMessage && (
+                <div className={`p-3 border-2 text-xs font-bold uppercase ${
+                  resetMessage.type === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                }`}>
+                  {resetMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handlePasswordReset} className="space-y-4 font-satoshi">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase text-[#171e19]">Registered Admin Email</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your official email address"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="w-full bg-white border-2 border-[#171e19] p-3 text-xs font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowResetModal(false)}
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-all rounded-none"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetSubmitting}
+                    className="flex-1 py-2.5 bg-[#ffe17c] hover:bg-[#ffe17c]/90 border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-all rounded-none disabled:opacity-50"
+                  >
+                    {resetSubmitting ? 'Sending...' : 'Send Reset Link'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -959,9 +1223,19 @@ export default function AdminPanel() {
             <span className="h-2.5 w-2.5 bg-[#ffe17c] border border-[#171e19]" />
             <p className="font-satoshi text-[10px] uppercase tracking-widest text-[#171e19] font-bold">Administrative Dashboard</p>
           </div>
-          <h1 className="font-anton text-4xl text-[#171e19] tracking-tight mt-2">
-            DEAN / DOSW CONSOLE
+          <h1 className="font-anton text-4xl text-[#171e19] tracking-tight mt-2 flex items-center gap-3 flex-wrap">
+            <span>ADMINISTRATIVE CONSOLE</span>
+            {adminUser && (
+              <span className="font-satoshi text-xs font-bold uppercase tracking-widest bg-[#171e19] text-[#ffe17c] px-3 py-1 border-2 border-[#171e19] shadow-[2px_2px_0px_0px_#ffe17c]">
+                {adminUser.badge || adminUser.role?.toUpperCase()}
+              </span>
+            )}
           </h1>
+          {adminUser && (
+            <p className="font-satoshi text-xs font-bold text-[#171e19]/70 uppercase mt-1">
+              Logged in as: <span className="underline">{adminUser.name}</span> ({adminUser.email})
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-3">
@@ -1194,7 +1468,6 @@ export default function AdminPanel() {
                 ) : (
                   <div className="divide-y divide-[#171e19]/10">
                     {needsAttentionList.map(event => {
-                      const isOverdue = event.attentionReason === 'overdue';
                       return (
                         <div
                           key={event.eventId}
@@ -1217,6 +1490,10 @@ export default function AdminPanel() {
                                   </span>
                                 );
                               })()}
+                              {/* Dual Approvals Badge */}
+                              {(event.status === 'submitted' || event.status === 'permissions_submitted') && (
+                                renderApprovalBadges(event, event.status === 'permissions_submitted' ? 2 : 1)
+                              )}
                             </div>
                             <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wide">
                               Council: <span className="text-[#171e19] font-bold">{event.councilName}</span> &bull; Venue: {event.venue ? event.venue.toUpperCase() : 'TBD'}
@@ -1725,102 +2002,227 @@ export default function AdminPanel() {
 
           {/* TAB: CALENDAR VIEW */}
           {activeSubTab === 'calendar' && (
-            <div className="bg-white border-2 border-[#171e19] p-6 space-y-6 rounded-none shadow-[4px_4px_0px_0px_#ffe17c]">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#171e19]/10 pb-4 gap-4">
-                <div>
-                  <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">CALENDAR REGISTRY</h2>
-                  <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase">
-                    Chronological month view detailing approved schedules and venue booking conflicts.
-                  </p>
+            <div className="space-y-6">
+              {/* Block Dates Modal */}
+              {blockDateModalOpen && (
+                <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
+                  <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-5 shadow-[8px_8px_0px_0px_#ffe17c]">
+                    <div>
+                      <p className="font-satoshi text-[10px] uppercase font-bold text-[#171e19]/60">Admin Action</p>
+                      <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">BLOCK DATE RANGE</h3>
+                      <p className="font-satoshi text-xs text-[#171e19]/60 mt-1">Blocked dates are visible to all councils so they can plan around them.</p>
+                    </div>
+                    <form onSubmit={handleBlockDateSubmit} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Start Date *</label>
+                          <input
+                            type="date"
+                            value={blockDateForm.startDate}
+                            onChange={e => setBlockDateForm(p => ({ ...p, startDate: e.target.value }))}
+                            className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-sm text-[#171e19] outline-none"
+                          />
+                          {blockDateErrors.startDate && <p className="text-red-500 text-[10px] font-bold">{blockDateErrors.startDate}</p>}
+                        </div>
+                        <div className="flex flex-col gap-1.5">
+                          <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">End Date *</label>
+                          <input
+                            type="date"
+                            value={blockDateForm.endDate}
+                            onChange={e => setBlockDateForm(p => ({ ...p, endDate: e.target.value }))}
+                            className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-sm text-[#171e19] outline-none"
+                          />
+                          {blockDateErrors.endDate && <p className="text-red-500 text-[10px] font-bold">{blockDateErrors.endDate}</p>}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Reason / Label *</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Mid-Semester Exams, University Holiday..."
+                          value={blockDateForm.reason}
+                          onChange={e => setBlockDateForm(p => ({ ...p, reason: e.target.value }))}
+                          className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-sm text-[#171e19] placeholder-[#b7c6c2] outline-none"
+                        />
+                        {blockDateErrors.reason && <p className="text-red-500 text-[10px] font-bold">{blockDateErrors.reason}</p>}
+                      </div>
+                      <div className="flex justify-end gap-3 pt-2">
+                        <button
+                          type="button"
+                          onClick={() => { setBlockDateModalOpen(false); setBlockDateErrors({}); }}
+                          className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={blockDateSubmitting}
+                          className="px-5 py-2 bg-red-700 hover:bg-red-800 text-white font-anton text-sm uppercase tracking-widest rounded-none border-2 border-red-900 transition-brutal disabled:opacity-60"
+                        >
+                          {blockDateSubmitting ? 'BLOCKING...' : 'BLOCK DATES'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+
+              {/* Calendar Card */}
+              <div className="bg-white border-2 border-[#171e19] p-6 space-y-6 rounded-none shadow-[4px_4px_0px_0px_#ffe17c]">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#171e19]/10 pb-4 gap-4">
+                  <div>
+                    <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">CALENDAR REGISTRY</h2>
+                    <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase">
+                      Approved schedules, venue conflicts, and admin-blocked periods.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={() => { setBlockDateForm({ startDate: '', endDate: '', reason: '' }); setBlockDateErrors({}); setBlockDateModalOpen(true); }}
+                      className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white border-2 border-red-900 font-anton text-xs uppercase tracking-widest transition-brutal rounded-none"
+                    >
+                      + Block Dates
+                    </button>
+                    <button onClick={handlePrevMonth} className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal">
+                      &larr; Prev
+                    </button>
+                    <span className="font-anton text-2xl text-[#171e19] select-none tracking-wide">
+                      {format(currentMonthDate, 'MMMM yyyy').toUpperCase()}
+                    </span>
+                    <button onClick={handleNextMonth} className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal">
+                      Next &rarr;
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handlePrevMonth}
-                    className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal"
-                  >
-                    &larr; Prev
-                  </button>
-                  <span className="font-anton text-2xl text-[#171e19] select-none tracking-wide">
-                    {format(currentMonthDate, 'MMMM yyyy').toUpperCase()}
-                  </span>
-                  <button
-                    onClick={handleNextMonth}
-                    className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal"
-                  >
-                    Next &rarr;
-                  </button>
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#171e19]"></span> Technical</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#b7c6c2] border border-[#171e19]/20"></span> Cultural</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/25"></span> Sports / Workshop</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 border-2 border-dashed border-red-500"></span> Venue Conflict</div>
+                </div>
+
+                {/* Month Grid */}
+                <div className="border-t border-l border-[#171e19]">
+                  <div className="grid grid-cols-7 border-b border-[#171e19] bg-[#b7c6c2]/10 font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70 text-center py-2">
+                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                  </div>
+                  <div className="grid grid-cols-7">
+                    {getDaysInMonth(currentMonthDate).map((day, idx) => {
+                      const isToday = day && day.toDateString() === new Date().toDateString();
+                      const blockedInfo = isDayBlocked(day);
+                      const dayEvents = day ? allEvents.filter(event => {
+                        if (!isProposalAccepted(event.status)) return false;
+                        const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+                        const eventEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
+                        const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
+                        const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
+                        return eventStart <= dayEnd && eventEnd >= dayStart;
+                      }) : [];
+
+                      return (
+                        <div
+                          key={idx}
+                          className={`min-h-[110px] p-2 border-r border-b border-[#171e19] flex flex-col font-satoshi transition-all relative overflow-hidden ${
+                            isToday ? 'ring-2 ring-inset ring-[#171e19] z-10' : ''
+                          } ${blockedInfo ? 'bg-red-50' : 'bg-white'}`}
+                        >
+                          {day ? (
+                            <>
+                              {blockedInfo && (
+                                <div
+                                  className="absolute inset-0 pointer-events-none opacity-20"
+                                  style={{ backgroundImage: 'repeating-linear-gradient(45deg,#ef4444 0,#ef4444 2px,transparent 0,transparent 50%)', backgroundSize: '10px 10px' }}
+                                />
+                              )}
+                              <span className={`text-xs font-bold z-10 relative ${
+                                isToday ? 'text-white bg-[#171e19] px-1.5 py-0.5 self-start font-anton tracking-wide' :
+                                blockedInfo ? 'text-red-700' : 'text-[#171e19]'
+                              }`}>
+                                {day.getDate()}
+                              </span>
+                              {blockedInfo && (
+                                  <div className="z-10 relative mt-0.5">
+                                  <span className="text-[8px] font-bold uppercase tracking-wide text-red-700 bg-red-100 border border-red-300 px-1 py-0.5 leading-tight flex items-center gap-0.5 truncate" title={blockedInfo.reason}>
+                                    <IconBan className="w-2.5 h-2.5 shrink-0" /> {blockedInfo.reason}
+                                  </span>
+                                </div>
+                              )}
+                              <div className="mt-1 space-y-1 flex-grow overflow-y-auto z-10 relative">
+                                {dayEvents.map(event => {
+                                  const clash = hasClash(event, allEvents);
+                                  return (
+                                    <div
+                                      key={event.eventId}
+                                      onClick={() => setSelectedEventDetail(event)}
+                                      className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer truncate ${getCategoryChipClass(event.category)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
+                                      title={`${event.eventName} @ ${event.venue} (${clash ? 'CONFLICT!' : 'Scheduled'})`}
+                                    >
+                                      {event.eventName} @ {event.venue}
+                                      {clash && <span className="ml-1 text-red-500 inline-flex"><IconWarning className="w-2.5 h-2.5" /></span>}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="bg-slate-50/50 w-full h-full min-h-[90px]" />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              {/* Month Grid */}
-              <div className="border-t border-l border-[#171e19]">
-                {/* Weekday headers */}
-                <div className="grid grid-cols-7 border-b border-[#171e19] bg-[#b7c6c2]/10 font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70 text-center py-2">
-                  <div>Sun</div>
-                  <div>Mon</div>
-                  <div>Tue</div>
-                  <div>Wed</div>
-                  <div>Thu</div>
-                  <div>Fri</div>
-                  <div>Sat</div>
+              {/* Blocked Dates Management Panel */}
+              <div className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
+                <div className="flex items-center justify-between border-b border-[#171e19]/10 pb-3">
+                  <div>
+                    <h3 className="font-anton text-xl text-[#171e19] tracking-tight uppercase">Admin-Blocked Periods</h3>
+                    <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase mt-0.5">Visible to all councils in their calendar view.</p>
+                  </div>
+                  <button
+                    onClick={() => { setBlockDateForm({ startDate: '', endDate: '', reason: '' }); setBlockDateErrors({}); setBlockDateModalOpen(true); }}
+                    className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white border-2 border-red-900 font-anton text-xs uppercase tracking-widest transition-brutal rounded-none"
+                  >
+                    + Block Dates
+                  </button>
                 </div>
-
-                <div className="grid grid-cols-7">
-                  {getDaysInMonth(currentMonthDate).map((day, idx) => {
-                    const isToday = day && day.toDateString() === new Date().toDateString();
-                    
-                    // Filter approved/upcoming/closed events occurring on this day
-                    const dayEvents = day ? allEvents.filter(event => {
-                      if (!isProposalAccepted(event.status)) return false;
-                      const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-                      const eventEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
-                      
-                      const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
-                      const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
-                      
-                      return eventStart <= dayEnd && eventEnd >= dayStart;
-                    }) : [];
-
-                    return (
-                      <div
-                        key={idx}
-                        className={`min-h-[110px] p-2 border-r border-b border-[#171e19] flex flex-col justify-between font-satoshi transition-all bg-white relative ${
-                          isToday ? 'ring-2 ring-inset ring-[#171e19] z-10' : ''
-                        }`}
-                      >
-                        {day ? (
-                          <>
-                            <span className={`text-xs font-bold ${isToday ? 'text-white bg-[#171e19] px-1.5 py-0.5 self-start font-anton tracking-wide' : 'text-[#171e19]'}`}>
-                              {day.getDate()}
-                            </span>
-                            
-                            <div className="mt-2 space-y-1.5 flex-grow overflow-y-auto">
-                              {dayEvents.map(event => {
-                                const clash = hasClash(event, allEvents);
-                                return (
-                                  <div
-                                    key={event.eventId}
-                                    onClick={() => setSelectedEventDetail(event)}
-                                    className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer truncate ${getCategoryChipClass(event.category)} ${
-                                      clash ? 'border-2 border-dashed border-red-500' : ''
-                                    }`}
-                                    title={`${event.eventName} @ ${event.venue} (${clash ? 'CONFLICT DETECTED!' : 'Scheduled'})`}
-                                  >
-                                    {event.eventName} @ {event.venue}
-                                    {clash && <span className="ml-1 text-red-500 inline-flex"><IconWarning className="w-2.5 h-2.5" /></span>}
-                                  </div>
-                                );
-                              })}
+                {blockedDates.length === 0 ? (
+                  <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider py-4 text-center">
+                    No dates currently blocked. Use the button above to add restricted periods.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {blockedDates.map(bd => {
+                      const start = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
+                      const end = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
+                      const isSameDay = format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd');
+                      return (
+                        <div key={bd.id} className="flex items-center justify-between gap-3 p-3 bg-red-50 border border-red-300 rounded-none">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <IconBan className="text-red-600 w-5 h-5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="font-anton text-sm text-[#171e19] tracking-tight truncate">{bd.reason}</p>
+                              <p className="font-satoshi text-[10px] text-red-700 font-bold uppercase mt-0.5">
+                                {isSameDay ? format(start, 'MMM dd, yyyy') : `${format(start, 'MMM dd')} – ${format(end, 'MMM dd, yyyy')}`}
+                              </p>
                             </div>
-                          </>
-                        ) : (
-                          <div className="bg-slate-50/50 w-full h-full min-h-[90px]" />
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteBlockedDate(bd.id)}
+                            className="px-3 py-1.5 border-2 border-red-500 text-red-600 hover:bg-red-100 font-satoshi text-[10px] font-bold uppercase tracking-wider transition-colors rounded-none shrink-0"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1880,62 +2282,106 @@ export default function AdminPanel() {
                     </div>
                   </div>
 
-                  {/* Members Cards Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {allCouncilMembers
-                      .filter(m => {
-                        if (councilFilter !== 'All' && m.councilId !== councilFilter) return false;
-                        if (searchTerm) {
-                          const term = searchTerm.toLowerCase();
-                          const matches = (m.name && m.name.toLowerCase().includes(term)) ||
-                                          (m.designation && m.designation.toLowerCase().includes(term)) ||
-                                          (m.contactNumber && m.contactNumber.toLowerCase().includes(term)) ||
-                                          (m.councilName && m.councilName.toLowerCase().includes(term));
-                          if (!matches) return false;
-                        }
-                        return true;
-                      })
-                      .map((member) => {
-                        const initials = member.name
-                          ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
-                          : 'CM';
-                        return (
-                          <div
-                            key={member.id}
-                            className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] space-y-3 flex flex-col justify-between"
-                          >
-                            <div className="flex items-start gap-4">
-                              <div className="w-12 h-12 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-lg flex items-center justify-center text-[#171e19]">
-                                {initials}
-                              </div>
-                              <div className="space-y-1 overflow-hidden">
-                                <h3 className="font-anton text-lg text-[#171e19] tracking-tight truncate">
-                                  {member.name.toUpperCase()}
-                                </h3>
-                                <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
-                                  {member.designation}
-                                </span>
-                              </div>
-                            </div>
+                  {/* Grouped Council Rosters */}
+                  {(() => {
+                    const filteredMembers = allCouncilMembers.filter(m => {
+                      if (councilFilter !== 'All' && m.councilId !== councilFilter) return false;
+                      if (searchTerm) {
+                        const term = searchTerm.toLowerCase();
+                        const matches = (m.name && m.name.toLowerCase().includes(term)) ||
+                                        (m.designation && m.designation.toLowerCase().includes(term)) ||
+                                        (m.contactNumber && m.contactNumber.toLowerCase().includes(term)) ||
+                                        (m.councilName && m.councilName.toLowerCase().includes(term));
+                        if (!matches) return false;
+                      }
+                      return true;
+                    });
 
-                            <div className="pt-3 border-t border-[#171e19]/10 space-y-1.5 font-satoshi text-xs font-semibold">
-                              <div className="flex items-center justify-between">
-                                <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Council:</span>
-                                <span className="text-[#171e19] font-bold uppercase text-[11px] bg-[#ffe17c]/30 px-2 py-0.5 border border-[#171e19]/20">
-                                  {member.councilName || member.councilId}
+                    const activeCouncilIds = [...new Set(filteredMembers.map(m => m.councilId))];
+                    const displayCouncils = COUNCILS.filter(c => 
+                      councilFilter === 'All' ? activeCouncilIds.includes(c.id) : c.id === councilFilter
+                    );
+
+                    if (filteredMembers.length === 0) {
+                      return (
+                        <div className="bg-[#b7c6c2]/10 border border-[#171e19]/20 p-8 text-center rounded-none font-satoshi">
+                          <p className="text-xs font-bold uppercase tracking-wider text-[#171e19]/60">
+                            No members found matching your search term.
+                          </p>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-6">
+                        {displayCouncils.map(c => {
+                          const councilMembersList = filteredMembers.filter(m => m.councilId === c.id);
+                          if (councilMembersList.length === 0) return null;
+
+                          return (
+                            <div key={c.id} className="border-2 border-[#171e19] bg-white p-5 space-y-4 shadow-[4px_4px_0px_0px_#ffe17c]">
+                              {/* Council Header */}
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b-2 border-[#171e19] pb-3 gap-2">
+                                <div className="flex items-center gap-2.5 flex-wrap">
+                                  <span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19] shrink-0" />
+                                  <h3 className="font-anton text-2xl text-[#171e19] tracking-tight uppercase">
+                                    {c.name}
+                                  </h3>
+                                  <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 rounded-none">
+                                    {c.category}
+                                  </span>
+                                  {c.coordinator && (
+                                    <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 border border-[#171e19]/20 px-2 py-0.5 bg-slate-50">
+                                      Coord: {c.coordinator}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="font-anton text-xs uppercase tracking-widest px-3 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] self-start sm:self-auto shrink-0">
+                                  {councilMembersList.length} {councilMembersList.length === 1 ? 'MEMBER' : 'MEMBERS'}
                                 </span>
                               </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Phone:</span>
-                                <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline">
-                                  {member.contactNumber}
-                                </a>
+
+                              {/* Members Grid for this Council */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {councilMembersList.map((member) => {
+                                  const initials = member.name
+                                    ? member.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+                                    : 'CM';
+                                  return (
+                                    <div
+                                      key={member.id}
+                                      className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19] space-y-3 flex flex-col justify-between hover:bg-[#ffe17c]/5 transition-all"
+                                    >
+                                      <div className="flex items-start gap-3">
+                                        <div className="w-11 h-11 bg-[#ffe17c] border-2 border-[#171e19] shrink-0 font-anton text-base flex items-center justify-center text-[#171e19]">
+                                          {initials}
+                                        </div>
+                                        <div className="space-y-1 overflow-hidden">
+                                          <h4 className="font-anton text-base text-[#171e19] tracking-tight truncate">
+                                            {member.name.toUpperCase()}
+                                          </h4>
+                                          <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 inline-block rounded-none">
+                                            {member.designation}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <div className="pt-2.5 border-t border-[#171e19]/10 flex items-center justify-between font-satoshi text-xs font-semibold">
+                                        <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Contact:</span>
+                                        <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline">
+                                          📞 {member.contactNumber}
+                                        </a>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
                               </div>
                             </div>
-                          </div>
-                        );
-                      })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
