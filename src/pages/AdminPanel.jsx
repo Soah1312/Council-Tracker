@@ -468,6 +468,14 @@ export default function AdminPanel() {
     }
   };
 
+  const getEventStageChipClass = (status) => {
+    const isApproved = ['approved', 'report_pending', 'closed'].includes(status);
+    const isStage2 = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status);
+    if (isApproved) return 'bg-emerald-600 text-white';
+    if (isStage2) return 'bg-indigo-700 text-white';
+    return 'bg-[#ffe17c] text-[#171e19] border border-[#171e19]/35';
+  };
+
   const getCategoryChipClass = (category) => {
     switch (category) {
       case 'technical':
@@ -2113,9 +2121,9 @@ export default function AdminPanel() {
 
                 {/* Legend */}
                 <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
-                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#171e19]"></span> Technical</div>
-                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#b7c6c2] border border-[#171e19]/20"></span> Cultural</div>
-                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/25"></span> Sports / Workshop</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/35"></span> Stage 1 (Proposal)</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 2 (Clearances)</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Closed</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 border-2 border-dashed border-red-500"></span> Venue Conflict</div>
                 </div>
@@ -2179,7 +2187,7 @@ export default function AdminPanel() {
                                     <div
                                       key={event.eventId}
                                       onClick={() => setSelectedEventDetail(event)}
-                                      className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer break-words whitespace-normal leading-tight ${getCategoryChipClass(event.category)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
+                                      className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer break-words whitespace-normal leading-tight ${getEventStageChipClass(event.status)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
                                       title={`${event.eventName}${event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''} (${clash ? 'CONFLICT!' : 'Scheduled'})`}
                                     >
                                       {event.eventName}{event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''}
