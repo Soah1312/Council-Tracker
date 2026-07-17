@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useInView } from 'framer-motion';
 import {
-  Calendar as CalendarIcon, MapPin, Users, Trophy, Ticket, X,
-  Activity, CheckCircle, Clock, AlertCircle, Sparkles, CalendarDays, CircleCheckBig,
-  ChevronLeft, ChevronRight
+  CalendarIcon, MapPin, Users, Trophy, Ticket, X,
+  Activity, CheckCircle, Clock, AlertCircle, Sparkles,
+  CalendarDays, CircleCheckBig, ChevronLeft, ChevronRight,
+  ArrowRight, Zap, Shield, Globe, Star
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  addDays, addMonths, subMonths, isSameDay, isSameMonth, isToday,
-  isBefore, isAfter
+  addDays, addMonths, subMonths, isSameMonth, isToday, isAfter,
 } from 'date-fns';
 
-// ─── Council & Status Config ─────────────────────────────────────────────
+// ─── Config ─────────────────────────────────────────────────────────────────
 const COUNCIL_COLORS = {
   'ieee-wie': '#6366f1', 'csi': '#0ea5e9', 'acm': '#14b8a6', 'asme': '#f97316',
   'e-cell': '#8b5cf6', 'fsai': '#ec4899', 'team-robix': '#ef4444', 'team-abadha': '#f59e0b',
@@ -37,7 +37,6 @@ const toDate = (field) => {
   if (field.seconds) return new Date(field.seconds * 1000);
   return new Date(field);
 };
-
 const resolveStatus = (event) => {
   if (event.status === 'approved') {
     const end = toDate(event.endDate);
@@ -46,210 +45,181 @@ const resolveStatus = (event) => {
   return event.status;
 };
 
-// ─── Glassmorphism Stat Card ─────────────────────────────────────────────
-function StatCard({ icon: Icon, label, value, accentColor, loading, delay }) {
+// ─── Reusable Reveal Animation ───────────────────────────────────────────────
+function Reveal({ children, delay = 0, className = '' }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-80px' });
   return (
     <motion.div
-      initial={{ opacity: 0, y: 24 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
-      className="group relative overflow-hidden"
+      ref={ref}
+      initial={{ opacity: 0, y: 32 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.7, delay, ease: [0.23, 1, 0.32, 1] }}
+      className={className}
     >
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.12] via-white/[0.04] to-transparent p-[1px]">
-        <div className="w-full h-full rounded-2xl bg-[#0a0a0a]" />
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Stat Card ───────────────────────────────────────────────────────────────
+function StatCard({ icon: Icon, label, value, accent, loading, delay }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-60px' });
+  return (
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 28, scale: 0.96 }}
+      animate={inView ? { opacity: 1, y: 0, scale: 1 } : {}}
+      transition={{ duration: 0.6, delay, ease: [0.23, 1, 0.32, 1] }}
+      className="group relative"
+    >
+      {/* Gradient border */}
+      <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-br from-white/15 via-white/5 to-transparent">
+        <div className="w-full h-full rounded-2xl bg-[#080808]" />
       </div>
-      <div className="relative rounded-2xl bg-white/[0.03] backdrop-blur-xl p-6 md:p-7 transition-all duration-500 group-hover:bg-white/[0.05]">
-        <div
-          className="absolute -top-12 -right-12 w-32 h-32 rounded-full blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
-          style={{ background: accentColor }}
-        />
-        <div className="flex items-start justify-between mb-4 relative z-10">
-          <div className="w-9 h-9 rounded-xl bg-white/[0.06] border border-white/[0.06] flex items-center justify-center">
-            <Icon size={16} strokeWidth={2} style={{ color: accentColor }} />
+      {/* Hover glow blob */}
+      <div
+        className="absolute -inset-px rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none blur-xl"
+        style={{ background: `radial-gradient(circle at 50% 0%, ${accent}22 0%, transparent 70%)` }}
+      />
+      <div className="relative rounded-2xl bg-white/[0.025] backdrop-blur-xl p-7 group-hover:bg-white/[0.04] transition-colors duration-500">
+        <div className="flex items-center gap-3 mb-5">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/8"
+            style={{ background: `${accent}15` }}>
+            <Icon size={18} strokeWidth={1.75} style={{ color: accent }} />
           </div>
+          <span className="text-white/30 text-[11px] uppercase tracking-[0.18em] font-semibold">{label}</span>
         </div>
-        <div className="relative z-10">
-          <div
-            className="font-anton text-4xl md:text-5xl mb-1.5 tracking-tight"
-            style={{
-              background: `linear-gradient(135deg, #fff 30%, ${accentColor})`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            {loading ? '—' : value}
-          </div>
-          <div className="text-white/35 text-[11px] uppercase tracking-[0.15em] font-semibold">{label}</div>
+        <div className="font-anton text-5xl md:text-6xl tracking-tight"
+          style={{
+            background: `linear-gradient(135deg, #ffffff 20%, ${accent} 100%)`,
+            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          }}>
+          {loading ? '—' : value}
         </div>
       </div>
     </motion.div>
   );
 }
 
-// ─── Build calendar grid rows ─────────────────────────────────────────────
-function buildCalendarGrid(currentDate) {
-  const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
-  const gridStart = startOfWeek(monthStart, { weekStartsOn: 0 }); // Sunday
-  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+// ─── Feature Pill ────────────────────────────────────────────────────────────
+function FeaturePill({ icon: Icon, text, color }) {
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full border border-white/8 bg-white/[0.03] backdrop-blur-md">
+      <Icon size={14} style={{ color }} strokeWidth={2} />
+      <span className="text-white/60 text-xs font-semibold tracking-wide">{text}</span>
+    </div>
+  );
+}
 
+// ─── Floating Islands Calendar ────────────────────────────────────────────────
+function buildCalendarGrid(date) {
+  const start = startOfWeek(startOfMonth(date), { weekStartsOn: 0 });
+  const end = endOfWeek(endOfMonth(date), { weekStartsOn: 0 });
   const rows = [];
-  let day = gridStart;
-  while (!isAfter(day, gridEnd)) {
+  let d = start;
+  while (!isAfter(d, end)) {
     const week = [];
-    for (let i = 0; i < 7; i++) {
-      week.push(new Date(day));
-      day = addDays(day, 1);
-    }
+    for (let i = 0; i < 7; i++) { week.push(new Date(d)); d = addDays(d, 1); }
     rows.push(week);
   }
   return rows;
 }
 
-// ─── Floating Islands Calendar ────────────────────────────────────────────
 function FloatingCalendar({ events, onSelectEvent, loading }) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const today = new Date();
-
-  const rows = buildCalendarGrid(currentDate);
-
-  // Index events by date string (YYYY-MM-DD)
-  const eventsByDate = {};
+  const [month, setMonth] = useState(new Date());
+  const rows = buildCalendarGrid(month);
+  const byDate = {};
   events.forEach(ev => {
     if (!ev._startDate) return;
-    const key = format(ev._startDate, 'yyyy-MM-dd');
-    if (!eventsByDate[key]) eventsByDate[key] = [];
-    eventsByDate[key].push(ev);
+    const k = format(ev._startDate, 'yyyy-MM-dd');
+    (byDate[k] = byDate[k] || []).push(ev);
   });
-
-  const DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
     <div>
-      {/* Calendar Toolbar */}
-      <div className="flex items-center justify-between mb-6">
-        <button
-          onClick={() => setCurrentDate(d => subMonths(d, 1))}
-          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] transition-all duration-200"
-        >
+      {/* Toolbar */}
+      <div className="flex items-center justify-between mb-8">
+        <button onClick={() => setMonth(m => subMonths(m, 1))}
+          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
           <ChevronLeft size={16} />
         </button>
-
-        <h2 className="font-anton text-2xl md:text-3xl text-white tracking-wide">
-          {format(currentDate, 'MMMM yyyy').toUpperCase()}
-        </h2>
-
-        <button
-          onClick={() => setCurrentDate(d => addMonths(d, 1))}
-          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] transition-all duration-200"
-        >
+        <div className="text-center">
+          <h2 className="font-anton text-2xl md:text-3xl text-white tracking-wide">{format(month, 'MMMM').toUpperCase()}</h2>
+          <p className="text-white/25 text-sm font-medium">{format(month, 'yyyy')}</p>
+        </div>
+        <button onClick={() => setMonth(m => addMonths(m, 1))}
+          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
           <ChevronRight size={16} />
         </button>
       </div>
 
-      {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 gap-2 mb-2">
+      {/* DOW Headers */}
+      <div className="grid grid-cols-7 gap-2 mb-3">
         {DOW.map(d => (
-          <div key={d} className="text-center text-[10px] font-bold tracking-[0.15em] text-white/20 py-1">
-            {d}
-          </div>
+          <div key={d} className="text-center text-[10px] font-bold tracking-[0.18em] text-white/18 py-1 uppercase">{d}</div>
         ))}
       </div>
 
-      {/* Loading state */}
       {loading ? (
-        <div className="h-[520px] flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-[#ffe17c]/40 border-t-[#ffe17c] rounded-full animate-spin" />
+        <div className="h-96 flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-[#ffe17c]/30 border-t-[#ffe17c] rounded-full animate-spin" />
         </div>
       ) : (
-        /* Floating Island Grid */
         <div className="flex flex-col gap-2">
-          {rows.map((week, wIdx) => (
-            <div key={wIdx} className="grid grid-cols-7 gap-2">
-              {week.map((day, dIdx) => {
-                const key = format(day, 'yyyy-MM-dd');
-                const dayEvents = eventsByDate[key] || [];
-                const isCurrentMonth = isSameMonth(day, currentDate);
-                const isTodayDay = isToday(day);
-                const hasEvents = dayEvents.length > 0;
-                const visibleEvents = dayEvents.slice(0, 2);
-                const overflow = dayEvents.length - 2;
-
+          {rows.map((week, wi) => (
+            <div key={wi} className="grid grid-cols-7 gap-2">
+              {week.map((day, di) => {
+                const k = format(day, 'yyyy-MM-dd');
+                const dayEvs = byDate[k] || [];
+                const inMonth = isSameMonth(day, month);
+                const todayDay = isToday(day);
+                const visible = dayEvs.slice(0, 2);
+                const more = dayEvs.length - 2;
                 return (
-                  <motion.div
-                    key={dIdx}
-                    whileHover={isCurrentMonth ? { scale: 1.04, zIndex: 10 } : {}}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    className="relative"
-                    style={{ zIndex: 1 }}
+                  <motion.div key={di}
+                    whileHover={inMonth ? { scale: 1.05, zIndex: 20 } : {}}
+                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                    style={{ position: 'relative', zIndex: 1 }}
                   >
-                    <div
-                      className={`
-                        relative rounded-xl p-2 min-h-[80px] sm:min-h-[96px] flex flex-col gap-1
-                        transition-colors duration-200 cursor-default
-                        ${isTodayDay
-                          ? 'bg-[#ffe17c]/[0.08] border border-[#ffe17c]/30 shadow-[0_0_20px_rgba(255,225,124,0.1),inset_0_0_20px_rgba(255,225,124,0.03)]'
-                          : isCurrentMonth
-                            ? hasEvents
-                              ? 'bg-white/[0.04] border border-white/[0.07] hover:bg-white/[0.07] hover:border-white/[0.12]'
-                              : 'bg-white/[0.025] border border-white/[0.04] hover:bg-white/[0.04]'
-                            : 'bg-white/[0.01] border border-white/[0.02]'
-                        }
-                      `}
-                    >
-                      {/* Date number */}
-                      <div className="flex justify-end">
-                        <span
-                          className={`
-                            text-[11px] font-bold leading-none w-6 h-6 flex items-center justify-center rounded-lg
-                            ${isTodayDay
-                              ? 'bg-[#ffe17c] text-black font-black shadow-[0_0_12px_rgba(255,225,124,0.5)]'
-                              : isCurrentMonth
-                                ? 'text-white/60'
-                                : 'text-white/15'
-                            }
-                          `}
-                        >
+                    <div className={[
+                      'relative rounded-xl p-1.5 sm:p-2.5 min-h-[74px] sm:min-h-[92px] flex flex-col gap-1 transition-all duration-200',
+                      todayDay
+                        ? 'bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]'
+                        : inMonth
+                          ? dayEvs.length > 0
+                            ? 'bg-white/[0.045] border border-white/[0.09] hover:bg-white/[0.07] hover:border-white/[0.14]'
+                            : 'bg-white/[0.022] border border-white/[0.04] hover:bg-white/[0.04]'
+                          : 'bg-transparent border border-transparent',
+                    ].join(' ')}>
+                      {/* Date Number */}
+                      <div className="flex justify-end mb-0.5">
+                        <span className={[
+                          'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
+                          todayDay
+                            ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
+                            : inMonth ? 'text-white/55' : 'text-white/12',
+                        ].join(' ')}>
                           {format(day, 'd')}
                         </span>
                       </div>
 
-                      {/* Event pills */}
-                      {isCurrentMonth && visibleEvents.map((ev, eIdx) => {
-                        const color = COUNCIL_COLORS[ev.councilId] || '#fff';
+                      {/* Event Pills */}
+                      {inMonth && visible.map((ev, ei) => {
+                        const c = COUNCIL_COLORS[ev.councilId] || '#fff';
                         return (
-                          <button
-                            key={eIdx}
-                            onClick={() => onSelectEvent(ev)}
-                            className="flex items-center gap-1 w-full rounded-md px-1.5 py-0.5 text-left transition-all duration-150 hover:brightness-125"
-                            style={{
-                              backgroundColor: `${color}18`,
-                              border: `1px solid ${color}30`,
-                            }}
-                          >
-                            <span
-                              className="w-1 h-1 rounded-full shrink-0"
-                              style={{ backgroundColor: color, boxShadow: `0 0 4px ${color}` }}
-                            />
-                            <span className="text-[9px] font-semibold truncate" style={{ color: `${color}cc` }}>
-                              {ev.eventName}
-                            </span>
+                          <button key={ei} onClick={() => onSelectEvent(ev)}
+                            className="flex items-center gap-1 w-full rounded-md px-1.5 py-[3px] text-left truncate transition-all duration-150 hover:brightness-125 active:scale-[0.97]"
+                            style={{ background: `${c}18`, border: `1px solid ${c}28` }}>
+                            <span className="w-1 h-1 rounded-full shrink-0" style={{ background: c, boxShadow: `0 0 5px ${c}` }} />
+                            <span className="text-[9px] font-semibold truncate" style={{ color: `${c}cc` }}>{ev.eventName}</span>
                           </button>
                         );
                       })}
-
-                      {/* Overflow indicator */}
-                      {isCurrentMonth && overflow > 0 && (
-                        <span className="text-[9px] font-bold text-white/30 px-1.5">
-                          +{overflow} more
-                        </span>
-                      )}
-
-                      {/* Today glow ring */}
-                      {isTodayDay && (
-                        <div className="absolute inset-0 rounded-xl pointer-events-none" style={{
-                          boxShadow: 'inset 0 0 0 1px rgba(255,225,124,0.4)',
-                        }} />
+                      {inMonth && more > 0 && (
+                        <span className="text-[9px] font-bold text-white/25 px-1.5">+{more} more</span>
                       )}
                     </div>
                   </motion.div>
@@ -263,118 +233,221 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
   );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────
-export default function LandingPage() {
-  const [allEvents, setAllEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [detailEvent, setDetailEvent] = useState(null);
+// ─── Marquee Council Names ────────────────────────────────────────────────────
+const COUNCILS = [
+  'IEEE-WIE', 'CSI', 'ACM', 'ASME', 'E-Cell', 'FSAI',
+  'Team Robix', 'Team Abadha', 'Team CFR', 'GDA', 'NSS',
+  'Mozilla Codelabs', 'GDSC', 'Rotaract Club', 'TEDx CRCE',
+];
+function Marquee() {
+  return (
+    <div className="relative overflow-hidden py-3 my-8">
+      {/* Fade edges */}
+      <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#000] to-transparent z-10 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#000] to-transparent z-10 pointer-events-none" />
+      <div className="flex" style={{ animation: 'marquee 30s linear infinite' }}>
+        {[...COUNCILS, ...COUNCILS].map((name, i) => (
+          <span key={i} className="flex items-center gap-4 mr-8 shrink-0">
+            <span className="text-white/20 text-xs font-bold uppercase tracking-[0.2em]">{name}</span>
+            <span className="w-1 h-1 rounded-full bg-[#ffe17c]/30" />
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
-  const fetchEvents = useCallback(async () => {
+// ─── Main ─────────────────────────────────────────────────────────────────────
+export default function LandingPage() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState(null);
+
+  const fetch = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getAllEvents();
-      const resolved = data.map(e => ({ ...e, _status: resolveStatus(e), _startDate: toDate(e.startDate) }));
-      resolved.sort((a, b) => (a._startDate || 0) - (b._startDate || 0));
-      setAllEvents(resolved);
-    } catch (err) {
-      console.error('Failed to fetch events:', err);
-    } finally {
-      setLoading(false);
-    }
+      const resolved = data
+        .map(e => ({ ...e, _status: resolveStatus(e), _startDate: toDate(e.startDate) }))
+        .sort((a, b) => (a._startDate || 0) - (b._startDate || 0));
+      setEvents(resolved);
+    } catch (e) { console.error(e); }
+    finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
-    fetchEvents();
-    document.body.style.backgroundColor = '#000000';
-    return () => { document.body.style.backgroundColor = '#ffffff'; };
-  }, [fetchEvents]);
+    fetch();
+    document.body.style.background = '#000';
+    return () => { document.body.style.background = '#fff'; };
+  }, [fetch]);
 
   const stats = {
-    total: allEvents.length,
-    upcoming: allEvents.filter(e => e._status === 'approved').length,
-    closed: allEvents.filter(e => e._status === 'closed').length,
+    total: events.length,
+    upcoming: events.filter(e => e._status === 'approved').length,
+    closed: events.filter(e => e._status === 'closed').length,
   };
-
-  const nextMajorEvent = allEvents.find(e => e._status === 'approved' && e._startDate > new Date());
-
-  // Only show approved/closed events on the calendar
-  const calendarEvents = allEvents.filter(e =>
-    ['approved', 'report_pending', 'closed'].includes(e._status) && e._startDate
-  );
+  const next = events.find(e => e._status === 'approved' && e._startDate > new Date());
+  const calEvs = events.filter(e => ['approved', 'report_pending', 'closed'].includes(e._status) && e._startDate);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white font-satoshi selection:bg-[#ffe17c] selection:text-black relative overflow-x-hidden">
+    <div className="min-h-screen bg-[#000] text-white font-satoshi overflow-x-hidden selection:bg-[#ffe17c] selection:text-black">
 
-      {/* ── AMBIENT BACKGROUND ────────────────────────────────────────── */}
-      <div
-        className="fixed inset-0 pointer-events-none opacity-[0.03] z-0"
-        style={{
-          backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)',
-          backgroundSize: '32px 32px',
-        }}
-      />
-      <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[120%] h-[80%] bg-[#ffe17c]/[0.04] rounded-full blur-[200px] pointer-events-none transform-gpu z-0" />
-      <div className="absolute bottom-[-20%] right-[-15%] w-[50%] h-[50%] bg-emerald-500/[0.02] rounded-full blur-[150px] pointer-events-none transform-gpu z-0" />
+      {/* ── CSS Scroll-driven reveal keyframes (injected as style tag) ── */}
+      <style>{`
+        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        @keyframes reveal-up {
+          from { opacity: 0; transform: translateY(40px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+        }
+        @supports ((animation-timeline: scroll()) and (animation-range: 0% 100%)) {
+          .scroll-reveal {
+            animation: reveal-up linear both;
+            animation-timeline: view();
+            animation-range: entry 0% entry 30%;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .scroll-reveal { animation: none !important; opacity: 1 !important; transform: none !important; }
+          [style*="animation"] { animation: none !important; }
+        }
+        .noise-overlay::after {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+          pointer-events: none;
+          z-index: 1;
+          opacity: 0.35;
+        }
+      `}</style>
 
-      <div className="max-w-7xl mx-auto px-6 pt-16 pb-28 relative z-10">
+      {/* ── AMBIENT LAYERS ──────────────────────────────────────────────── */}
+      <div className="noise-overlay" />
+      {/* Dot grid */}
+      <div className="fixed inset-0 pointer-events-none z-0"
+        style={{ backgroundImage: 'radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
+      {/* Massive glow orbs */}
+      <div className="fixed top-[-40%] left-1/2 -translate-x-1/2 w-[160%] h-[80vh] rounded-full blur-[180px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse at center, rgba(255,225,124,0.035) 0%, transparent 65%)' }} />
+      <div className="fixed bottom-[-30%] right-[-20%] w-[60vw] h-[60vh] rounded-full blur-[140px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse, rgba(16,185,129,0.025) 0%, transparent 70%)' }} />
+      <div className="fixed top-[40%] left-[-20%] w-[50vw] h-[50vh] rounded-full blur-[130px] pointer-events-none z-0"
+        style={{ background: 'radial-gradient(ellipse, rgba(99,102,241,0.02) 0%, transparent 70%)' }} />
 
-        {/* ── HERO ──────────────────────────────────────────────────────── */}
-        <div className="mb-20">
+
+      {/* ── HERO ────────────────────────────────────────────────────────── */}
+      <section className="relative min-h-screen flex flex-col justify-center pt-16 pb-16 px-6 z-10">
+        <div className="max-w-7xl mx-auto w-full">
+
+          {/* Eyebrow badge */}
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1] }}
-            className="relative"
+            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md"
           >
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-[#ffe17c]/[0.05] rounded-full blur-[120px] pointer-events-none" />
-
-            <h1 className="font-anton text-6xl md:text-8xl lg:text-[9rem] leading-[0.85] text-white tracking-tight mb-4 relative">
-              FR.CRCE
-            </h1>
-            <h1 className="font-anton text-5xl md:text-7xl lg:text-[7rem] leading-[0.85] tracking-tight mb-3 relative">
-              <span className="text-white">OFFICIAL </span>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffe17c] via-amber-300 to-[#ffe17c]">EVENTS</span>
-            </h1>
-            <h1 className="font-anton text-5xl md:text-7xl lg:text-[7rem] leading-[0.85] tracking-tight relative">
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#ffe17c] via-amber-300 to-[#ffe17c]">PORTAL</span>
-            </h1>
-
-            <p className="mt-8 text-white/30 text-sm md:text-base max-w-md font-medium tracking-wide leading-relaxed">
-              A unified calendar and tracking system for all college council events, proposals, and clearances.
-            </p>
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#10b981]" />
+            </span>
+            <span className="text-[#10b981] text-[11px] font-bold uppercase tracking-[0.2em]">Live Events Portal</span>
           </motion.div>
 
-          {/* Next Major Event Banner */}
-          {nextMajorEvent && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-              onClick={() => setDetailEvent(nextMajorEvent)}
-              className="relative z-10 group cursor-pointer overflow-hidden mt-12"
+          {/* Main headline */}
+          <div className="overflow-hidden mb-4">
+            <motion.h1
+              initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+              className="font-anton text-[clamp(3.5rem,12vw,11rem)] leading-[0.82] tracking-tight text-white"
             >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.12] via-white/[0.04] to-transparent p-[1px]">
-                <div className="w-full h-full rounded-2xl bg-[#050505]" />
+              FR.CRCE
+            </motion.h1>
+          </div>
+          <div className="overflow-hidden mb-4">
+            <motion.h1
+              initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.9, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
+              className="font-anton text-[clamp(3rem,10vw,9rem)] leading-[0.82] tracking-tight"
+              style={{
+                background: 'linear-gradient(135deg, #ffe17c 0%, #f59e0b 50%, #ffe17c 100%)',
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+              }}
+            >
+              OFFICIAL
+            </motion.h1>
+          </div>
+          <div className="overflow-hidden mb-10">
+            <motion.h1
+              initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.9, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
+              className="font-anton text-[clamp(3rem,10vw,9rem)] leading-[0.82] tracking-tight text-white/[0.12]"
+            >
+              EVENTS PORTAL
+            </motion.h1>
+          </div>
+
+          {/* Sub text + CTA row */}
+          <motion.div
+            initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.45, ease: [0.23, 1, 0.32, 1] }}
+            className="flex flex-col md:flex-row md:items-end justify-between gap-8"
+          >
+            <div className="max-w-md">
+              <p className="text-white/35 text-base md:text-lg leading-relaxed font-medium">
+                A unified platform for tracking, approving, and publishing every student council event at Fr. CRCE.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-5">
+                <FeaturePill icon={Shield} text="Admin Reviewed" color="#10b981" />
+                <FeaturePill icon={Globe}  text="18+ Councils"   color="#6366f1" />
+                <FeaturePill icon={Star}   text="Live Updates"   color="#ffe17c" />
               </div>
-              <div className="relative rounded-2xl bg-white/[0.02] backdrop-blur-xl p-8 md:p-10 transition-all duration-500 group-hover:bg-white/[0.04]">
-                <div className="absolute inset-0 bg-gradient-to-br from-[#ffe17c]/[0.03] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 rounded-2xl" />
-                <p className="text-[#ffe17c]/80 text-[10px] font-bold uppercase tracking-[0.2em] mb-5 flex items-center gap-2.5 relative z-10">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ffe17c] opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#ffe17c]"></span>
-                  </span>
-                  Next Major Event
-                </p>
-                <div className="grid md:grid-cols-2 gap-8 items-end relative z-10">
+            </div>
+
+            {/* Scroll hint */}
+            <div className="hidden md:flex flex-col items-center gap-2 opacity-30">
+              <span className="text-[10px] tracking-[0.2em] uppercase font-bold text-white/50">Scroll</span>
+              <div className="w-[1px] h-12 bg-gradient-to-b from-white/50 to-transparent" />
+            </div>
+          </motion.div>
+
+          {/* Next Major Event - Glassmorphism card */}
+          {next && (
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.7, delay: 0.6, ease: [0.23, 1, 0.32, 1] }}
+              onClick={() => setDetail(next)}
+              className="relative group cursor-pointer mt-14 overflow-hidden"
+            >
+              {/* Animated gradient border */}
+              <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-br from-[#ffe17c]/30 via-white/5 to-[#ffe17c]/10">
+                <div className="w-full h-full rounded-2xl bg-[#070707]" />
+              </div>
+              <div className="relative rounded-2xl backdrop-blur-xl bg-white/[0.02] p-8 md:p-10 transition-colors duration-500 group-hover:bg-white/[0.04]">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#ffe17c]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                   <div>
-                    <h2 className="text-2xl md:text-4xl font-bold tracking-tight mb-2 text-white">{nextMajorEvent.eventName}</h2>
-                    <p className="text-white/40 text-sm">{nextMajorEvent.councilName}</p>
+                    <p className="text-[#ffe17c]/60 text-[10px] font-bold uppercase tracking-[0.22em] mb-3 flex items-center gap-2.5">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ffe17c] opacity-75" />
+                        <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#ffe17c]" />
+                      </span>
+                      Next Approved Event
+                    </p>
+                    <h2 className="text-2xl md:text-4xl font-bold text-white tracking-tight mb-1.5">{next.eventName}</h2>
+                    <p className="text-white/35 text-sm">{next.councilName}</p>
                   </div>
-                  <div className="md:text-right">
-                    <div className="inline-flex flex-col text-left bg-white/[0.04] rounded-xl p-4 border border-white/[0.06]">
-                      <p className="text-white/30 text-[10px] uppercase font-bold tracking-[0.15em] mb-1">Date</p>
-                      <p className="text-lg font-medium text-white">{format(nextMajorEvent._startDate, 'EEEE, MMMM d')}</p>
-                      <p className="text-[#ffe17c]/80 font-semibold text-sm mt-0.5">{format(nextMajorEvent._startDate, 'h:mm a')}</p>
+                  <div className="flex items-center gap-4">
+                    <div className="text-right bg-white/[0.04] border border-white/[0.07] rounded-xl p-4">
+                      <p className="text-white/25 text-[10px] uppercase font-bold tracking-[0.15em] mb-1">Date</p>
+                      <p className="text-white font-semibold text-base">{format(next._startDate, 'EEE, MMM d')}</p>
+                      <p className="text-[#ffe17c]/70 text-sm font-bold">{format(next._startDate, 'h:mm a')}</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-xl bg-[#ffe17c]/10 border border-[#ffe17c]/20 flex items-center justify-center text-[#ffe17c] group-hover:bg-[#ffe17c]/20 transition-colors duration-300 shrink-0">
+                      <ArrowRight size={18} />
                     </div>
                   </div>
                 </div>
@@ -382,127 +455,177 @@ export default function LandingPage() {
             </motion.div>
           )}
         </div>
+      </section>
 
-        {/* ── STATS ─────────────────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-20 relative z-10">
-          <StatCard icon={CalendarDays}   label="Total Events" value={stats.total}    accentColor="#ffe17c" loading={loading} delay={0.15} />
-          <StatCard icon={Sparkles}       label="Upcoming"     value={stats.upcoming} accentColor="#10b981" loading={loading} delay={0.25} />
-          <StatCard icon={CircleCheckBig} label="Completed"    value={stats.closed}   accentColor="#94a3b8" loading={loading} delay={0.35} />
-        </div>
-
-        {/* ── FLOATING ISLANDS CALENDAR ─────────────────────────────────── */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4, duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
-        >
-          <div className="p-[1px] rounded-2xl bg-gradient-to-br from-white/[0.1] via-white/[0.03] to-transparent">
-            <div className="bg-[#060606]/90 rounded-[15px] p-5 sm:p-8 backdrop-blur-xl">
-              <FloatingCalendar
-                events={calendarEvents}
-                onSelectEvent={setDetailEvent}
-                loading={loading}
-              />
-            </div>
-          </div>
-        </motion.div>
-
-        {/* ── FOOTER / CTA ──────────────────────────────────────────────── */}
-        <div className="mt-20 flex flex-col items-center gap-6">
-          <div className="flex items-center gap-8">
-            <Link to="/portal" className="text-sm font-medium text-white/30 hover:text-white/70 transition-colors duration-300 tracking-wide">
-              Council Login
-            </Link>
-            <Link to="/admin" className="group relative px-8 py-3 text-xs font-bold uppercase tracking-[0.2em] overflow-hidden rounded-xl transition-all duration-500">
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/60 via-[#ffe17c] to-[#ffe17c]/60 p-[1px]">
-                <div className="w-full h-full rounded-[11px] bg-[#000] group-hover:bg-[#ffe17c]/10 transition-colors duration-500" />
-              </div>
-              <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Login</span>
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 shadow-[0_0_30px_rgba(255,225,124,0.25)] transition-opacity duration-500" />
-            </Link>
-          </div>
-          <p className="text-white/15 text-[10px] uppercase tracking-[0.2em] font-medium mt-4">
-            Fr. Conceicao Rodrigues College of Engineering
-          </p>
-        </div>
+      {/* ── COUNCIL MARQUEE ─────────────────────────────────────────────── */}
+      <div className="relative z-10 border-y border-white/[0.04] py-1">
+        <Marquee />
       </div>
 
-      {/* ── EVENT DETAIL MODAL ────────────────────────────────────────── */}
-      <AnimatePresence>
-        {detailEvent && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              onClick={() => setDetailEvent(null)}
-              className="absolute inset-0 bg-black/70 backdrop-blur-md"
-            />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-              className="relative w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]"
-            >
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.15] via-white/[0.05] to-transparent p-[1px]">
-                <div className="w-full h-full rounded-2xl bg-[#080808]" />
+      {/* ── STATS ───────────────────────────────────────────────────────── */}
+      <section className="relative z-10 py-24 px-6">
+        <div className="max-w-7xl mx-auto">
+          <Reveal className="mb-12">
+            <p className="text-white/20 text-[11px] uppercase tracking-[0.25em] font-bold mb-3">At a glance</p>
+            <h2 className="font-anton text-4xl md:text-5xl text-white tracking-tight">BY THE NUMBERS</h2>
+          </Reveal>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard icon={CalendarDays}   label="Total Events"  value={stats.total}    accent="#ffe17c" loading={loading} delay={0} />
+            <StatCard icon={Sparkles}       label="Approved"      value={stats.upcoming} accent="#10b981" loading={loading} delay={0.1} />
+            <StatCard icon={CircleCheckBig} label="Completed"     value={stats.closed}   accent="#6366f1" loading={loading} delay={0.2} />
+          </div>
+        </div>
+      </section>
+
+      {/* ── CALENDAR ────────────────────────────────────────────────────── */}
+      <section className="relative z-10 py-12 px-6 pb-28">
+        <div className="max-w-7xl mx-auto">
+          <Reveal className="mb-10">
+            <div className="flex items-end justify-between flex-wrap gap-4">
+              <div>
+                <p className="text-white/20 text-[11px] uppercase tracking-[0.25em] font-bold mb-3">Event Schedule</p>
+                <h2 className="font-anton text-4xl md:text-5xl text-white tracking-tight">CALENDAR</h2>
               </div>
-              <div className="relative rounded-2xl bg-[#080808] flex flex-col max-h-[90vh]">
-                <button
-                  onClick={() => setDetailEvent(null)}
-                  className="absolute top-5 right-5 w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.12] transition-all z-10"
-                >
+              <p className="text-white/25 text-sm max-w-sm leading-relaxed">
+                All approved and past events are shown. Click any event for full details.
+              </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.1}>
+            {/* Glassmorphism Calendar Container */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-3xl p-[1px] bg-gradient-to-br from-white/12 via-white/4 to-transparent">
+                <div className="w-full h-full rounded-3xl bg-[#050505]" />
+              </div>
+              <div className="relative rounded-3xl bg-white/[0.02] backdrop-blur-2xl p-6 sm:p-10">
+                {/* Inner glow */}
+                <div className="absolute inset-0 rounded-3xl pointer-events-none"
+                  style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(255,225,124,0.03) 0%, transparent 60%)' }} />
+                <FloatingCalendar events={calEvs} onSelectEvent={setDetail} loading={loading} />
+              </div>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
+      <footer className="relative z-10 border-t border-white/[0.05] py-16 px-6">
+        <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-8">
+          {/* Logo & Brand */}
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="w-20 h-20 flex items-center justify-center">
+              <img src="/logo.png" alt="FR.CRCE Logo" className="w-full h-full object-contain" />
+            </div>
+            <div>
+              <p className="font-anton text-lg text-white tracking-wide">FR.CRCE COUNCILS</p>
+              <p className="text-white/30 text-xs uppercase tracking-[0.2em] mt-1">Official Events Portal</p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-2">
+            <Link to="/portal"
+              className="w-full sm:w-auto text-center px-8 py-3 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04]">
+              Council Login
+            </Link>
+            <Link to="/admin"
+              className="w-full sm:w-auto text-center group relative px-8 py-3 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl"
+            >
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/70 via-[#ffe17c] to-[#ffe17c]/70 p-[1px]">
+                <div className="w-full h-full rounded-[11px] bg-black group-hover:bg-[#ffe17c]/10 transition-colors duration-400" />
+              </div>
+              <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Panel</span>
+              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
+            </Link>
+          </div>
+        </div>
+        <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/[0.04] flex items-center justify-center">
+          <p className="text-white/15 text-[10px] uppercase tracking-[0.25em] font-medium text-center">
+            Fr. Conceicao Rodrigues College of Engineering · Bandra, Mumbai
+          </p>
+        </div>
+      </footer>
+
+      {/* ── EVENT DETAIL MODAL ──────────────────────────────────────────── */}
+      <AnimatePresence>
+        {detail && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setDetail(null)}
+              className="absolute inset-0 bg-black/75 backdrop-blur-lg" />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 24 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.94, y: 24 }}
+              transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
+              className="relative w-full max-w-2xl flex flex-col max-h-[90vh]"
+            >
+              <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-br from-white/15 via-white/5 to-transparent">
+                <div className="w-full h-full rounded-2xl bg-[#060606]" />
+              </div>
+              <div className="relative rounded-2xl bg-[#060606] flex flex-col max-h-[90vh]">
+                <button onClick={() => setDetail(null)}
+                  className="absolute top-5 right-5 z-10 w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.12] transition-all">
                   <X size={14} />
                 </button>
-                <div className="p-8 border-b border-white/[0.06] relative overflow-hidden shrink-0">
-                  <div className="absolute top-0 left-0 right-0 h-[2px]" style={{ background: `linear-gradient(90deg, transparent, ${COUNCIL_COLORS[detailEvent.councilId] || '#fff'}, transparent)` }} />
+                <div className="p-8 border-b border-white/[0.05] shrink-0 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 right-0 h-[1.5px]"
+                    style={{ background: `linear-gradient(90deg, transparent 0%, ${COUNCIL_COLORS[detail.councilId] || '#ffe17c'} 50%, transparent 100%)` }} />
                   <div className="flex items-center gap-2.5 mb-4">
-                    <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-white/50 border border-white/[0.06]">
-                      {detailEvent.councilName}
-                    </span>
-                    <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 border" style={{ backgroundColor: `${(STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).color}12`, color: (STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).color, borderColor: `${(STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).color}25` }}>
-                      {(() => { const Icon = (STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).icon; return <Icon size={11} />; })()}
-                      {(STATUS_CONFIG[detailEvent._status] || STATUS_CONFIG.closed).label}
-                    </span>
+                    <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-white/45 border border-white/[0.06]">{detail.councilName}</span>
+                    {(() => {
+                      const s = STATUS_CONFIG[detail._status] || STATUS_CONFIG.closed;
+                      const I = s.icon;
+                      return (
+                        <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 border"
+                          style={{ background: `${s.color}12`, color: s.color, borderColor: `${s.color}25` }}>
+                          <I size={11} /> {s.label}
+                        </span>
+                      );
+                    })()}
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">{detailEvent.eventName}</h2>
-                  <div className="flex flex-wrap items-center gap-4 text-sm text-white/40">
-                    <div className="flex items-center gap-1.5"><CalendarIcon size={13} /> {format(detailEvent._startDate, 'EEEE, MMM d, yyyy · h:mm a')}</div>
-                    {detailEvent.venue && <div className="flex items-center gap-1.5"><MapPin size={13} /> {detailEvent.venue}</div>}
+                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">{detail.eventName}</h2>
+                  <div className="flex flex-wrap gap-4 text-sm text-white/35">
+                    <span className="flex items-center gap-1.5"><CalendarIcon size={13} /> {format(detail._startDate, 'EEEE, MMM d · h:mm a')}</span>
+                    {detail.venue && <span className="flex items-center gap-1.5"><MapPin size={13} /> {detail.venue}</span>}
                   </div>
                 </div>
                 <div className="p-8 overflow-y-auto">
                   <div className="grid grid-cols-2 gap-4 mb-8">
-                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                      <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5 flex items-center gap-2"><Users size={13} /> Expected Footfall</p>
-                      <p className="text-xl text-white font-medium">{detailEvent.expectedFootfall || 'N/A'}</p>
-                    </div>
-                    <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                      <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5 flex items-center gap-2"><Ticket size={13} /> Registration</p>
-                      <p className="text-xl text-white font-medium">{detailEvent.registrationFeeApplicable ? `₹${detailEvent.registrationFeeAmount}` : 'Free'}</p>
-                    </div>
+                    {[
+                      { icon: Users,  label: 'Expected Footfall', value: detail.expectedFootfall || 'N/A' },
+                      { icon: Ticket, label: 'Registration',       value: detail.registrationFeeApplicable ? `₹${detail.registrationFeeAmount}` : 'Free' },
+                    ].map(({ icon: I, label, value }) => (
+                      <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
+                        <p className="text-white/25 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><I size={12} /> {label}</p>
+                        <p className="text-xl text-white font-semibold">{value}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div className="space-y-6">
-                    {detailEvent.prizeMoneyApplicable && (
-                      <div>
-                        <h4 className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex items-center gap-2"><Trophy size={13} /> Prize Pool</h4>
-                        <p className="text-white bg-amber-500/[0.08] border border-amber-500/[0.15] px-4 py-3 rounded-xl inline-block text-sm">₹{detailEvent.prizeMoneyAmount} <span className="text-white/30 ml-2">({detailEvent.prizeMoneySource})</span></p>
+                  <div className="space-y-4">
+                    {detail.prizeMoneyApplicable && (
+                      <div className="bg-amber-500/[0.07] border border-amber-500/[0.15] rounded-xl p-4">
+                        <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-[0.15em] mb-1 flex items-center gap-1.5"><Trophy size={12} /> Prize Pool</p>
+                        <p className="text-white font-semibold">₹{detail.prizeMoneyAmount} <span className="text-white/30 font-normal text-sm">({detail.prizeMoneySource})</span></p>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.06] rounded-xl p-5">
+                    <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
                       <div>
-                        <h4 className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] mb-1">Student Contact</h4>
-                        <p className="text-sm text-white">{detailEvent.studentContactName}</p>
-                        <p className="text-xs text-white/40">{detailEvent.studentContactPhone}</p>
+                        <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
+                        <p className="text-sm text-white/80">{detail.studentContactName}</p>
+                        <p className="text-xs text-white/35">{detail.studentContactPhone}</p>
                       </div>
                       <div>
-                        <h4 className="text-white/30 text-[10px] font-bold uppercase tracking-[0.15em] mb-1">Faculty Coordinator</h4>
-                        <p className="text-sm text-white">{detailEvent.facultyCoordinatorName}</p>
+                        <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
+                        <p className="text-sm text-white/80">{detail.facultyCoordinatorName}</p>
                       </div>
                     </div>
-                    {(detailEvent.safetyArrangementNeeded || detailEvent.venuePermissionApplicable) && (
-                      <div className="flex gap-2 flex-wrap pt-2">
-                        {detailEvent.safetyArrangementNeeded && <span className="px-3 py-1.5 rounded-lg bg-orange-500/[0.08] text-orange-400 text-xs font-bold border border-orange-500/[0.15]">Safety Measures Required</span>}
-                        {detailEvent.venuePermissionApplicable && <span className="px-3 py-1.5 rounded-lg bg-teal-500/[0.08] text-teal-400 text-xs font-bold border border-teal-500/[0.15]">Venue Perm Required</span>}
+                    {(detail.safetyArrangementNeeded || detail.venuePermissionApplicable) && (
+                      <div className="flex gap-2 flex-wrap">
+                        {detail.safetyArrangementNeeded && <span className="px-3 py-1.5 rounded-lg bg-orange-500/[0.07] text-orange-400 text-xs font-bold border border-orange-500/[0.14]">Safety Required</span>}
+                        {detail.venuePermissionApplicable && <span className="px-3 py-1.5 rounded-lg bg-teal-500/[0.07] text-teal-400 text-xs font-bold border border-teal-500/[0.14]">Venue Permit</span>}
                       </div>
                     )}
                   </div>
