@@ -89,7 +89,7 @@ function StatCard({ icon: Icon, label, value, accent, loading, delay }) {
             style={{ background: `${accent}15` }}>
             <Icon size={18} strokeWidth={1.75} style={{ color: accent }} />
           </div>
-          <span className="text-white/70 text-[11px] uppercase tracking-[0.18em] font-semibold">{label}</span>
+          <span className="text-white/30 text-[11px] uppercase tracking-[0.18em] font-semibold">{label}</span>
         </div>
         <div className="font-anton text-4xl md:text-6xl tracking-tight"
           style={{
@@ -143,15 +143,15 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
       {/* Toolbar */}
       <div className="flex items-center justify-between mb-8">
         <button onClick={() => setMonth(m => subMonths(m, 1))}
-          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/80 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
+          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
           <ChevronLeft size={16} />
         </button>
         <div className="text-center">
           <h2 className="font-anton text-2xl md:text-3xl text-white tracking-wide">{format(month, 'MMMM').toUpperCase()}</h2>
-          <p className="text-white/70 text-sm font-medium">{format(month, 'yyyy')}</p>
+          <p className="text-white/25 text-sm font-medium">{format(month, 'yyyy')}</p>
         </div>
         <button onClick={() => setMonth(m => addMonths(m, 1))}
-          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/80 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
+          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
           <ChevronRight size={16} />
         </button>
       </div>
@@ -161,76 +161,76 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
         <div className="min-w-[768px]">
           <div className="grid grid-cols-7 gap-2 mb-3">
             {DOW.map(d => (
-              <div key={d} className="text-center text-[10px] font-bold tracking-[0.18em] text-white/60 py-1 uppercase">{d}</div>
+              <div key={d} className="text-center text-[10px] font-bold tracking-[0.18em] text-white/18 py-1 uppercase">{d}</div>
             ))}
           </div>
-      {loading ? (
-        <div className="h-96 flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-[#ffe17c]/30 border-t-[#ffe17c] rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {rows.map((week, wi) => (
-            <div key={wi} className="grid grid-cols-7 gap-2">
-              {week.map((day, di) => {
-                const k = format(day, 'yyyy-MM-dd');
-                const dayEvs = byDate[k] || [];
-                const inMonth = isSameMonth(day, month);
-                const todayDay = isToday(day);
-                const visible = dayEvs.slice(0, 2);
-                const more = dayEvs.length - 2;
-                return (
-                  <motion.div key={di}
-                    whileHover={inMonth ? { scale: 1.05, zIndex: 20 } : {}}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                    style={{ position: 'relative', zIndex: 1 }}
-                  >
-                    <div className={[
-                      'relative rounded-xl p-1.5 sm:p-2.5 min-h-[74px] sm:min-h-[92px] flex flex-col gap-1 transition-all duration-200',
-                      todayDay
-                        ? 'bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]'
-                        : inMonth
-                          ? dayEvs.length > 0
-                            ? 'bg-white/[0.045] border border-white/[0.09] hover:bg-white/[0.07] hover:border-white/[0.14]'
-                            : 'bg-white/[0.022] border border-white/[0.04] hover:bg-white/[0.04]'
-                          : 'bg-transparent border border-transparent',
-                    ].join(' ')}>
-                      {/* Date Number */}
-                      <div className="flex justify-end mb-0.5">
-                        <span className={[
-                          'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
-                          todayDay
-                            ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
-                            : inMonth ? 'text-white/55' : 'text-white/60',
-                        ].join(' ')}>
-                          {format(day, 'd')}
-                        </span>
-                      </div>
-
-                      {/* Event Pills */}
-                      {inMonth && visible.map((ev, ei) => {
-                        const c = COUNCIL_COLORS[ev.councilId] || '#fff';
-                        return (
-                          <button key={ei} onClick={() => onSelectEvent(ev)}
-                            className="flex items-center gap-1 w-full rounded-md px-1.5 py-[3px] text-left truncate transition-all duration-150 hover:brightness-125 active:scale-[0.97]"
-                            style={{ background: `${c}18`, border: `1px solid ${c}28` }}>
-                            <span className="w-1 h-1 rounded-full shrink-0" style={{ background: c, boxShadow: `0 0 5px ${c}` }} />
-                            <span className="text-[9px] font-semibold truncate" style={{ color: `${c}cc` }}>{ev.eventName}</span>
-                          </button>
-                        );
-                      })}
-                      {inMonth && more > 0 && (
-                        <span className="text-[9px] font-bold text-white/70 px-1.5">+{more} more</span>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
+          {loading ? (
+            <div className="h-96 flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-[#ffe17c]/30 border-t-[#ffe17c] rounded-full animate-spin" />
             </div>
-          ))}
+          ) : (
+            <div className="flex flex-col gap-2">
+              {rows.map((week, wi) => (
+                <div key={wi} className="grid grid-cols-7 gap-2">
+                  {week.map((day, di) => {
+                    const k = format(day, 'yyyy-MM-dd');
+                    const dayEvs = byDate[k] || [];
+                    const inMonth = isSameMonth(day, month);
+                    const todayDay = isToday(day);
+                    const visible = dayEvs.slice(0, 2);
+                    const more = dayEvs.length - 2;
+                    return (
+                      <motion.div key={di}
+                        whileHover={inMonth ? { scale: 1.05, zIndex: 20 } : {}}
+                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                        style={{ position: 'relative', zIndex: 1 }}
+                      >
+                        <div className={[
+                          'relative rounded-xl p-1.5 sm:p-2.5 min-h-[74px] sm:min-h-[92px] flex flex-col gap-1 transition-all duration-200',
+                          todayDay
+                            ? 'bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]'
+                            : inMonth
+                              ? dayEvs.length > 0
+                                ? 'bg-white/[0.045] border border-white/[0.09] hover:bg-white/[0.07] hover:border-white/[0.14]'
+                                : 'bg-white/[0.022] border border-white/[0.04] hover:bg-white/[0.04]'
+                              : 'bg-transparent border border-transparent',
+                        ].join(' ')}>
+                          {/* Date Number */}
+                          <div className="flex justify-end mb-0.5">
+                            <span className={[
+                              'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
+                              todayDay
+                                ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
+                                : inMonth ? 'text-white/55' : 'text-white/12',
+                            ].join(' ')}>
+                              {format(day, 'd')}
+                            </span>
+                          </div>
+
+                          {/* Event Pills */}
+                          {inMonth && visible.map((ev, ei) => {
+                            const c = COUNCIL_COLORS[ev.councilId] || '#fff';
+                            return (
+                              <button key={ei} onClick={() => onSelectEvent(ev)}
+                                className="flex items-center gap-1 w-full rounded-md px-1.5 py-[3px] text-left truncate transition-all duration-150 hover:brightness-125 active:scale-[0.97]"
+                                style={{ background: `${c}18`, border: `1px solid ${c}28` }}>
+                                <span className="w-1 h-1 rounded-full shrink-0" style={{ background: c, boxShadow: `0 0 5px ${c}` }} />
+                                <span className="text-[9px] font-semibold truncate" style={{ color: `${c}cc` }}>{ev.eventName}</span>
+                              </button>
+                            );
+                          })}
+                          {inMonth && more > 0 && (
+                            <span className="text-[9px] font-bold text-white/25 px-1.5">+{more} more</span>
+                          )}
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
-      </div>
       </div>
     </div>
   );
@@ -251,7 +251,7 @@ function Marquee() {
       <div className="flex" style={{ animation: 'marquee 30s linear infinite' }}>
         {[...COUNCILS, ...COUNCILS].map((name, i) => (
           <span key={i} className="flex items-center gap-4 mr-8 shrink-0">
-            <span className="text-white/70 text-xs font-bold uppercase tracking-[0.2em]">{name}</span>
+            <span className="text-white/20 text-xs font-bold uppercase tracking-[0.2em]">{name}</span>
             <span className="w-1 h-1 rounded-full bg-[#ffe17c]/30" />
           </span>
         ))}
@@ -403,8 +403,8 @@ export default function LandingPage() {
                 A unified platform for tracking, approving, and publishing every student council event at Fr. CRCE.
               </p>
               <div className="flex flex-wrap gap-2 mt-5">
-                <FeaturePill icon={Globe}  text="18+ Councils"   color="#6366f1" />
-                <FeaturePill icon={Star}   text="Live Updates"   color="#ffe17c" />
+                <FeaturePill icon={Globe} text="18+ Councils" color="#6366f1" />
+                <FeaturePill icon={Star} text="Live Updates" color="#ffe17c" />
               </div>
             </div>
 
@@ -444,7 +444,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right bg-white/[0.04] border border-white/[0.07] rounded-xl p-4">
-                      <p className="text-white/70 text-[10px] uppercase font-bold tracking-[0.15em] mb-1">Date</p>
+                      <p className="text-white/25 text-[10px] uppercase font-bold tracking-[0.15em] mb-1">Date</p>
                       <p className="text-white font-semibold text-base">{format(next._startDate, 'EEE, MMM d')}</p>
                       <p className="text-[#ffe17c]/70 text-sm font-bold">{format(next._startDate, 'h:mm a')}</p>
                     </div>
@@ -465,16 +465,17 @@ export default function LandingPage() {
       </div>
 
 
+
       {/* ── CALENDAR ────────────────────────────────────────────────────── */}
       <section className="relative z-10 py-12 px-6 pb-28">
         <div className="max-w-7xl mx-auto">
           <Reveal className="mb-10">
             <div className="flex items-end justify-between flex-wrap gap-4">
               <div>
-                <p className="text-white/70 text-[11px] uppercase tracking-[0.25em] font-bold mb-3">Event Schedule</p>
+                <p className="text-white/20 text-[11px] uppercase tracking-[0.25em] font-bold mb-3">Event Schedule</p>
                 <h2 className="font-anton text-4xl md:text-5xl text-white tracking-tight">CALENDAR</h2>
               </div>
-              <p className="text-white/70 text-sm max-w-sm leading-relaxed">
+              <p className="text-white/25 text-sm max-w-sm leading-relaxed">
                 All approved and past events are shown. Click any event for full details.
               </p>
             </div>
@@ -507,7 +508,7 @@ export default function LandingPage() {
             </div>
             <div>
               <p className="font-anton text-lg text-white tracking-wide">FR.CRCE COUNCILS</p>
-              <p className="text-white/70 text-xs uppercase tracking-[0.2em] mt-1">Official Events Portal</p>
+              <p className="text-white/30 text-xs uppercase tracking-[0.2em] mt-1">Official Events Portal</p>
             </div>
           </div>
 
@@ -555,7 +556,7 @@ export default function LandingPage() {
               </div>
               <div className="relative rounded-2xl bg-[#060606] flex flex-col max-h-[85vh]">
                 <button onClick={() => setDetail(null)}
-                  className="absolute top-5 right-5 z-10 w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center text-white/80 hover:text-white hover:bg-white/[0.12] transition-all">
+                  className="absolute top-5 right-5 z-10 w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.12] transition-all">
                   <X size={14} />
                 </button>
                 <div className="p-8 border-b border-white/[0.05] shrink-0 relative overflow-hidden">
@@ -583,11 +584,11 @@ export default function LandingPage() {
                 <div className="p-8 overflow-y-auto">
                   <div className="grid grid-cols-2 gap-4 mb-8">
                     {[
-                      { icon: Users,  label: 'Expected Footfall', value: detail.expectedFootfall || 'N/A' },
-                      { icon: Ticket, label: 'Registration',       value: detail.registrationFeeApplicable ? `₹${detail.registrationFeeAmount}` : 'Free' },
+                      { icon: Users, label: 'Expected Footfall', value: detail.expectedFootfall || 'N/A' },
+                      { icon: Ticket, label: 'Registration', value: detail.registrationFeeApplicable ? `₹${detail.registrationFeeAmount}` : 'Free' },
                     ].map(({ icon: I, label, value }) => (
                       <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                        <p className="text-white/70 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><I size={12} /> {label}</p>
+                        <p className="text-white/25 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><I size={12} /> {label}</p>
                         <p className="text-xl text-white font-semibold">{value}</p>
                       </div>
                     ))}
@@ -596,17 +597,17 @@ export default function LandingPage() {
                     {detail.prizeMoneyApplicable && (
                       <div className="bg-amber-500/[0.07] border border-amber-500/[0.15] rounded-xl p-4">
                         <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-[0.15em] mb-1 flex items-center gap-1.5"><Trophy size={12} /> Prize Pool</p>
-                        <p className="text-white font-semibold">₹{detail.prizeMoneyAmount} <span className="text-white/70 font-normal text-sm">({detail.prizeMoneySource})</span></p>
+                        <p className="text-white font-semibold">₹{detail.prizeMoneyAmount} <span className="text-white/30 font-normal text-sm">({detail.prizeMoneySource})</span></p>
                       </div>
                     )}
                     <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
                       <div>
-                        <p className="text-white/70 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
+                        <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
                         <p className="text-sm text-white/80">{detail.studentContactName}</p>
                         <p className="text-xs text-white/35">{detail.studentContactPhone}</p>
                       </div>
                       <div>
-                        <p className="text-white/70 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
+                        <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
                         <p className="text-sm text-white/80">{detail.facultyCoordinatorName}</p>
                       </div>
                     </div>
