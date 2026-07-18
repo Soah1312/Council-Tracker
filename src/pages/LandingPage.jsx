@@ -177,50 +177,83 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
                     const dayEvs = byDate[k] || [];
                     const inMonth = isSameMonth(day, month);
                     const todayDay = isToday(day);
-                    const visible = dayEvs.slice(0, 2);
-                    const more = dayEvs.length - 2;
+                    const hasEvent = inMonth && dayEvs.length > 0;
+                    const primaryEvent = hasEvent ? dayEvs[0] : null;
+                    const eventColor = primaryEvent ? (COUNCIL_COLORS[primaryEvent.councilId] || '#ffe17c') : null;
+
+                    // Set styles dynamically if there is an event
+                    const cellStyle = {};
+                    let cellClasses = 'relative rounded-xl p-1.5 sm:p-2.5 min-h-[74px] sm:min-h-[92px] flex flex-col justify-between transition-all duration-300';
+                    
+                    if (todayDay) {
+                      cellClasses += ' bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]';
+                    } else if (inMonth) {
+                      if (hasEvent) {
+                        cellClasses += ' border hover:brightness-125 cursor-pointer';
+                        cellStyle.background = `${eventColor}24`;
+                        cellStyle.borderColor = `${eventColor}bf`;
+                        cellStyle.boxShadow = `inset 0 0 15px ${eventColor}20, 0 0 20px ${eventColor}40`;
+                      } else {
+                        cellClasses += ' bg-white/[0.022] border border-white/[0.04] hover:bg-white/[0.04]';
+                      }
+                    } else {
+                      cellClasses += ' bg-transparent border border-transparent';
+                    }
+
                     return (
                       <motion.div key={di}
-                        whileHover={inMonth ? { scale: 1.05, zIndex: 20 } : {}}
+                        whileHover={inMonth ? { scale: 1.03, zIndex: 20 } : {}}
                         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                         style={{ position: 'relative', zIndex: 1 }}
+                        onClick={() => {
+                          if (hasEvent) {
+                            onSelectEvent(primaryEvent);
+                          }
+                        }}
                       >
-                        <div className={[
-                          'relative rounded-xl p-1.5 sm:p-2.5 min-h-[74px] sm:min-h-[92px] flex flex-col gap-1 transition-all duration-200',
-                          todayDay
-                            ? 'bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]'
-                            : inMonth
-                              ? dayEvs.length > 0
-                                ? 'bg-white/[0.045] border border-white/[0.09] hover:bg-white/[0.07] hover:border-white/[0.14]'
-                                : 'bg-white/[0.022] border border-white/[0.04] hover:bg-white/[0.04]'
-                              : 'bg-transparent border border-transparent',
-                        ].join(' ')}>
-                          {/* Date Number */}
-                          <div className="flex justify-end mb-0.5">
+                        <div className={cellClasses} style={cellStyle}>
+                          {/* Top Row: Council name (no glow) and Date Number */}
+                          <div className="flex items-center justify-between w-full">
+                            <div>
+                              {hasEvent && (
+                                <span 
+                                  className="text-[11px] font-black tracking-wider uppercase font-anton" 
+                                  style={{ color: eventColor }}
+                                >
+                                  {primaryEvent.councilId?.toUpperCase() || primaryEvent.councilName?.slice(0, 8).toUpperCase()}
+                                </span>
+                              )}
+                            </div>
                             <span className={[
                               'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
                               todayDay
                                 ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
-                                : inMonth ? 'text-white/55' : 'text-white/12',
-                            ].join(' ')}>
+                                : inMonth 
+                                  ? hasEvent 
+                                    ? 'text-white font-extrabold'
+                                    : 'text-white/55' 
+                                  : 'text-white/12',
+                            ].join(' ')}
+                            style={hasEvent && !todayDay ? { textShadow: `0 0 6px ${eventColor}` } : {}}>
                               {format(day, 'd')}
                             </span>
                           </div>
 
-                          {/* Event Pills */}
-                          {inMonth && visible.map((ev, ei) => {
-                            const c = COUNCIL_COLORS[ev.councilId] || '#fff';
-                            return (
-                              <button key={ei} onClick={() => onSelectEvent(ev)}
-                                className="flex items-center gap-1 w-full rounded-md px-1.5 py-[3px] text-left truncate transition-all duration-150 hover:brightness-125 active:scale-[0.97]"
-                                style={{ background: `${c}18`, border: `1px solid ${c}28` }}>
-                                <span className="w-1 h-1 rounded-full shrink-0" style={{ background: c, boxShadow: `0 0 5px ${c}` }} />
-                                <span className="text-[9px] font-semibold truncate" style={{ color: `${c}cc` }}>{ev.eventName}</span>
-                              </button>
-                            );
-                          })}
-                          {inMonth && more > 0 && (
-                            <span className="text-[9px] font-bold text-white/25 px-1.5">+{more} more</span>
+                          {/* Event details occupying bottom area */}
+                          {hasEvent && (
+                            <div className="mt-2 flex flex-col gap-0.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: eventColor, boxShadow: `0 0 8px ${eventColor}` }} />
+                                <span className="text-[10px] font-black tracking-wide uppercase truncate" style={{ color: eventColor, textShadow: `0 0 8px ${eventColor}30` }}>
+                                  {primaryEvent.eventName}
+                                </span>
+                              </div>
+                              {dayEvs.length > 1 && (
+                                <span className="text-[8px] font-bold text-white/45 pl-3.5">
+                                  +{dayEvs.length - 1} more event{dayEvs.length > 2 ? 's' : ''}
+                                </span>
+                              )}
+                            </div>
                           )}
                         </div>
                       </motion.div>
