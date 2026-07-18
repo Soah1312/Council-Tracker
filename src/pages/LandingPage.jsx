@@ -456,12 +456,6 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
-
-            {/* Scroll hint */}
-            <div className="hidden md:flex flex-col items-center gap-2 opacity-30">
-              <span className="text-[10px] tracking-[0.2em] uppercase font-bold text-white/50">Scroll</span>
-              <div className="w-[1px] h-12 bg-gradient-to-b from-white/50 to-transparent" />
-            </div>
           </motion.div>
 
           {/* Next Major Event - Glassmorphism card */}
