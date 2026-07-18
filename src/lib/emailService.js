@@ -51,6 +51,11 @@ const recentDispatches = new Set();
  * @param {Object} params  - Template variables forwarded to EmailJS
  */
 async function dispatch(params) {
+  if (params.event_name?.toUpperCase() === 'TEST') {
+    console.log('[EmailJS] Event name is TEST — skipping email dispatch.');
+    return;
+  }
+
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
     console.warn('[EmailJS] Missing configuration — skipping email notification.');
     return;
