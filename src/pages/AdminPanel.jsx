@@ -201,6 +201,8 @@ export default function AdminPanel() {
     setReviewNotes(
       statusType === 'submitted'
         ? 'Proposal re-opened by administration for re-evaluation.'
+        : statusType === 'permissions_submitted'
+        ? 'Stage 2 approvals reverted by administration. Clearances under re-evaluation.'
         : event.reviewNotes || ''
     );
   };
@@ -1228,6 +1230,24 @@ export default function AdminPanel() {
                     className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
                   >
                     Re-Open Proposal for Evaluation
+                  </button>
+                )}
+
+                {selectedEventDetail.status === 'proposal_approved' && (
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                  >
+                    Revert Stage 1 Approval
+                  </button>
+                )}
+
+                {(selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'closed') && (
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'permissions_submitted')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                  >
+                    Revert Stage 2 Approval
                   </button>
                 )}
               </div>

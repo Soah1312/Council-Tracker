@@ -435,9 +435,25 @@ export default function LandingPage() {
               <p className="text-white/35 text-base md:text-lg leading-relaxed font-medium">
                 A unified platform for tracking, approving, and publishing every student council event at Fr. CRCE.
               </p>
-              <div className="flex flex-wrap gap-2 mt-5">
-                <FeaturePill icon={Globe} text="18+ Councils" color="#6366f1" />
-                <FeaturePill icon={Star} text="Live Updates" color="#ffe17c" />
+              {/* Portal CTAs */}
+              <div className="flex items-center gap-4 flex-wrap mt-6">
+                <Link
+                  to="/portal"
+                  className="px-6 py-3.5 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04] cursor-pointer"
+                >
+                  Council Login
+                </Link>
+                <Link
+                  to="/admin"
+                  className="group relative px-6 py-3.5 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl cursor-pointer"
+                >
+                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/70 via-[#ffe17c] to-[#ffe17c]/70 p-[1px]">
+                    <div className="w-full h-full rounded-[11px] bg-black group-hover:bg-[#ffe17c]/10 transition-colors duration-400" />
+                  </div>
+                  <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Login</span>
+                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
+                </Link>
               </div>
             </div>
 
@@ -543,24 +559,6 @@ export default function LandingPage() {
               <p className="font-anton text-lg text-white tracking-wide">FR.CRCE COUNCILS</p>
               <p className="text-white/30 text-xs uppercase tracking-[0.2em] mt-1">Official Events Portal</p>
             </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-2">
-            <Link to="/portal"
-              className="w-full sm:w-auto text-center px-8 py-3 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04]">
-              Council Login
-            </Link>
-            <Link to="/admin"
-              className="w-full sm:w-auto text-center group relative px-8 py-3 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl"
-            >
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/70 via-[#ffe17c] to-[#ffe17c]/70 p-[1px]">
-                <div className="w-full h-full rounded-[11px] bg-black group-hover:bg-[#ffe17c]/10 transition-colors duration-400" />
-              </div>
-              <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Panel</span>
-              <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
-            </Link>
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-white/[0.04] flex items-center justify-center">

@@ -323,6 +323,9 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     updates.status = 'submitted';
     updates.stage1Approvals = {};
     updates.stage2Approvals = {};
+  } else if (actionStatus === 'permissions_submitted') {
+    updates.status = 'permissions_submitted';
+    updates.stage2Approvals = {};
   } else {
     updates.status = actionStatus;
   }
