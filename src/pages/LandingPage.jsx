@@ -210,51 +210,67 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
                             onSelectEvent(primaryEvent);
                           }
                         }}
+                        className="group"
                       >
-                        <div className={cellClasses} style={cellStyle}>
-                          {/* Top Row: Council name (no glow) and Date Number */}
-                          <div className="flex items-center justify-between w-full">
-                            <div>
-                              {hasEvent && (
-                                <span 
-                                  className="text-[11px] font-black tracking-wider uppercase font-anton" 
-                                  style={{ color: eventColor }}
-                                >
-                                  {primaryEvent.councilId?.toUpperCase() || primaryEvent.councilName?.slice(0, 8).toUpperCase()}
-                                </span>
-                              )}
-                            </div>
-                            <span className={[
-                              'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
-                              todayDay
-                                ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
-                                : inMonth 
-                                  ? hasEvent 
-                                    ? 'text-white font-extrabold'
-                                    : 'text-white/55' 
-                                  : 'text-white/12',
-                            ].join(' ')}
-                            style={hasEvent && !todayDay ? { textShadow: `0 0 6px ${eventColor}` } : {}}>
-                              {format(day, 'd')}
-                            </span>
-                          </div>
-
-                          {/* Event details occupying bottom area */}
-                          {hasEvent && (
-                            <div className="mt-2 flex flex-col gap-0.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: eventColor, boxShadow: `0 0 8px ${eventColor}` }} />
-                                <span className="text-[10px] font-black tracking-wide uppercase truncate" style={{ color: eventColor, textShadow: `0 0 8px ${eventColor}30` }}>
-                                  {primaryEvent.eventName}
-                                </span>
-                              </div>
-                              {dayEvs.length > 1 && (
-                                <span className="text-[8px] font-bold text-white/45 pl-3.5">
-                                  +{dayEvs.length - 1} more event{dayEvs.length > 2 ? 's' : ''}
-                                </span>
-                              )}
-                            </div>
+                        <div className={`${cellClasses} overflow-hidden`} style={cellStyle}>
+                          {/* Event Poster Background with cinematic overlays */}
+                          {hasEvent && primaryEvent.eventPosterUrl && (
+                            <>
+                              <div 
+                                className="absolute inset-0 bg-cover bg-center transition-transform duration-700 ease-out group-hover:scale-105"
+                                style={{ backgroundImage: `url(${primaryEvent.eventPosterUrl})` }}
+                              />
+                              <div 
+                                className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/60 to-[#09090b]/90 transition-opacity duration-500 ease-out group-hover:opacity-75"
+                              />
+                            </>
                           )}
+
+                          <div className="relative z-10 flex flex-col justify-between w-full h-full flex-grow">
+                            {/* Top Row: Council name (no glow) and Date Number */}
+                            <div className="flex items-center justify-between w-full">
+                              <div>
+                                {hasEvent && (
+                                  <span 
+                                    className="text-[11px] font-black tracking-wider uppercase font-anton" 
+                                    style={{ color: eventColor }}
+                                  >
+                                    {primaryEvent.councilId?.toUpperCase() || primaryEvent.councilName?.slice(0, 8).toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <span className={[
+                                'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
+                                todayDay
+                                  ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
+                                  : inMonth 
+                                    ? hasEvent 
+                                      ? 'text-white font-extrabold'
+                                      : 'text-white/55' 
+                                    : 'text-white/12',
+                              ].join(' ')}
+                              style={hasEvent && !todayDay ? { textShadow: `0 0 6px ${eventColor}` } : {}}>
+                                {format(day, 'd')}
+                              </span>
+                            </div>
+
+                            {/* Event details occupying bottom area */}
+                            {hasEvent && (
+                              <div className="mt-2 flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: eventColor, boxShadow: `0 0 8px ${eventColor}` }} />
+                                  <span className="text-[10px] font-black tracking-wide uppercase truncate" style={{ color: eventColor, textShadow: `0 0 8px ${eventColor}30` }}>
+                                    {primaryEvent.eventName}
+                                  </span>
+                                </div>
+                                {dayEvs.length > 1 && (
+                                  <span className="text-[8px] font-bold text-white/45 pl-3.5">
+                                    +{dayEvs.length - 1} more event{dayEvs.length > 2 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </motion.div>
                     );
@@ -628,12 +644,12 @@ export default function LandingPage() {
                     <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
                       <div>
                         <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
-                        <p className="text-sm text-white/80">{detail.studentContactName}</p>
-                        <p className="text-xs text-white/35">{detail.studentContactPhone}</p>
+                        <p className="text-sm text-white/80">{detail.studentContactName || 'N/A'}</p>
+                        {detail.studentContactPhone && <p className="text-xs text-white/35">{detail.studentContactPhone}</p>}
                       </div>
                       <div>
                         <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
-                        <p className="text-sm text-white/80">{detail.facultyCoordinatorName}</p>
+                        <p className="text-sm text-white/80">{detail.facultyCoordinatorName || 'N/A'}</p>
                       </div>
                     </div>
                     {(detail.safetyArrangementNeeded || detail.venuePermissionApplicable) && (

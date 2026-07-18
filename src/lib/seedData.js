@@ -33,6 +33,9 @@ export const SEED_EVENTS = [
     reportPdfUrl: DUMMY_PDF,
     reportSubmittedAt: ts(2026, 7, 11, 14),
     reportImageUrls: [DUMMY_IMG_1, DUMMY_IMG_2],
+    studentContactName: 'Rahul Sharma',
+    studentContactPhone: '+91 98765 43210',
+    facultyCoordinatorName: 'Dr. Kalpana Deorukhkar',
     createdAt: ts(2026, 7, 1, 9)
   },
   {
@@ -51,6 +54,9 @@ export const SEED_EVENTS = [
     permissionsSubmittedAt: ts(2026, 7, 12, 14),
     venue: 'Electronics Lab',
     reportDueDate: ts(2026, 7, 25),
+    studentContactName: 'Sneha Iyer',
+    studentContactPhone: '+91 98765 43211',
+    facultyCoordinatorName: 'Prof. Archana Lopes',
     createdAt: ts(2026, 7, 5, 9)
   },
   {
@@ -67,6 +73,9 @@ export const SEED_EVENTS = [
     councilPermissionLetterUrl: DUMMY_PDF,
     venuePermissionLetterUrl: DUMMY_PDF,
     permissionsSubmittedAt: ts(2026, 7, 14, 11),
+    studentContactName: 'Aditya Patel',
+    studentContactPhone: '+91 98765 43212',
+    facultyCoordinatorName: 'Prof. Prajakta Dhamanskar',
     createdAt: ts(2026, 7, 6, 12)
   },
   {
@@ -79,6 +88,9 @@ export const SEED_EVENTS = [
     startDate: ts(2026, 8, 5, 11),
     endDate: ts(2026, 8, 5, 14),
     eventDescriptionUrl: DUMMY_PDF,
+    studentContactName: 'Rohan Mehta',
+    studentContactPhone: '+91 98765 43213',
+    facultyCoordinatorName: 'Prof. Sarika Davare',
     createdAt: ts(2026, 7, 10, 15)
   },
   {
@@ -91,6 +103,9 @@ export const SEED_EVENTS = [
     startDate: ts(2026, 8, 12, 9),
     endDate: ts(2026, 8, 12, 17),
     eventDescriptionUrl: DUMMY_PDF,
+    studentContactName: 'Pooja Shah',
+    studentContactPhone: '+91 98765 43214',
+    facultyCoordinatorName: 'Dr. Dipali Bhise',
     createdAt: ts(2026, 7, 14, 10)
   },
   {
@@ -104,6 +119,9 @@ export const SEED_EVENTS = [
     endDate: ts(2026, 8, 20, 16),
     eventDescriptionUrl: DUMMY_PDF,
     reviewNotes: 'Please attach a detailed list of collaborating hospitals in the description PDF.',
+    studentContactName: 'Kunal Joshi',
+    studentContactPhone: '+91 98765 43215',
+    facultyCoordinatorName: 'Prof. Pradeep Singh',
     createdAt: ts(2026, 7, 12, 8)
   },
   {
@@ -121,6 +139,9 @@ export const SEED_EVENTS = [
     venuePermissionLetterUrl: DUMMY_PDF,
     permissionsSubmittedAt: ts(2026, 7, 14, 16),
     reviewNotes: 'The venue booking slip is missing the principal\'s signature. Please re-upload with correct signature.',
+    studentContactName: 'Neha Sen',
+    studentContactPhone: '+91 98765 43216',
+    facultyCoordinatorName: 'Prof. Savita Borole',
     createdAt: ts(2026, 7, 8, 11)
   },
   {
@@ -142,6 +163,9 @@ export const SEED_EVENTS = [
     reportPdfUrl: DUMMY_PDF,
     reportSubmittedAt: ts(2026, 6, 16, 11),
     reportImageUrls: [DUMMY_IMG_1],
+    studentContactName: 'Vikram Malhotra',
+    studentContactPhone: '+91 98765 43217',
+    facultyCoordinatorName: 'Dr. Prajakta Bhangale',
     createdAt: ts(2026, 6, 1, 9)
   },
   {
@@ -160,6 +184,9 @@ export const SEED_EVENTS = [
     permissionsSubmittedAt: ts(2026, 7, 8, 14),
     venue: 'Sports Ground',
     reportDueDate: ts(2026, 7, 24),
+    studentContactName: 'Sanjay Dutt',
+    studentContactPhone: '+91 98765 43218',
+    facultyCoordinatorName: 'Dr. Deepali Bhise',
     createdAt: ts(2026, 7, 4, 10)
   }
 ];
