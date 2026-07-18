@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import {
   CalendarIcon, MapPin, Users, Trophy, Ticket, X,
@@ -311,9 +311,18 @@ function Marquee() {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
+  const navigate = useNavigate();
+  const [routeTransition, setRouteTransition] = useState(null);
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
+
+  const handleLoginClick = (targetPath) => {
+    setRouteTransition(targetPath);
+    setTimeout(() => {
+      navigate(targetPath);
+    }, 1000);
+  };
 
   const fetch = useCallback(async () => {
     setLoading(true);
@@ -453,23 +462,35 @@ export default function LandingPage() {
               </p>
               {/* Portal CTAs */}
               <div className="flex items-center gap-4 flex-wrap mt-6">
-                <Link
-                  to="/portal"
-                  className="px-6 py-3.5 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04] cursor-pointer"
+                <button
+                  onClick={() => handleLoginClick('/portal')}
+                  disabled={!!routeTransition}
+                  className="px-6 py-3.5 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04] cursor-pointer flex items-center justify-center gap-2 min-w-[130px]"
                 >
-                  Council Login
-                </Link>
-                <Link
-                  to="/admin"
-                  className="group relative px-6 py-3.5 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl cursor-pointer"
+                  {routeTransition === '/portal' ? (
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    'Council Login'
+                  )}
+                </button>
+                <button
+                  onClick={() => handleLoginClick('/admin')}
+                  disabled={!!routeTransition}
+                  className="group relative px-6 py-3.5 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl cursor-pointer flex items-center justify-center gap-2 min-w-[130px]"
                 >
                   <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/70 via-[#ffe17c] to-[#ffe17c]/70 p-[1px]">
                     <div className="w-full h-full rounded-[11px] bg-black group-hover:bg-[#ffe17c]/10 transition-colors duration-400" />
                   </div>
-                  <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Login</span>
-                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                    style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
-                </Link>
+                  {routeTransition === '/admin' ? (
+                    <div className="relative z-10 w-4 h-4 border-2 border-[#ffe17c]/20 border-t-[#ffe17c] rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Login</span>
+                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </motion.div>
