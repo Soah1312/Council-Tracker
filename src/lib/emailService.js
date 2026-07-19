@@ -52,10 +52,7 @@ const recentDispatches = new Set();
  * @param {Object} params  - Template variables forwarded to EmailJS
  */
 async function dispatch(params) {
-  if (params.event_name && /\btest\b/i.test(params.event_name)) {
-    console.log(`[EmailJS] Event name contains 'TEST' (${params.event_name}) — skipping email dispatch.`);
-    return;
-  }
+
 
 
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
