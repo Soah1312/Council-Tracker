@@ -13,7 +13,8 @@
  */
 
 import emailjs from '@emailjs/browser';
-import { COUNCILS, getCouncilByEmail } from './auth';
+import { COUNCILS } from './auth';
+
 
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
@@ -196,9 +197,11 @@ export async function notifyReportSubmitted(event, councilName) {
  * whenever admin approves, rejects, requests revision, or reopens an event proposal/clearance.
  */
 export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes = '') {
-  // Look up council email address
-  const councilObj = COUNCILS.find(c => c.id === event.councilId) || getCouncilByEmail(event.councilId);
-  const councilEmail = councilObj?.email || event.councilEmail || '';
+  // Use the council's logged-in email stored on the event document,
+  // falling back to the COUNCILS registry for older events
+  const councilEmail = event.councilEmail
+    || (COUNCILS.find(c => c.id === event.councilId)?.email)
+    || '';
 
   const recipientList = [councilEmail, ...RECIPIENTS].filter(Boolean);
   const uniqueRecipients = [...new Set(recipientList)].join(', ');

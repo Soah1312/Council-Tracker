@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
 import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
+import { auth } from '../lib/firebase';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
@@ -1055,6 +1056,7 @@ export default function CouncilPortal() {
         eventId,
         councilId: council.id,
         councilName: council.name,
+        councilEmail: auth.currentUser?.email || '',
         eventName: formData.eventName.trim(),
         expectedFootfall: Number(formData.expectedFootfall),
         startDate: formData.startDate,
