@@ -8,6 +8,8 @@ import {
   ArrowRight, Zap, Shield, Globe, Star
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
+import { subscribeToAllCouncilMembers } from '../lib/members';
+import { COUNCILS } from '../lib/auth';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addDays, addMonths, subMonths, isSameMonth, isToday, isAfter,
@@ -330,6 +332,7 @@ export default function LandingPage() {
       const data = await getAllEvents();
       const resolved = data
         .map(e => ({ ...e, _status: resolveStatus(e), _startDate: toDate(e.startDate) }))
+        .filter(e => ['approved', 'report_pending', 'closed'].includes(e._status))
         .sort((a, b) => (a._startDate || 0) - (b._startDate || 0));
       setEvents(resolved);
     } catch (e) { console.error(e); }
@@ -348,7 +351,7 @@ export default function LandingPage() {
     closed: events.filter(e => e._status === 'closed').length,
   };
   const next = events.find(e => e._status === 'approved' && e._startDate > new Date());
-  const calEvs = events.filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(e._status) && e._startDate);
+  const calEvs = events.filter(e => ['approved', 'report_pending', 'closed'].includes(e._status) && e._startDate);
 
   return (
     <div className="min-h-screen bg-[#000] text-white font-satoshi overflow-x-hidden selection:bg-[#ffe17c] selection:text-black">
@@ -405,18 +408,6 @@ export default function LandingPage() {
       <section className="relative min-h-screen flex flex-col justify-center pt-16 pb-16 px-6 z-10">
         <div className="max-w-7xl mx-auto w-full">
 
-          {/* Eyebrow badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 mb-8 px-4 py-2 rounded-full border border-white/10 bg-white/[0.04] backdrop-blur-md"
-          >
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10b981] opacity-75" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#10b981]" />
-            </span>
-            <span className="text-[#10b981] text-[11px] font-bold uppercase tracking-[0.2em]">Live Events Portal</span>
-          </motion.div>
-
           {/* Main headline */}
           <div className="overflow-hidden mb-4">
             <motion.h1
@@ -457,41 +448,6 @@ export default function LandingPage() {
             className="flex flex-col md:flex-row md:items-end justify-between gap-8"
           >
             <div className="max-w-md">
-              <p className="text-white/35 text-base md:text-lg leading-relaxed font-medium">
-                A unified platform for tracking, approving, and publishing every student council event at Fr. CRCE.
-              </p>
-              {/* Portal CTAs */}
-              <div className="flex items-center gap-4 flex-wrap mt-6">
-                <button
-                  onClick={() => handleLoginClick('/portal')}
-                  disabled={!!routeTransition}
-                  className="px-6 py-3.5 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04] cursor-pointer flex items-center justify-center gap-2 min-w-[130px]"
-                >
-                  {routeTransition === '/portal' ? (
-                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                  ) : (
-                    'Council Login'
-                  )}
-                </button>
-                <button
-                  onClick={() => handleLoginClick('/admin')}
-                  disabled={!!routeTransition}
-                  className="group relative px-6 py-3.5 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl cursor-pointer flex items-center justify-center gap-2 min-w-[130px]"
-                >
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/70 via-[#ffe17c] to-[#ffe17c]/70 p-[1px]">
-                    <div className="w-full h-full rounded-[11px] bg-black group-hover:bg-[#ffe17c]/10 transition-colors duration-400" />
-                  </div>
-                  {routeTransition === '/admin' ? (
-                    <div className="relative z-10 w-4 h-4 border-2 border-[#ffe17c]/20 border-t-[#ffe17c] rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Login</span>
-                      <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                        style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
-                    </>
-                  )}
-                </button>
-              </div>
             </div>
           </motion.div>
 
@@ -578,13 +534,60 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── ACCESS PORTALS SECTION ────────────────────────────────────── */}
+      <section className="relative z-10 py-16 px-6 border-t border-white/[0.04] bg-white/[0.01]">
+        <div className="max-w-7xl mx-auto flex flex-col items-center text-center space-y-6">
+          <Reveal>
+            <p className="text-[#ffe17c] text-[11px] font-bold uppercase tracking-[0.25em]">Portal Access</p>
+            <h2 className="font-anton text-4xl md:text-5xl text-white tracking-tight mt-2 uppercase">Management Consoles</h2>
+            <p className="text-white/35 text-xs font-semibold max-w-md mx-auto mt-2 uppercase tracking-wide">
+              Official access points for student councils and administrative staff.
+            </p>
+          </Reveal>
+          
+          <Reveal delay={0.1}>
+            <div className="flex items-center justify-center gap-4 flex-wrap mt-4">
+              <button
+                onClick={() => handleLoginClick('/portal')}
+                disabled={!!routeTransition}
+                className="px-8 py-4 text-xs font-semibold text-white/50 hover:text-white border border-white/[0.07] hover:border-white/[0.15] rounded-xl transition-all duration-300 hover:bg-white/[0.04] cursor-pointer flex items-center justify-center gap-2 min-w-[150px]"
+              >
+                {routeTransition === '/portal' ? (
+                  <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                ) : (
+                  'Council Login'
+                )}
+              </button>
+              <button
+                onClick={() => handleLoginClick('/admin')}
+                disabled={!!routeTransition}
+                className="group relative px-8 py-4 text-xs font-bold uppercase tracking-[0.15em] overflow-hidden rounded-xl cursor-pointer flex items-center justify-center gap-2 min-w-[150px]"
+              >
+                <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-[#ffe17c]/70 via-[#ffe17c] to-[#ffe17c]/70 p-[1px]">
+                  <div className="w-full h-full rounded-[11px] bg-black group-hover:bg-[#ffe17c]/10 transition-colors duration-400" />
+                </div>
+                {routeTransition === '/admin' ? (
+                  <div className="relative z-10 w-4 h-4 border-2 border-[#ffe17c]/20 border-t-[#ffe17c] rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <span className="relative z-10 text-[#ffe17c] group-hover:text-white transition-colors duration-300">Admin Login</span>
+                    <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                      style={{ boxShadow: '0 0 32px rgba(255,225,124,0.3)' }} />
+                  </>
+                )}
+              </button>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
       {/* ── FOOTER ──────────────────────────────────────────────────────── */}
       <footer className="relative z-10 border-t border-white/[0.05] py-16 px-6">
         <div className="max-w-7xl mx-auto flex flex-col items-center justify-center gap-8">
           {/* Logo & Brand */}
           <div className="flex flex-col items-center gap-4 text-center">
-            <div className="w-20 h-20 flex items-center justify-center">
-              <img src="/logo.png" alt="FR.CRCE Logo" className="w-full h-full object-contain" />
+            <div className="w-36 h-36 flex items-center justify-center">
+              <img src="/crce logo 2.png" alt="FR.CRCE Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <p className="font-anton text-lg text-white tracking-wide">FR.CRCE COUNCILS</p>
