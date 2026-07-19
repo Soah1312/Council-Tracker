@@ -9,8 +9,8 @@ import {
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
 import { subscribeToAllCouncilMembers } from '../lib/members';
-import { COUNCILS } from '../lib/auth';
 import {
+
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   addDays, addMonths, subMonths, isSameMonth, isToday, isAfter,
 } from 'date-fns';
