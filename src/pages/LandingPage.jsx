@@ -20,8 +20,9 @@ const COUNCIL_COLORS = {
   'ieee-wie': '#6366f1', 'csi': '#0ea5e9', 'acm': '#14b8a6', 'asme': '#f97316',
   'e-cell': '#8b5cf6', 'fsai': '#ec4899', 'team-robix': '#ef4444', 'team-abadha': '#f59e0b',
   'team-cfr': '#10b981', 'team-vaayushastra': '#3b82f6', 'team-mavericks': '#a855f7',
-  'project-cell': '#06b6d4', 'mozilla-codelabs': '#f43f5e', 'gdsc': '#22c55e',
-  'gda': '#eab308', 'nss': '#64748b', 'rotaract-club': '#d97706', 'tedx': '#dc2626',
+  'project-cell': '#06b6d4', 'mozilla-codelabs': '#f43f5e', 'codestorm': '#f43f5e',
+  'gdg': '#22c55e', 'gda': '#eab308', 'nss': '#64748b',
+  'rotaract-club': '#d97706', 'tedx': '#dc2626', 'finvest': '#10b981', 'crce-rocketry': '#ef4444'
 };
 
 const STATUS_CONFIG = {
@@ -291,7 +292,7 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
 const COUNCILS = [
   'IEEE-WIE', 'CSI', 'ACM', 'ASME', 'E-Cell', 'FSAI',
   'Team Robix', 'Team Abadha', 'Team CFR', 'GDA', 'NSS',
-  'Mozilla Codelabs', 'GDSC', 'Rotaract Club', 'TEDx CRCE',
+  'CodeStorm', 'GDG on Campus', 'Rotaract Club', 'TEDx CRCE',
 ];
 function Marquee() {
   return (

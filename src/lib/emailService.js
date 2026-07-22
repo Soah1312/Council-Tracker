@@ -10,6 +10,7 @@
  *   VITE_NOTIFY_EMAIL_1        → Recipient 1 email address
  *   VITE_NOTIFY_EMAIL_2        → Recipient 2 email address
  *   VITE_NOTIFY_EMAIL_3        → Recipient 3 email address
+ *   VITE_NOTIFY_EMAIL_4        → Recipient 4 (Principal) email address
  */
 
 import emailjs from '@emailjs/browser';
@@ -24,6 +25,7 @@ const RECIPIENTS = [
   import.meta.env.VITE_NOTIFY_EMAIL_1,
   import.meta.env.VITE_NOTIFY_EMAIL_2,
   import.meta.env.VITE_NOTIFY_EMAIL_3,
+  import.meta.env.VITE_NOTIFY_EMAIL_4,
 ].filter(Boolean); // drop undefined/empty entries
 
 /**

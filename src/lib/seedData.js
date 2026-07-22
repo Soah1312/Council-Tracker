@@ -16,8 +16,8 @@ const DUMMY_IMG_2 = 'https://images.unsplash.com/photo-1511578314322-379afb47686
 export const SEED_EVENTS = [
   {
     eventId: 'EVT-2026-001',
-    councilId: 'gdsc',
-    councilName: 'GDSC',
+    councilId: 'gdg',
+    councilName: 'GDG on Campus Fr. CRCE',
     eventName: 'NextJS Architecture & AI Workshop',
     category: 'workshop',
     status: 'closed',

@@ -23,29 +23,32 @@ export const COUNCILS = [
 
   // Professional Chapters
   { id: 'ieee-wie', name: 'IEEE & WIE', category: 'Professional Chapters', email: '', coordinator: 'Prof. Archana Lopes' },
-  { id: 'csi', name: 'CSI', category: 'Professional Chapters', email: '', coordinator: 'Prof. Prajakta Dhamanskar' },
-  { id: 'acm', name: 'ACM', category: 'Professional Chapters', email: '', coordinator: 'Prof. Sarika Davare' },
-  { id: 'asme', name: 'ASME', category: 'Professional Chapters', email: '', coordinator: 'Dr. Dipali Bhise' },
-  { id: 'e-cell', name: 'E-Cell', category: 'Professional Chapters', email: '', coordinator: 'Dr. Prajakta Bhangale' },
+  { id: 'csi', name: 'CSI CRCE', category: 'Professional Chapters', email: 'crce.csi@gmail.com', coordinator: 'Prof. Prajakta Dhamanskar' },
+  { id: 'acm', name: 'ACM Student Chapter', category: 'Professional Chapters', email: 'acm.frcrce@gmail.com', coordinator: 'Prof. Sarika Davare' },
+  { id: 'asme', name: 'ASME', category: 'Professional Chapters', email: 'crce.asme@gmail.com', coordinator: 'Dr. Dipali Bhise' },
+  { id: 'e-cell', name: 'E-Cell CRCE', category: 'Professional Chapters', email: 'ecell.frcrce@gmail.com', coordinator: 'Dr. Prajakta Bhangale' },
   { id: 'fsai', name: 'FSAI', category: 'Professional Chapters', email: '', coordinator: 'Dr. Swapnali Makdey' },
+  { id: 'finvest', name: 'FinVest Finance Council CRCE', category: 'Professional Chapters', email: 'finvest.crce@gmail.com', coordinator: '' },
   
   // Technical Teams
-  { id: 'team-robix', name: 'Team Robix', category: 'Technical Teams', email: '', coordinator: 'Dr. K. Sailakshmi Parvathi' },
-  { id: 'team-abadha', name: 'Team Abadha', category: 'Technical Teams', email: '', coordinator: 'Dr. V.B. Rao' },
-  { id: 'team-cfr', name: 'Team CFR', category: 'Technical Teams', email: '', coordinator: 'Dr. Graham Koyeerath' },
-  { id: 'team-vaayushastra', name: 'Team Vaayushastra', category: 'Technical Teams', email: '', coordinator: 'Dr. Deepali Bhise' },
-  { id: 'team-mavericks', name: 'Team Mavericks', category: 'Technical Teams', email: '', coordinator: 'Prof. Saurabh Kulkarni' },
-  { id: 'project-cell', name: 'Project Cell', category: 'Technical Teams', email: '', coordinator: 'Prof. Vaibhav Godbole' },
+  { id: 'team-robix', name: 'Robix', category: 'Technical Teams', email: 'teamrobix25@gmail.com', coordinator: 'Dr. K. Sailakshmi Parvathi' },
+  { id: 'team-abadha', name: 'Team Abadha CRCE', category: 'Technical Teams', email: 'teamabadha.crce@gmail.com', coordinator: 'Dr. V.B. Rao' },
+  { id: 'team-cfr', name: 'CRCE Formula Racing Electric (Team CFR)', category: 'Technical Teams', email: 'teamcfr.fatheragnel@gmail.com', coordinator: 'Dr. Graham Koyeerath' },
+  { id: 'team-vaayushastra', name: 'Team Vaayushastra', category: 'Technical Teams', email: 'vaayushastracrce@gmail.com', coordinator: 'Dr. Deepali Bhise' },
+  { id: 'team-mavericks', name: 'Team Mavericks UAS', category: 'Technical Teams', email: 'mavericksuas@gmail.com', coordinator: 'Prof. Saurabh Kulkarni' },
+  { id: 'crce-rocketry', name: 'CRCE Rocket Team', category: 'Technical Teams', email: 'crcerocketryteam@gmail.com', coordinator: '' },
+  { id: 'project-cell', name: 'Project Cell', category: 'Technical Teams', email: 'projectcellcrce2024@gmail.com', coordinator: 'Prof. Vaibhav Godbole' },
   
   // Technical Student Clubs
-  { id: 'mozilla-codelabs', name: 'Mozilla & Codelabs', category: 'Technical Student Clubs', email: '', coordinator: 'Dr. Roshni Padate' },
-  { id: 'gdsc', name: 'GDSC', category: 'Technical Student Clubs', email: '', coordinator: 'Dr. Kalpana Deorukhkar' },
-  { id: 'gda', name: 'GDA', category: 'Technical Student Clubs', email: '', coordinator: 'Prof. Heenakausar Pendhari' },
+  { id: 'codestorm', name: 'CodeStorm', category: 'Technical Student Clubs', email: 'codestorm.crce@gmail.com', coordinator: 'Dr. Roshni Padate' },
+  { id: 'mozilla-codelabs', name: 'Mozilla & Codelabs', category: 'Technical Student Clubs', email: 'codestorm.crce@gmail.com', coordinator: 'Dr. Roshni Padate' },
+  { id: 'gdg', name: 'GDG on Campus Fr. CRCE', category: 'Technical Student Clubs', email: 'gdgcrce@gmail.com', coordinator: 'Dr. Kalpana Deorukhkar' },
+  { id: 'gda', name: 'GDA (GAME DEVELOPERS ASSOCIATION CRCE)', category: 'Technical Student Clubs', email: 'gda.crce2022@gmail.com', coordinator: 'Prof. Heenakausar Pendhari' },
   
-  // Additional Societies
-  { id: 'nss', name: 'NSS', category: 'Societies & Clubs', email: 'crce.nss@gmail.com', coordinator: 'Prof. Pradeep Singh' },
-  { id: 'rotaract-club', name: 'Rotaract Club', category: 'Societies & Clubs', email: 'rotaractcrce@gmail.com', coordinator: 'Dr. Ketaki Joshi' },
-  { id: 'tedx', name: 'TEDx', category: 'Societies & Clubs', email: '', coordinator: 'Prof. Savita Borole' }
+  // Additional Societies & Clubs
+  { id: 'nss', name: 'National Service Scheme (NSS)', category: 'Societies & Clubs', email: 'crce.nss@gmail.com', coordinator: 'Prof. Pradeep Singh' },
+  { id: 'rotaract-club', name: 'Rotaract Club CRCE', category: 'Societies & Clubs', email: 'rotaractcrce@gmail.com', coordinator: 'Dr. Ketaki Joshi' },
+  { id: 'tedx', name: 'TEDxCRCE', category: 'Societies & Clubs', email: 'tedxcrce26.27@gmail.com', coordinator: 'Prof. Savita Borole' }
 ];
 
 /**
