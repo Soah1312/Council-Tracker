@@ -864,7 +864,8 @@ export default function AdminPanel() {
       {/* Review Dialog Modal Overlay */}
       {reviewingEvent && (
         <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c]">
+          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] max-h-[90vh] overflow-y-auto">
+
             <div>
               <p className="font-satoshi text-[10px] uppercase font-bold text-[#171e19]/60">Submit Event Review</p>
               <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
@@ -1299,10 +1300,10 @@ export default function AdminPanel() {
       {/* Main Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Navigation Sidebar */}
-        <div className="lg:col-span-1 flex flex-col gap-3">
+        <div className="lg:col-span-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 gap-2 sm:gap-3 no-scrollbar">
           <button
             onClick={() => setActiveSubTab('dashboard')}
-            className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
               activeSubTab === 'dashboard'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -1313,7 +1314,7 @@ export default function AdminPanel() {
           
           <button
             onClick={() => setActiveSubTab('review')}
-            className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
               activeSubTab === 'review'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -1329,7 +1330,7 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('logbook')}
-            className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
               activeSubTab === 'logbook'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -1340,7 +1341,7 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('calendar')}
-            className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
               activeSubTab === 'calendar'
                 ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -1351,7 +1352,7 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('councils')}
-            className={`w-full text-left px-4 py-3 font-anton uppercase tracking-wider text-sm transition-brutal rounded-none flex items-center justify-between border-2 ${
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
               activeSubTab === 'councils'
                 ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -1361,6 +1362,7 @@ export default function AdminPanel() {
           </button>
 
           {/* Developer Seeding Utility */}
+
           <div className="mt-8 p-4 bg-red-50 border-2 border-red-500 space-y-3 font-satoshi text-xs text-left">
             <p className="font-bold text-red-800 uppercase tracking-wide">Developer Seeding Console</p>
             <p className="text-red-950 font-medium leading-relaxed">

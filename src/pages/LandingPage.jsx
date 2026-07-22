@@ -624,10 +624,10 @@ export default function LandingPage() {
                   className="absolute top-5 right-5 z-10 w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.12] transition-all">
                   <X size={14} />
                 </button>
-                <div className="p-8 border-b border-white/[0.05] shrink-0 relative overflow-hidden">
+                <div className="p-5 sm:p-8 border-b border-white/[0.05] shrink-0 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-[1.5px]"
                     style={{ background: `linear-gradient(90deg, transparent 0%, ${COUNCIL_COLORS[detail.councilId] || '#ffe17c'} 50%, transparent 100%)` }} />
-                  <div className="flex items-center gap-2.5 mb-4">
+                  <div className="flex items-center gap-2.5 mb-4 pr-8">
                     <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-white/45 border border-white/[0.06]">{detail.councilName}</span>
                     {(() => {
                       const s = STATUS_CONFIG[detail._status] || STATUS_CONFIG.closed;
@@ -640,13 +640,14 @@ export default function LandingPage() {
                       );
                     })()}
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">{detail.eventName}</h2>
-                  <div className="flex flex-wrap gap-4 text-sm text-white/35">
+                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">{detail.eventName}</h2>
+                  <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-white/35">
                     <span className="flex items-center gap-1.5"><CalendarIcon size={13} /> {format(detail._startDate, 'EEEE, MMM d · h:mm a')}</span>
                     {detail.venue && <span className="flex items-center gap-1.5"><MapPin size={13} /> {detail.venue}</span>}
                   </div>
                 </div>
-                <div className="p-8 overflow-y-auto">
+                <div className="p-5 sm:p-8 overflow-y-auto">
+
                   <div className="grid grid-cols-2 gap-4 mb-8">
                     {[
                       { icon: Users, label: 'Expected Footfall', value: detail.expectedFootfall || 'N/A' },

@@ -1455,14 +1455,14 @@ export default function CouncilPortal() {
       </div>
 
       {/* Tabs folderSwitcher */}
-      <div className="flex flex-wrap border-b-2 border-[#171e19]">
+      <div className="flex overflow-x-auto border-b-2 border-[#171e19] no-scrollbar scroll-smooth">
         <button
           onClick={() => {
             setActiveTab('new-request');
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] tracking-wider transition-brutal ${activeTab === 'new-request'
+          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] tracking-wider transition-brutal shrink-0 whitespace-nowrap ${activeTab === 'new-request'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
@@ -1476,7 +1476,7 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal ${activeTab === 'my-events'
+          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap ${activeTab === 'my-events'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
@@ -1490,7 +1490,7 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal ${activeTab === 'members'
+          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap ${activeTab === 'members'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
@@ -1504,23 +1504,24 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal flex items-center gap-2 ${activeTab === 'calendar'
+          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 ${activeTab === 'calendar'
               ? 'bg-[#171e19] text-[#ffe17c] border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
         >
-          <IconCalendar className="w-5 h-5" /> Calendar
+          <IconCalendar className="w-4 h-4 sm:w-5 sm:h-5" /> Calendar
         </button>
 
         {reportingEvent && (
           <button
             onClick={() => setActiveTab('report')}
-            className={`font-anton text-sm md:text-xl px-4 md:px-8 py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-dashed border-[#ffe17c] bg-[#171e19] text-[#ffe17c] ml-[-2px] tracking-wider transition-brutal`}
+            className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-dashed border-[#ffe17c] bg-[#171e19] text-[#ffe17c] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap`}
           >
             Submit Report ({reportingEvent.eventId})
           </button>
         )}
       </div>
+
 
       {/* Main Content Pane */}
       <div className="pt-2">
@@ -2488,16 +2489,18 @@ export default function CouncilPortal() {
             </div>
 
             {/* Calendar Grid */}
-            <div className="bg-white border-2 border-[#171e19] overflow-hidden shadow-[4px_4px_0px_0px_#ffe17c]">
-              {/* Weekday Headers */}
-              <div className="grid grid-cols-7 bg-[#171e19] font-satoshi text-[10px] font-bold uppercase tracking-wider text-white text-center py-2.5">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d}>{d}</div>
-                ))}
-              </div>
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+              <div className="min-w-[650px] bg-white border-2 border-[#171e19] overflow-hidden shadow-[4px_4px_0px_0px_#ffe17c]">
+                {/* Weekday Headers */}
+                <div className="grid grid-cols-7 bg-[#171e19] font-satoshi text-[10px] font-bold uppercase tracking-wider text-white text-center py-2.5">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                    <div key={d}>{d}</div>
+                  ))}
+                </div>
 
-              {/* Days Grid */}
-              <div className="grid grid-cols-7 border-t border-l border-[#171e19]">
+                {/* Days Grid */}
+                <div className="grid grid-cols-7 border-t border-l border-[#171e19]">
+
                 {(() => {
                   const year = calMonth.getFullYear();
                   const month = calMonth.getMonth();
@@ -2585,7 +2588,7 @@ export default function CouncilPortal() {
                                   <button
                                     key={event.id || event.eventId}
                                     onClick={() => handleOpenCalEventModal(event)}
-                                    className={`w-full text-left px-1 py-0.5 text-[8px] font-bold uppercase tracking-tight break-words whitespace-normal leading-tight cursor-pointer ${chipClass}`}
+                                    className={`w-full text-left px-1.5 py-1 text-[9px] font-bold uppercase tracking-tight break-words whitespace-normal leading-tight rounded-none border border-[#171e19]/20 transition-all ${chipClass}`}
                                     title={`${event.councilName}: ${event.eventName} (${event.status.replace(/_/g, ' ')})`}
                                   >
                                     {isOwnCouncil ? '★ ' : ''}{event.councilName?.split(' ')[0]}: {event.eventName}
@@ -2599,8 +2602,12 @@ export default function CouncilPortal() {
                     );
                   });
                 })()}
+
               </div>
             </div>
+          </div>
+
+
 
             {/* Stats Strip */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -2663,7 +2670,7 @@ export default function CouncilPortal() {
 
         {/* TAB: SUBMIT REPORT */}
         {activeTab === 'report' && reportingEvent && (
-          <div className="bg-white border-2 border-[#171e19] p-8 space-y-6 rounded-none shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in">
+          <div className="bg-white border-2 border-[#171e19] p-8 space-y-6 rounded-none shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in max-h-[90vh] overflow-y-auto">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="h-2 w-2 bg-[#ffe17c] border border-[#171e19]" />
@@ -2738,7 +2745,7 @@ export default function CouncilPortal() {
         {/* MODAL OVERLAY: STAGE 2 PERMISSIONS UPLOAD */}
         {permissionsUploadEvent && (
           <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19]">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19] max-h-[90vh] overflow-y-auto">
               <div>
                 <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Stage 2: Upload Permission Letters</p>
                 <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
@@ -3042,7 +3049,7 @@ export default function CouncilPortal() {
         {/* ADD / EDIT MEMBER MODAL */}
         {memberModalOpen && (
           <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-5 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19]">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-5 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19] max-h-[90vh] overflow-y-auto">
               <div>
                 <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Council Member Management</p>
                 <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
