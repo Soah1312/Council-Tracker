@@ -1488,10 +1488,20 @@ export default function CouncilPortal() {
           <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold mt-1">Faculty Coordinator: {council?.coordinator ? council.coordinator.toUpperCase() : 'N/A'}</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={() => {
+              setResetEmail(auth?.currentUser?.email || council?.email || '');
+              setResetMessage(null);
+              setShowResetModal(true);
+            }}
+            className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer flex items-center gap-1.5"
+          >
+            🔑 Change Password
+          </button>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
+            className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer"
           >
             Logout / Switch
           </button>
