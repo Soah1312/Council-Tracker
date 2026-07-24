@@ -63,7 +63,7 @@ export const ADMIN_ACCOUNTS = [
     readOnly: false
   },
   {
-    email: 'josephrodrigues@fragnel.edu.in',
+    email: 'drjosephrodrigues@gmail.com',
     role: 'dosw',
     name: "Dean of Students' Welfare (DOSW)",
     badge: 'DOSW DEAN',

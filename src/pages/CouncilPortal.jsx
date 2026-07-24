@@ -540,6 +540,28 @@ export default function CouncilPortal() {
         if (matchingCouncil) {
           setCouncil(matchingCouncil);
           sessionStorage.setItem('active_council', JSON.stringify(matchingCouncil));
+
+          // First-time login detection per council email account
+          const cleanEmail = user.email.trim().toLowerCase();
+          const firstLoginKey = `council_first_login_${cleanEmail}`;
+          const hasLoggedInBefore = localStorage.getItem(firstLoginKey);
+
+          if (!hasLoggedInBefore) {
+            localStorage.setItem(firstLoginKey, 'true');
+            setTimeout(() => {
+              showNotification(
+                'SECURITY NOTICE: Welcome! First login detected. Please update your account password.',
+                'warning',
+                'CHANGE PASSWORD',
+                () => {
+                  setResetEmail(cleanEmail);
+                  setResetMessage(null);
+                  setShowResetModal(true);
+                },
+                12000
+              );
+            }, 800);
+          }
         } else {
           setCouncil(null);
           sessionStorage.removeItem('active_council');
@@ -577,11 +599,13 @@ export default function CouncilPortal() {
     return () => unsubscribe();
   }, [council]);
 
-  const showNotification = (message, type = 'success') => {
-    setNotification({ message, type });
-    setTimeout(() => {
-      setNotification(null);
-    }, 4500);
+  const showNotification = (message, type = 'success', actionText = null, onAction = null, duration = 4500) => {
+    setNotification({ message, type, actionText, onAction });
+    if (duration) {
+      setTimeout(() => {
+        setNotification(null);
+      }, duration);
+    }
   };
 
   const getSplitDateTime = (datetimeStr) => {
@@ -1423,11 +1447,31 @@ export default function CouncilPortal() {
     <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${notification.type === 'error'
+        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 p-4 border shadow-xl transition-all duration-300 transform translate-y-0 rounded-none ${
+          notification.type === 'error'
             ? 'bg-red-50 border-red-500 text-red-800'
+            : notification.type === 'warning'
+            ? 'bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19]'
             : 'bg-emerald-50 border-emerald-500 text-emerald-800'
-          }`}>
-          <div className="font-satoshi text-xs font-bold uppercase tracking-wide">{notification.message}</div>
+        }`}>
+          <div className="font-satoshi text-xs font-bold uppercase tracking-wide max-w-sm">{notification.message}</div>
+          {notification.actionText && (
+            <button
+              onClick={() => {
+                if (notification.onAction) notification.onAction();
+                setNotification(null);
+              }}
+              className="px-3 py-1.5 bg-[#171e19] text-[#ffe17c] hover:bg-black font-anton text-xs uppercase tracking-wider border border-[#171e19] transition-all shrink-0 cursor-pointer"
+            >
+              {notification.actionText}
+            </button>
+          )}
+          <button
+            onClick={() => setNotification(null)}
+            className="text-[#171e19] hover:opacity-75 font-bold ml-1 text-sm cursor-pointer"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -3121,6 +3165,65 @@ export default function CouncilPortal() {
                     className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
                   >
                     {memberSubmitting ? 'SAVING...' : (editingMember ? 'UPDATE MEMBER' : 'ADD MEMBER')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+        {/* FORGOT / FIRST TIME CHANGE PASSWORD MODAL OVERLAY */}
+        {showResetModal && (
+          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19]">
+              <div>
+                <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Password Management</p>
+                <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                  RESET ACCOUNT PASSWORD
+                </h3>
+                <p className="font-satoshi text-xs text-[#6b7280] mt-1 font-medium leading-relaxed">
+                  Enter your registered council email address. We will send you an official password reset link.
+                </p>
+              </div>
+
+              {resetMessage && (
+                <div className={`p-3 border-2 text-xs font-bold uppercase ${resetMessage.type === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                  }`}>
+                  {resetMessage.text}
+                </div>
+              )}
+
+              <form onSubmit={handleSendResetLink} className="space-y-4">
+                <div className="space-y-1">
+                  <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2] block">
+                    Registered Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Enter your official email address"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 pt-2 border-t border-[#171e19]/10">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowResetModal(false);
+                      setResetMessage(null);
+                    }}
+                    className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={resetSubmitting}
+                    className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:bg-slate-400"
+                  >
+                    {resetSubmitting ? 'SENDING...' : 'SEND RESET LINK'}
                   </button>
                 </div>
               </form>
