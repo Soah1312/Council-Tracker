@@ -22,7 +22,7 @@ export const COUNCILS = [
   { id: 'stuco', name: "Students' Council CRCE", category: 'Main Council', email: 'frcrce.stuco@gmail.com', coordinator: 'Dr. Joseph Rodrigues' },
 
   // Professional Chapters
-  { id: 'ieee-wie', name: 'IEEE & WIE', category: 'Professional Chapters', email: '', coordinator: 'Prof. Archana Lopes' },
+  { id: 'ieee-wie', name: 'IEEE & WIE', category: 'Professional Chapters', email: 'ieeexwie.crce@gmail.com', coordinator: 'Prof. Archana Lopes' },
   { id: 'csi', name: 'CSI CRCE', category: 'Professional Chapters', email: 'crce.csi@gmail.com', coordinator: 'Prof. Prajakta Dhamanskar' },
   { id: 'acm', name: 'ACM Student Chapter', category: 'Professional Chapters', email: 'acm.frcrce@gmail.com', coordinator: 'Prof. Sarika Davare' },
   { id: 'asme', name: 'ASME', category: 'Professional Chapters', email: 'crce.asme@gmail.com', coordinator: 'Dr. Dipali Bhise' },
