@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
   IconFile, IconCalendar, IconMapPin, IconWarning,
-  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan
+  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan, IconEye, IconEyeOff
 } from '../lib/icons';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -526,6 +526,7 @@ export default function CouncilPortal() {
   // Firebase Auth State
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -1355,17 +1356,27 @@ export default function CouncilPortal() {
                   Forgot Password?
                 </button>
               </div>
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={authPassword}
-                onChange={(e) => {
-                  setAuthPassword(e.target.value);
-                  setAuthError('');
-                }}
-                className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={authPassword}
+                  onChange={(e) => {
+                    setAuthPassword(e.target.value);
+                    setAuthError('');
+                  }}
+                  className="w-full bg-white border-2 border-[#171e19] px-4 py-3 pr-10 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171e19]/60 hover:text-[#171e19] transition-colors p-1 cursor-pointer"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <button

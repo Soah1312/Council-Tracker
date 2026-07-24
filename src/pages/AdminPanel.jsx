@@ -7,7 +7,7 @@ import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailS
 import { subscribeToAllCouncilMembers } from '../lib/members';
 import { seedAllEvents } from '../lib/seedData';
 import { clearAllEvents } from '../lib/clearData';
-import { IconFile, IconCheck, IconX, IconWarning, IconBan } from '../lib/icons';
+import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff } from '../lib/icons';
 
 export default function AdminPanel() {
   // Passcode Security Gate State
@@ -20,6 +20,7 @@ export default function AdminPanel() {
   });
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [passcodeError, setPasscodeError] = useState('');
   const [adminAuthSubmitting, setAdminAuthSubmitting] = useState(false);
 
@@ -753,14 +754,24 @@ export default function AdminPanel() {
                   Forgot Password?
                 </button>
               </div>
-              <input
-                type="password"
-                required
-                placeholder="••••••••"
-                value={adminPassword}
-                onChange={e => { setAdminPassword(e.target.value); setPasscodeError(''); }}
-                className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-xs font-bold text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="••••••••"
+                  value={adminPassword}
+                  onChange={e => { setAdminPassword(e.target.value); setPasscodeError(''); }}
+                  className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 pr-10 text-xs font-bold text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171e19]/60 hover:text-[#171e19] transition-colors p-1 cursor-pointer"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             {passcodeError && (
