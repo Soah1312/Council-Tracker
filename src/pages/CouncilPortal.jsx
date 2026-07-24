@@ -2547,8 +2547,8 @@ export default function CouncilPortal() {
 
             {/* Legend */}
             <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
-              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Approved</div>
-              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/25"></span> Pending / Under Review</div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Approved / Closed</div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 1 Approved / Under Clearances</div>
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#b7c6c2] border border-[#171e19]/20"></span> Your Council's Event</div>
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
             </div>
@@ -2587,9 +2587,9 @@ export default function CouncilPortal() {
                       return bdStart <= dEnd && bdEnd >= dStart;
                     }) : null;
 
-                    // All events (all councils) occurring on this day — include all statuses from Stage 1
+                    // All events (all councils) occurring on this day — only show events whose Stage 1 has been proceeded
                     const dayEvents = day ? allCalEvents.filter(event => {
-                      const relevantStatuses = ['submitted', 'revision_needed', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'];
+                      const relevantStatuses = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'];
                       if (!relevantStatuses.includes(event.status)) return false;
                       const eStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
                       const eEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
@@ -2680,6 +2680,7 @@ export default function CouncilPortal() {
                 <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Total Events This Month</p>
                 <p className="font-anton text-3xl text-[#171e19] mt-1">
                   {allCalEvents.filter(ev => {
+                    if (!['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(ev.status)) return false;
                     const eStart = ev.startDate?.toDate ? ev.startDate.toDate() : new Date(ev.startDate);
                     return eStart.getMonth() === calMonth.getMonth() && eStart.getFullYear() === calMonth.getFullYear();
                   }).length}
