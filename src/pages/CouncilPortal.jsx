@@ -592,7 +592,7 @@ export default function CouncilPortal() {
 
     const unsubscribe = subscribeToEventsByCouncil(council.id, (data) => {
       const processed = data.map(event => {
-        if (event.status === 'approved') {
+        if (event.status === 'approved' && !event.isPastEvent) {
           const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
           if (endDate < new Date()) {
             return { ...event, status: 'report_pending' };

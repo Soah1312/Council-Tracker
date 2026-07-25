@@ -80,7 +80,7 @@ export default function AdminPanel() {
     startDate: '',
     endDate: '',
     venue: '',
-    status: 'closed',
+    status: 'report_pending',
     description: ''
   });
   const [pastEventSubmitting, setPastEventSubmitting] = useState(false);
@@ -137,11 +137,19 @@ export default function AdminPanel() {
 
     setPastEventSubmitting(true);
     try {
-      const selectedCouncilObj = COUNCILS.find(c => c.id === pastEventForm.councilId);
+      const normalizedCouncilId = String(pastEventForm.councilId).trim().toLowerCase();
+      const selectedCouncilObj = COUNCILS.find(c => c.id === normalizedCouncilId);
       const councilName = selectedCouncilObj ? selectedCouncilObj.name : pastEventForm.councilId.toUpperCase();
+      const eventStatus = pastEventForm.status || 'report_pending';
+
+      const endDateVal = pastEventForm.isMultiSession
+        ? (pastEventForm.eventSessions?.[pastEventForm.eventSessions.length - 1]?.endDate ? new Date(pastEventForm.eventSessions[pastEventForm.eventSessions.length - 1].endDate) : new Date())
+        : (pastEventForm.endDate ? new Date(pastEventForm.endDate) : new Date());
+
+      const reportDueDate = new Date(endDateVal.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       await createEventRequest({
-        councilId: pastEventForm.councilId,
+        councilId: normalizedCouncilId,
         councilName,
         eventName: pastEventForm.eventName.trim(),
         category: pastEventForm.category,
@@ -151,10 +159,14 @@ export default function AdminPanel() {
         endDate: pastEventForm.isMultiSession ? null : new Date(pastEventForm.endDate),
         venue: pastEventForm.venue.trim() || 'CRCE Campus',
         eventDescription: pastEventForm.description.trim(),
-        status: pastEventForm.status || 'closed'
+        status: eventStatus,
+        isPastEvent: true,
+        reportDueDate: reportDueDate,
+        stage1Approvals: { dosw: { status: 'approved', timestamp: new Date() } },
+        stage2Approvals: { admin: { status: 'approved', timestamp: new Date() } }
       });
 
-      showNotification('Past / Archival event added successfully!', 'success');
+      showNotification('Past / Archival event added successfully! Council Stage 3 report is now pending.', 'success');
       setShowAddPastEventModal(false);
       setPastEventForm({
         councilId: '',
@@ -165,7 +177,7 @@ export default function AdminPanel() {
         startDate: '',
         endDate: '',
         venue: '',
-        status: 'closed',
+        status: 'report_pending',
         description: ''
       });
     } catch (err) {
@@ -182,7 +194,7 @@ export default function AdminPanel() {
 
     const unsubscribe = subscribeToAllEvents((data) => {
       const processed = data.map(event => {
-        if (event.status === 'approved') {
+        if (event.status === 'approved' && !event.isPastEvent) {
           const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
           if (endDate < new Date()) {
             return { ...event, status: 'report_pending' };
@@ -1456,9 +1468,9 @@ export default function AdminPanel() {
                     onChange={(e) => setPastEventForm(prev => ({ ...prev, status: e.target.value }))}
                     className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
                   >
+                    <option value="report_pending">Stage 3 Report Pending (Require Council Report)</option>
+                    <option value="approved">Stage 2 Approved / Published</option>
                     <option value="closed">Closed / Completed (Archived)</option>
-                    <option value="approved">Approved / Published</option>
-                    <option value="submitted">Submitted (Pending Review)</option>
                   </select>
                 </div>
               </div>

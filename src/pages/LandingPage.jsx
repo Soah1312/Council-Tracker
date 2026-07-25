@@ -45,7 +45,7 @@ const toDate = (field) => {
   return new Date(field);
 };
 const resolveStatus = (event) => {
-  if (event.status === 'approved') {
+  if (event.status === 'approved' && !event.isPastEvent) {
     const end = toDate(event.endDate);
     if (end && end < new Date()) return 'report_pending';
   }
