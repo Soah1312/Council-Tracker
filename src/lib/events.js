@@ -89,23 +89,29 @@ export function isEventActiveOnDate(event, targetDate) {
   if (!event || !targetDate) return false;
   const d = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
 
+  const parseDate = (f) => {
+    if (!f) return null;
+    if (f.toDate && typeof f.toDate === 'function') return f.toDate();
+    if (typeof f.seconds === 'number') return new Date(f.seconds * 1000);
+    const parsed = new Date(f);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
+
   if (event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0) {
     return event.eventSessions.some(session => {
-      if (!session.startDate || !session.endDate) return false;
-      const sStart = session.startDate?.toDate ? session.startDate.toDate() : new Date(session.startDate);
-      const sEnd = session.endDate?.toDate ? session.endDate.toDate() : new Date(session.endDate);
-      if (isNaN(sStart.getTime()) || isNaN(sEnd.getTime())) return false;
+      const sStart = parseDate(session.startDate);
+      const sEnd = parseDate(session.endDate) || sStart;
+      if (!sStart) return false;
 
       const sStartDay = new Date(sStart.getFullYear(), sStart.getMonth(), sStart.getDate(), 0, 0, 0);
-      const sEndDay = new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate(), 23, 59, 59);
+      const sEndDay = new Date(sEnd ? sEnd.getFullYear() : sStart.getFullYear(), sEnd ? sEnd.getMonth() : sStart.getMonth(), sEnd ? sEnd.getDate() : sStart.getDate(), 23, 59, 59);
       return d >= sStartDay && d <= sEndDay;
     });
   }
 
-  if (!event.startDate) return false;
-  const start = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-  const end = event.endDate ? (event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate)) : start;
-  if (isNaN(start.getTime())) return false;
+  const start = parseDate(event.startDate);
+  const end = parseDate(event.endDate) || start;
+  if (!start) return false;
 
   const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
   const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);

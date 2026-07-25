@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
 import { subscribeToAllCouncilMembers } from '../lib/members';
+import { COUNCILS } from '../lib/auth';
 import {
 
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
@@ -140,36 +141,39 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
   events.forEach(ev => {
     if (ev.isMultiSession && Array.isArray(ev.eventSessions) && ev.eventSessions.length > 0) {
       ev.eventSessions.forEach(session => {
-        if (!session.startDate) return;
-        const sStart = session.startDate?.toDate ? session.startDate.toDate() : new Date(session.startDate);
-        const sEnd = session.endDate ? (session.endDate?.toDate ? session.endDate.toDate() : new Date(session.endDate)) : sStart;
-        if (isNaN(sStart.getTime())) return;
+        const sStart = toDate(session.startDate);
+        const sEnd = toDate(session.endDate) || sStart;
+        if (!sStart || isNaN(sStart.getTime())) return;
 
         let curr = new Date(sStart.getFullYear(), sStart.getMonth(), sStart.getDate());
-        const last = new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate());
+        const last = sEnd && !isNaN(sEnd.getTime())
+          ? new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate())
+          : curr;
 
         while (curr <= last) {
           const k = format(curr, 'yyyy-MM-dd');
           if (!byDate[k]) byDate[k] = [];
-          if (!byDate[k].some(existing => existing.eventId === ev.eventId)) {
+          if (!byDate[k].some(existing => (existing.eventId || existing.id) === (ev.eventId || ev.id))) {
             byDate[k].push(ev);
           }
-          curr.setDate(curr.getDate() + 1);
+          curr = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate() + 1);
         }
       });
     } else if (ev._startDate) {
       const sStart = ev._startDate;
-      const sEnd = ev.endDate ? (ev.endDate?.toDate ? ev.endDate.toDate() : new Date(ev.endDate)) : sStart;
+      const sEnd = toDate(ev.endDate) || sStart;
       let curr = new Date(sStart.getFullYear(), sStart.getMonth(), sStart.getDate());
-      const last = isNaN(sEnd.getTime()) ? curr : new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate());
+      const last = sEnd && !isNaN(sEnd.getTime())
+        ? new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate())
+        : curr;
 
       while (curr <= last) {
         const k = format(curr, 'yyyy-MM-dd');
         if (!byDate[k]) byDate[k] = [];
-        if (!byDate[k].some(existing => existing.eventId === ev.eventId)) {
+        if (!byDate[k].some(existing => (existing.eventId || existing.id) === (ev.eventId || ev.id))) {
           byDate[k].push(ev);
         }
-        curr.setDate(curr.getDate() + 1);
+        curr = new Date(curr.getFullYear(), curr.getMonth(), curr.getDate() + 1);
       }
     }
   });
@@ -220,7 +224,7 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
 
                     // Set styles dynamically if there is an event
                     const cellStyle = {};
-                    let cellClasses = 'relative rounded-xl p-1.5 sm:p-2.5 min-h-[74px] sm:min-h-[92px] flex flex-col justify-between transition-all duration-300';
+                    let cellClasses = 'relative rounded-xl p-2 sm:p-3 min-h-[90px] sm:min-h-[110px] flex flex-col justify-between transition-all duration-300';
                     
                     if (todayDay) {
                       cellClasses += ' bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]';
@@ -263,13 +267,13 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
                             </>
                           )}
 
-                          <div className="relative z-10 flex flex-col justify-between w-full h-full flex-grow">
-                            {/* Top Row: Council name (no glow) and Date Number */}
+                          <div className="relative z-10 flex flex-col justify-between w-full h-full flex-grow gap-2">
+                            {/* Top Row: Council name and Date Number */}
                             <div className="flex items-center justify-between w-full">
                               <div>
                                 {hasEvent && (
                                   <span 
-                                    className="text-[11px] font-black tracking-wider uppercase font-anton" 
+                                    className="text-xs sm:text-sm font-black tracking-wider uppercase font-anton" 
                                     style={{ color: eventColor }}
                                   >
                                     {primaryEvent.councilId?.toUpperCase() || primaryEvent.councilName?.slice(0, 8).toUpperCase()}
@@ -277,7 +281,7 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
                                 )}
                               </div>
                               <span className={[
-                                'text-[11px] font-bold leading-none flex items-center justify-center w-6 h-6 rounded-lg',
+                                'text-xs font-black leading-none flex items-center justify-center w-6 h-6 rounded-lg',
                                 todayDay
                                   ? 'bg-[#ffe17c] text-[#000] font-black shadow-[0_0_14px_rgba(255,225,124,0.6)]'
                                   : inMonth 
@@ -291,18 +295,18 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
                               </span>
                             </div>
 
-                            {/* Event details occupying bottom area */}
+                            {/* Event details occupying bottom area (No pulsating dot) */}
                             {hasEvent && (
-                              <div className="mt-2 flex flex-col gap-0.5">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="w-2 h-2 rounded-full shrink-0 animate-pulse" style={{ background: eventColor, boxShadow: `0 0 8px ${eventColor}` }} />
-                                  <span className="text-[10px] font-black tracking-wide uppercase truncate" style={{ color: eventColor, textShadow: `0 0 8px ${eventColor}30` }}>
-                                    {primaryEvent.eventName}
-                                  </span>
-                                </div>
+                              <div className="mt-1 flex flex-col gap-1">
+                                <span
+                                  className="text-xs sm:text-sm font-black tracking-wide uppercase line-clamp-2 leading-snug break-words text-white"
+                                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}
+                                >
+                                  {primaryEvent.eventName}
+                                </span>
                                 {dayEvs.length > 1 && (
-                                  <span className="text-[8px] font-bold text-white/45 pl-3.5">
-                                    +{dayEvs.length - 1} more event{dayEvs.length > 2 ? 's' : ''}
+                                  <span className="text-[10px] font-extrabold text-[#ffe17c] uppercase tracking-wider mt-0.5">
+                                    +{dayEvs.length - 1} MORE EVENT{dayEvs.length > 2 ? 'S' : ''}
                                   </span>
                                 )}
                               </div>
@@ -323,7 +327,7 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
 }
 
 // ─── Marquee Council Names ────────────────────────────────────────────────────
-const COUNCILS = [
+const MARQUEE_COUNCILS = [
   'IEEE-WIE', 'CSI', 'ACM', 'ASME', 'E-Cell', 'FSAI',
   'Team Robix', 'Team Abadha', 'Team CFR', 'GDA', 'NSS',
   'CodeStorm', 'GDG on Campus', 'Rotaract Club', 'TEDx CRCE',
@@ -335,7 +339,7 @@ function Marquee() {
       <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-[#000] to-transparent z-10 pointer-events-none" />
       <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-[#000] to-transparent z-10 pointer-events-none" />
       <div className="flex" style={{ animation: 'marquee 30s linear infinite' }}>
-        {[...COUNCILS, ...COUNCILS].map((name, i) => (
+        {[...MARQUEE_COUNCILS, ...MARQUEE_COUNCILS].map((name, i) => (
           <span key={i} className="flex items-center gap-4 mr-8 shrink-0">
             <span className="text-white/20 text-xs font-bold uppercase tracking-[0.2em]">{name}</span>
             <span className="w-1 h-1 rounded-full bg-[#ffe17c]/30" />
@@ -353,6 +357,14 @@ export default function LandingPage() {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [detail, setDetail] = useState(null);
+  const [allCouncilMembers, setAllCouncilMembers] = useState([]);
+
+  useEffect(() => {
+    const unsub = subscribeToAllCouncilMembers((members) => {
+      setAllCouncilMembers(members);
+    });
+    return () => unsub();
+  }, []);
 
   const handleLoginClick = (targetPath) => {
     setRouteTransition(targetPath);
@@ -664,16 +676,6 @@ export default function LandingPage() {
                     style={{ background: `linear-gradient(90deg, transparent 0%, ${COUNCIL_COLORS[detail.councilId] || '#ffe17c'} 50%, transparent 100%)` }} />
                   <div className="flex items-center gap-2.5 mb-4 pr-8">
                     <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-white/45 border border-white/[0.06]">{detail.councilName}</span>
-                    {(() => {
-                      const s = STATUS_CONFIG[detail._status] || STATUS_CONFIG.closed;
-                      const I = s.icon;
-                      return (
-                        <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 border"
-                          style={{ background: `${s.color}12`, color: s.color, borderColor: `${s.color}25` }}>
-                          <I size={11} /> {s.label}
-                        </span>
-                      );
-                    })()}
                   </div>
                   <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">{detail.eventName}</h2>
                   <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-white/35">
@@ -701,17 +703,52 @@ export default function LandingPage() {
                         <p className="text-white font-semibold">₹{detail.prizeMoneyAmount} <span className="text-white/30 font-normal text-sm">({detail.prizeMoneySource})</span></p>
                       </div>
                     )}
-                    <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
-                      <div>
-                        <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
-                        <p className="text-sm text-white/80">{detail.studentContactName || 'N/A'}</p>
-                        {detail.studentContactPhone && <p className="text-xs text-white/35">{detail.studentContactPhone}</p>}
-                      </div>
-                      <div>
-                        <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
-                        <p className="text-sm text-white/80">{detail.facultyCoordinatorName || 'N/A'}</p>
-                      </div>
-                    </div>
+
+                    {(() => {
+                      const councilObj = COUNCILS.find(c =>
+                        c.id === detail.councilId ||
+                        c.id === (detail.councilId || '').toLowerCase() ||
+                        c.name?.toLowerCase() === (detail.councilName || '').toLowerCase()
+                      );
+
+                      const cId = String(detail.councilId || '').toLowerCase();
+                      const cName = String(detail.councilName || '').toLowerCase();
+                      
+                      const councilMembersForEvent = allCouncilMembers
+                        .filter(m => {
+                          const mId = String(m.councilId || '').toLowerCase();
+                          const mName = String(m.councilName || '').toLowerCase();
+                          return (cId && mId === cId) || (cName && mName === cName);
+                        })
+                        .sort((a, b) => {
+                          const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+                          const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+                          if (orderA !== orderB) return orderA - orderB;
+                          return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+                        });
+
+                      const topMember = councilMembersForEvent[0];
+
+                      const studentContactName = detail.studentContactName || (topMember ? topMember.name : 'N/A');
+                      const studentContactPhone = detail.studentContactPhone || (topMember ? topMember.contactNumber : null);
+                      const facultyCoordName = (detail.facultyCoordinatorName && detail.facultyCoordinatorName !== 'N/A')
+                        ? detail.facultyCoordinatorName
+                        : (councilObj?.coordinator || 'N/A');
+
+                      return (
+                        <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
+                          <div>
+                            <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
+                            <p className="text-sm text-white/80">{studentContactName}</p>
+                            {studentContactPhone && <p className="text-xs text-white/35 mt-0.5">{studentContactPhone}</p>}
+                          </div>
+                          <div>
+                            <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
+                            <p className="text-sm text-white/80">{facultyCoordName}</p>
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {(detail.safetyArrangementNeeded || detail.venuePermissionApplicable) && (
                       <div className="flex gap-2 flex-wrap">
                         {detail.safetyArrangementNeeded && <span className="px-3 py-1.5 rounded-lg bg-orange-500/[0.07] text-orange-400 text-xs font-bold border border-orange-500/[0.14]">Safety Required</span>}

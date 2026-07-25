@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
@@ -2505,11 +2505,7 @@ export default function AdminPanel() {
                       const blockedInfo = isDayBlocked(day);
                       const dayEvents = day ? allEvents.filter(event => {
                         if (!isProposalAccepted(event.status)) return false;
-                        const eventStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-                        const eventEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
-                        const dayStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
-                        const dayEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
-                        return eventStart <= dayEnd && eventEnd >= dayStart;
+                        return isEventActiveOnDate(event, day);
                       }) : [];
 
                       return (
