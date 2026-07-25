@@ -48,7 +48,10 @@ export const COUNCILS = [
   // Additional Societies & Clubs
   { id: 'nss', name: 'National Service Scheme (NSS)', category: 'Societies & Clubs', email: 'crce.nss@gmail.com', coordinator: 'Prof. Pradeep Singh' },
   { id: 'rotaract-club', name: 'Rotaract Club CRCE', category: 'Societies & Clubs', email: 'rotaractcrce@gmail.com', coordinator: 'Dr. Ketaki Joshi' },
-  { id: 'tedx', name: 'TEDxCRCE', category: 'Societies & Clubs', email: 'tedxcrce26.27@gmail.com', coordinator: 'Prof. Savita Borole' }
+  { id: 'tedx', name: 'TEDxCRCE', category: 'Societies & Clubs', email: 'tedxcrce26.27@gmail.com', coordinator: 'Prof. Savita Borole' },
+
+  // Test Account
+  { id: 'test-council', name: 'Test Council', category: 'Test Council', email: 'test@gmail.com', coordinator: 'Test Coordinator' }
 ];
 
 /**

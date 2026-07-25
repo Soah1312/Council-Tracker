@@ -82,17 +82,72 @@ export async function generateEventId() {
 }
 
 /**
+ * Helper to check if an event is active on a specific calendar date.
+ * Handles both standard single-range events and multi-session / split-date events.
+ */
+export function isEventActiveOnDate(event, targetDate) {
+  if (!event || !targetDate) return false;
+  const d = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate(), 0, 0, 0);
+
+  if (event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0) {
+    return event.eventSessions.some(session => {
+      if (!session.startDate || !session.endDate) return false;
+      const sStart = session.startDate?.toDate ? session.startDate.toDate() : new Date(session.startDate);
+      const sEnd = session.endDate?.toDate ? session.endDate.toDate() : new Date(session.endDate);
+      if (isNaN(sStart.getTime()) || isNaN(sEnd.getTime())) return false;
+
+      const sStartDay = new Date(sStart.getFullYear(), sStart.getMonth(), sStart.getDate(), 0, 0, 0);
+      const sEndDay = new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate(), 23, 59, 59);
+      return d >= sStartDay && d <= sEndDay;
+    });
+  }
+
+  if (!event.startDate) return false;
+  const start = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
+  const end = event.endDate ? (event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate)) : start;
+  if (isNaN(start.getTime())) return false;
+
+  const startDay = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 0, 0, 0);
+  const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 23, 59, 59);
+  return d >= startDay && d <= endDay;
+}
+
+/**
  * Creates a new event proposal request in Firestore.
  * Sets status to 'submitted' and creates the document.
  */
 export async function createEventRequest(data) {
   const eventId = data.eventId || await generateEventId();
   
+  let processedSessions = null;
+  if (data.isMultiSession && Array.isArray(data.eventSessions) && data.eventSessions.length > 0) {
+    processedSessions = data.eventSessions.map((s, idx) => ({
+      sessionName: s.sessionName ? s.sessionName.trim() : `Session ${idx + 1}`,
+      startDate: toTimestamp(s.startDate),
+      endDate: toTimestamp(s.endDate)
+    }));
+  }
+
+  let finalStartDate = toTimestamp(data.startDate);
+  let finalEndDate = toTimestamp(data.endDate);
+
+  if (processedSessions && processedSessions.length > 0) {
+    const sorted = [...processedSessions].sort((a, b) => {
+      const ta = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
+      const tb = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+      return ta - tb;
+    });
+    finalStartDate = sorted[0].startDate;
+    finalEndDate = sorted[sorted.length - 1].endDate;
+  }
+
   const finalData = {
     ...data,
     eventId,
-    startDate: toTimestamp(data.startDate),
-    endDate: toTimestamp(data.endDate),
+    isMultiSession: Boolean(data.isMultiSession && processedSessions && processedSessions.length > 0),
+    eventSessions: processedSessions,
+    startDate: finalStartDate,
+    endDate: finalEndDate,
     expectedFootfall: Number(data.expectedFootfall) || 0,
     prizeMoneyApplicable: Boolean(data.prizeMoneyApplicable),
     prizeMoneyAmount: data.prizeMoneyAmount ? Number(data.prizeMoneyAmount) : null,
@@ -104,10 +159,10 @@ export async function createEventRequest(data) {
     externalParticipantsExpected: data.externalParticipantsExpected ? Number(data.externalParticipantsExpected) : null,
     venuePermissionApplicable: Boolean(data.venuePermissionApplicable),
     safetyArrangementNeeded: Boolean(data.safetyArrangementNeeded),
-    status: 'submitted',
-    stage1Approvals: {},
-    stage2Approvals: {},
-    reviewHistory: [],
+    status: data.status || 'submitted',
+    stage1Approvals: data.stage1Approvals || {},
+    stage2Approvals: data.stage2Approvals || {},
+    reviewHistory: data.reviewHistory || [],
     createdAt: serverTimestamp()
   };
 

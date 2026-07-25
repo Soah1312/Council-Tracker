@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
 import { subscribeToAllCouncilMembers } from '../lib/members';
 import { seedAllEvents } from '../lib/seedData';
 import { clearAllEvents } from '../lib/clearData';
-import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff } from '../lib/icons';
+import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers } from '../lib/icons';
+import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 
 export default function AdminPanel() {
   // Passcode Security Gate State
@@ -65,6 +66,115 @@ export default function AdminPanel() {
 
   // Event Detail Modal (Phase 7)
   const [selectedEventDetail, setSelectedEventDetail] = useState(null);
+
+  // Add Past / Archival Event Modal (Superadmin feature)
+  const [showAddPastEventModal, setShowAddPastEventModal] = useState(false);
+  const [pastEventForm, setPastEventForm] = useState({
+    councilId: '',
+    eventName: '',
+    category: 'technical',
+    isMultiSession: false,
+    eventSessions: [
+      { sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '' }
+    ],
+    startDate: '',
+    endDate: '',
+    venue: '',
+    status: 'closed',
+    description: ''
+  });
+  const [pastEventSubmitting, setPastEventSubmitting] = useState(false);
+
+  const handleAddPastSession = () => {
+    setPastEventForm(prev => ({
+      ...prev,
+      eventSessions: [
+        ...prev.eventSessions,
+        { sessionName: `Session ${prev.eventSessions.length + 1}`, startDate: '', endDate: '' }
+      ]
+    }));
+  };
+
+  const handleRemovePastSession = (idx) => {
+    setPastEventForm(prev => ({
+      ...prev,
+      eventSessions: prev.eventSessions.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const handlePastSessionChange = (idx, field, val) => {
+    setPastEventForm(prev => {
+      const updated = [...prev.eventSessions];
+      updated[idx] = { ...updated[idx], [field]: val };
+      return { ...prev, eventSessions: updated };
+    });
+  };
+
+  const handleAddPastEventSubmit = async (e) => {
+    e.preventDefault();
+    if (!pastEventForm.eventName.trim() || !pastEventForm.councilId) {
+      showNotification('Please fill in all required fields.', 'error');
+      return;
+    }
+
+    if (pastEventForm.isMultiSession) {
+      if (!pastEventForm.eventSessions || pastEventForm.eventSessions.length === 0) {
+        showNotification('Please add at least one session for a multi-session event.', 'error');
+        return;
+      }
+      for (const s of pastEventForm.eventSessions) {
+        if (!s.startDate || !s.endDate) {
+          showNotification('All sessions must have valid start and end dates.', 'error');
+          return;
+        }
+      }
+    } else {
+      if (!pastEventForm.startDate || !pastEventForm.endDate) {
+        showNotification('Please select start and end dates.', 'error');
+        return;
+      }
+    }
+
+    setPastEventSubmitting(true);
+    try {
+      const selectedCouncilObj = COUNCILS.find(c => c.id === pastEventForm.councilId);
+      const councilName = selectedCouncilObj ? selectedCouncilObj.name : pastEventForm.councilId.toUpperCase();
+
+      await createEventRequest({
+        councilId: pastEventForm.councilId,
+        councilName,
+        eventName: pastEventForm.eventName.trim(),
+        category: pastEventForm.category,
+        isMultiSession: Boolean(pastEventForm.isMultiSession),
+        eventSessions: pastEventForm.isMultiSession ? pastEventForm.eventSessions : null,
+        startDate: pastEventForm.isMultiSession ? null : new Date(pastEventForm.startDate),
+        endDate: pastEventForm.isMultiSession ? null : new Date(pastEventForm.endDate),
+        venue: pastEventForm.venue.trim() || 'CRCE Campus',
+        eventDescription: pastEventForm.description.trim(),
+        status: pastEventForm.status || 'closed'
+      });
+
+      showNotification('Past / Archival event added successfully!', 'success');
+      setShowAddPastEventModal(false);
+      setPastEventForm({
+        councilId: '',
+        eventName: '',
+        category: 'technical',
+        isMultiSession: false,
+        eventSessions: [{ sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '' }],
+        startDate: '',
+        endDate: '',
+        venue: '',
+        status: 'closed',
+        description: ''
+      });
+    } catch (err) {
+      console.error(err);
+      showNotification(err.message || 'Failed to add past event.', 'error');
+    } finally {
+      setPastEventSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!authenticated) return;
@@ -1268,6 +1378,221 @@ export default function AdminPanel() {
         </div>
       )}
 
+      {/* ADD PAST / ARCHIVAL EVENT MODAL OVERLAY */}
+      {showAddPastEventModal && (
+        <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
+          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19] max-h-[90vh] overflow-y-auto">
+            <div>
+              <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Superadmin Archival Tool</p>
+              <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                ADD PAST / HISTORICAL EVENT
+              </h3>
+              <p className="font-satoshi text-xs text-[#6b7280] mt-1 font-medium leading-relaxed">
+                Add an event from the past to record it in the central registry and display it on the college calendar.
+              </p>
+            </div>
+
+            <form onSubmit={handleAddPastEventSubmit} className="space-y-4 font-satoshi">
+              {/* Council Selection */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                  Organizing Council *
+                </label>
+                <select
+                  required
+                  value={pastEventForm.councilId}
+                  onChange={(e) => setPastEventForm(prev => ({ ...prev, councilId: e.target.value }))}
+                  className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                >
+                  <option value="">-- Select Organizing Council --</option>
+                  {COUNCILS.map(c => (
+                    <option key={c.id} value={c.id}>{c.name} ({c.category})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Event Name */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                  Event Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Annual TechFest 2025"
+                  value={pastEventForm.eventName}
+                  onChange={(e) => setPastEventForm(prev => ({ ...prev, eventName: e.target.value }))}
+                  className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                />
+              </div>
+
+              {/* Category & Status */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                    Category *
+                  </label>
+                  <select
+                    value={pastEventForm.category}
+                    onChange={(e) => setPastEventForm(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  >
+                    <option value="technical">Technical</option>
+                    <option value="non_technical">Non-Technical</option>
+                    <option value="cultural">Cultural</option>
+                    <option value="sports">Sports</option>
+                    <option value="workshop">Workshop</option>
+                    <option value="seminar">Seminar</option>
+                    <option value="general">General</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                    Archive Status *
+                  </label>
+                  <select
+                    value={pastEventForm.status}
+                    onChange={(e) => setPastEventForm(prev => ({ ...prev, status: e.target.value }))}
+                    className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  >
+                    <option value="closed">Closed / Completed (Archived)</option>
+                    <option value="approved">Approved / Published</option>
+                    <option value="submitted">Submitted (Pending Review)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Schedule Type Toggle */}
+              <div className="flex items-center justify-between bg-slate-50 border-2 border-[#171e19] p-3">
+                <div>
+                  <span className="font-anton text-xs text-[#171e19] uppercase tracking-wider block">Multi-Phase / Split Dates?</span>
+                  <span className="font-satoshi text-[10px] text-[#6b7280] font-medium">Enable for split date ranges (e.g. March 10–13 &amp; Dec 18).</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPastEventForm(p => ({ ...p, isMultiSession: !p.isMultiSession }))}
+                  className={`px-3 py-1.5 font-anton text-xs uppercase tracking-wider border-2 border-[#171e19] transition-all cursor-pointer ${
+                    pastEventForm.isMultiSession ? 'bg-[#ffe17c] text-[#171e19]' : 'bg-white text-slate-700'
+                  }`}
+                >
+                  {pastEventForm.isMultiSession ? '✓ Multi-Session' : 'Single Range'}
+                </button>
+              </div>
+
+              {/* Multi-Session Builder OR Standard Start & End Date */}
+              {pastEventForm.isMultiSession ? (
+                <div className="space-y-3 bg-[#b7c6c2]/10 border-2 border-[#171e19] p-3">
+                  <span className="font-anton text-xs uppercase tracking-wider text-[#171e19] block">Event Sessions / Date Ranges</span>
+                  {pastEventForm.eventSessions.map((sess, sIdx) => (
+                    <div key={sIdx} className="bg-white border-2 border-[#171e19] p-3 space-y-2">
+                      <div className="flex justify-between items-center border-b border-[#171e19]/10 pb-1">
+                        <input
+                          type="text"
+                          value={sess.sessionName}
+                          onChange={e => handlePastSessionChange(sIdx, 'sessionName', e.target.value)}
+                          placeholder={`Session ${sIdx + 1} Title`}
+                          className="font-anton text-xs uppercase text-[#171e19] border-b border-[#171e19]/30 focus:border-[#171e19] focus:outline-none bg-transparent px-1 py-0.5"
+                        />
+                        {pastEventForm.eventSessions.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => handleRemovePastSession(sIdx)}
+                            className="text-red-500 hover:text-red-700 text-[10px] font-bold uppercase tracking-wider"
+                          >
+                            ✕ Remove
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <BrutalistDateTimePicker
+                          label="Start Date & Time *"
+                          value={sess.startDate}
+                          onChange={(newVal) => handlePastSessionChange(sIdx, 'startDate', newVal)}
+                        />
+                        <BrutalistDateTimePicker
+                          label="End Date & Time *"
+                          value={sess.endDate}
+                          onChange={(newVal) => handlePastSessionChange(sIdx, 'endDate', newVal)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={handleAddPastSession}
+                    className="w-full py-2 bg-white hover:bg-[#ffe17c]/20 border-2 border-dashed border-[#171e19] font-anton text-xs uppercase tracking-wider text-[#171e19] transition-all cursor-pointer"
+                  >
+                    + Add Another Session / Date Range
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <BrutalistDateTimePicker
+                    label="Start Date & Time *"
+                    value={pastEventForm.startDate}
+                    onChange={(newVal) => setPastEventForm(prev => ({ ...prev, startDate: newVal }))}
+                  />
+                  <BrutalistDateTimePicker
+                    label="End Date & Time *"
+                    value={pastEventForm.endDate}
+                    onChange={(newVal) => setPastEventForm(prev => ({ ...prev, endDate: newVal }))}
+                  />
+                </div>
+              )}
+
+              {/* Venue */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                  Venue Location
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Samartha Hall / Main Auditorium"
+                  value={pastEventForm.venue}
+                  onChange={(e) => setPastEventForm(prev => ({ ...prev, venue: e.target.value }))}
+                  className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                  Event Description / Summary
+                </label>
+                <textarea
+                  rows="3"
+                  placeholder="Summary of the event outcome or description..."
+                  value={pastEventForm.description}
+                  onChange={(e) => setPastEventForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full bg-white border-2 border-[#171e19] p-3 text-xs font-medium text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
+                <button
+                  type="button"
+                  disabled={pastEventSubmitting}
+                  onClick={() => setShowAddPastEventModal(false)}
+                  className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={pastEventSubmitting}
+                  className="px-5 py-2 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
+                >
+                  {pastEventSubmitting ? 'ADDING...' : 'ADD PAST EVENT'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
 
 
       {/* Header */}
@@ -1292,7 +1617,15 @@ export default function AdminPanel() {
           )}
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {adminUser?.role === 'super_admin' && (
+            <button
+              onClick={() => setShowAddPastEventModal(true)}
+              className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/80 transition-brutal shadow-[2px_2px_0px_0px_#171e19] cursor-pointer flex items-center gap-1.5"
+            >
+              + ADD PAST EVENT
+            </button>
+          )}
           <Link
             to="/portal"
             className="inline-flex items-center px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
@@ -1301,7 +1634,7 @@ export default function AdminPanel() {
           </Link>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border-2 border-[#171e19] bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/10 transition-brutal"
+            className="px-4 py-2 border-2 border-[#171e19] bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/10 transition-brutal cursor-pointer"
           >
             LOGOUT
           </button>
@@ -2304,8 +2637,8 @@ export default function AdminPanel() {
 
               {allCouncilMembers.length === 0 ? (
                 <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none shadow-[4px_4px_0px_0px_#ffe17c] space-y-3">
-                  <div className="w-12 h-12 bg-[#ffe17c]/30 border-2 border-[#171e19] rounded-full flex items-center justify-center mx-auto text-xl font-bold">
-                    👥
+                  <div className="w-12 h-12 bg-[#ffe17c]/30 border-2 border-[#171e19] rounded-full flex items-center justify-center mx-auto text-[#171e19]">
+                    <IconUsers className="w-6 h-6 text-[#171e19]" />
                   </div>
                   <h3 className="font-anton text-xl text-[#171e19] uppercase">NO COUNCIL MEMBERS REGISTERED YET</h3>
                   <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider">

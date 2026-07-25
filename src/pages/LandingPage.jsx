@@ -138,9 +138,40 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
   const rows = buildCalendarGrid(month);
   const byDate = {};
   events.forEach(ev => {
-    if (!ev._startDate) return;
-    const k = format(ev._startDate, 'yyyy-MM-dd');
-    (byDate[k] = byDate[k] || []).push(ev);
+    if (ev.isMultiSession && Array.isArray(ev.eventSessions) && ev.eventSessions.length > 0) {
+      ev.eventSessions.forEach(session => {
+        if (!session.startDate) return;
+        const sStart = session.startDate?.toDate ? session.startDate.toDate() : new Date(session.startDate);
+        const sEnd = session.endDate ? (session.endDate?.toDate ? session.endDate.toDate() : new Date(session.endDate)) : sStart;
+        if (isNaN(sStart.getTime())) return;
+
+        let curr = new Date(sStart.getFullYear(), sStart.getMonth(), sStart.getDate());
+        const last = new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate());
+
+        while (curr <= last) {
+          const k = format(curr, 'yyyy-MM-dd');
+          if (!byDate[k]) byDate[k] = [];
+          if (!byDate[k].some(existing => existing.eventId === ev.eventId)) {
+            byDate[k].push(ev);
+          }
+          curr.setDate(curr.getDate() + 1);
+        }
+      });
+    } else if (ev._startDate) {
+      const sStart = ev._startDate;
+      const sEnd = ev.endDate ? (ev.endDate?.toDate ? ev.endDate.toDate() : new Date(ev.endDate)) : sStart;
+      let curr = new Date(sStart.getFullYear(), sStart.getMonth(), sStart.getDate());
+      const last = isNaN(sEnd.getTime()) ? curr : new Date(sEnd.getFullYear(), sEnd.getMonth(), sEnd.getDate());
+
+      while (curr <= last) {
+        const k = format(curr, 'yyyy-MM-dd');
+        if (!byDate[k]) byDate[k] = [];
+        if (!byDate[k].some(existing => existing.eventId === ev.eventId)) {
+          byDate[k].push(ev);
+        }
+        curr.setDate(curr.getDate() + 1);
+      }
+    }
   });
   const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

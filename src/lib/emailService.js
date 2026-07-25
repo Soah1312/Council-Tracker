@@ -15,6 +15,7 @@
 
 import emailjs from '@emailjs/browser';
 import { COUNCILS } from './auth';
+import { auth } from './firebase';
 
 
 const SERVICE_ID  = import.meta.env.VITE_EMAILJS_SERVICE_ID;
@@ -54,10 +55,20 @@ const recentDispatches = new Set();
  * @param {Object} params  - Template variables forwarded to EmailJS
  */
 async function dispatch(params) {
-  if (params.event_name && /\btest\b/i.test(params.event_name)) {
-    console.log(`[EmailJS] Event name contains 'TEST' (${params.event_name}) — skipping email dispatch.`);
+  // Check if action is performed by or targeting test@gmail.com
+  const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
+  const councilEmail = (params.council_email || params.councilEmail || '').toLowerCase();
+  const toEmail = (params.to_email || '').toLowerCase();
+
+  if (
+    currentUserEmail === 'test@gmail.com' ||
+    councilEmail === 'test@gmail.com' ||
+    toEmail.includes('test@gmail.com')
+  ) {
+    console.log(`[EmailJS] Action performed by or for test account (test@gmail.com) — skipping email dispatch.`);
     return;
   }
+
   if (!SERVICE_ID || !TEMPLATE_ID || !PUBLIC_KEY) {
     console.warn('[EmailJS] Missing configuration — skipping email notification.');
     return;
@@ -113,6 +124,7 @@ export async function notifyProposalSubmitted(event, councilName) {
     event_id:       event.eventId,
     event_name:     event.eventName,
     council_name:   councilName,
+    council_email:  event.councilEmail || '',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review and respond.',
@@ -131,6 +143,7 @@ export async function notifyProposalReopened(event, councilName) {
     event_id:       event.eventId,
     event_name:     event.eventName,
     council_name:   councilName,
+    council_email:  event.councilEmail || '',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'The proposal is active again for review and clearance uploads.',
@@ -149,6 +162,7 @@ export async function notifyProposalResubmitted(event, councilName) {
     event_id:       event.eventId,
     event_name:     event.eventName,
     council_name:   councilName,
+    council_email:  event.councilEmail || '',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review the updated proposal.',
@@ -167,6 +181,7 @@ export async function notifyPermissionsSubmitted(event, councilName) {
     event_id:       event.eventId,
     event_name:     event.eventName,
     council_name:   councilName,
+    council_email:  event.councilEmail || '',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to verify the uploaded documents.',
@@ -185,6 +200,7 @@ export async function notifyReportSubmitted(event, councilName) {
     event_id:       event.eventId,
     event_name:     event.eventName,
     council_name:   councilName,
+    council_email:  event.councilEmail || '',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review the report and close the event.',

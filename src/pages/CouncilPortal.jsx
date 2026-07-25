@@ -7,7 +7,7 @@ import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
   IconFile, IconCalendar, IconMapPin, IconWarning,
-  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan, IconEye, IconEyeOff
+  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan, IconEye, IconEyeOff, IconKey, IconUsers
 } from '../lib/icons';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -15,6 +15,8 @@ import { CSS } from '@dnd-kit/utilities';
 import { GripVertical } from 'lucide-react';
 
 
+
+import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 
 function DragDropUpload({ id, label, accept, file, filesList, multiple, onChange, error, cachedUrl, helperText }) {
   const [dragActive, setDragActive] = useState(false);
@@ -225,6 +227,12 @@ export default function CouncilPortal() {
     studentContactPhone: '',
     facultyCoordinatorName: '',
     resourcesNeeded: '',
+
+    // Schedule type
+    isMultiSession: false,
+    eventSessions: [
+      { sessionName: 'Session 1 / Day 1', startDate: '', endDate: '' }
+    ],
 
     // Toggles
     venuePermissionApplicable: false,
@@ -1084,8 +1092,10 @@ export default function CouncilPortal() {
         councilEmail: auth.currentUser?.email || '',
         eventName: formData.eventName.trim(),
         expectedFootfall: Number(formData.expectedFootfall),
-        startDate: formData.startDate,
-        endDate: formData.endDate,
+        isMultiSession: Boolean(formData.isMultiSession),
+        eventSessions: formData.isMultiSession ? formData.eventSessions : null,
+        startDate: formData.isMultiSession ? null : formData.startDate,
+        endDate: formData.isMultiSession ? null : formData.endDate,
         eventDescriptionUrl,
         eventOutcomeUrl,
         doswPermissionLetterUrl,
@@ -1508,7 +1518,7 @@ export default function CouncilPortal() {
             }}
             className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer flex items-center gap-1.5"
           >
-            🔑 Change Password
+            <IconKey className="w-4 h-4 text-[#171e19]" /> Change Password
           </button>
           <button
             onClick={handleLogout}
@@ -1714,293 +1724,176 @@ export default function CouncilPortal() {
                   </div>
                 </div>
 
-                {/* SECTION 2: Logistics - Schedule & Timings */}
+                           {/* SECTION 2: Logistics - Schedule & Timings */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 mb-4">
                     <div className="w-3 h-7 bg-[#ffe17c] border border-[#171e19]" />
                     <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">SCHEDULE & TIMINGS</h3>
                   </div>
 
+                  {/* Schedule Type Selector */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border-2 border-[#171e19] p-4 gap-3">
+                    <div>
+                      <span className="font-anton text-sm text-[#171e19] uppercase tracking-wider block">Multi-Phase / Split-Date Event Schedule?</span>
+                      <span className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase">Enable for events spanning multiple non-contiguous date ranges (e.g. March 10–13 &amp; Dec 18).</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(p => ({ ...p, isMultiSession: !p.isMultiSession }))}
+                      className={`px-4 py-2 font-anton text-xs uppercase tracking-wider border-2 border-[#171e19] transition-brutal cursor-pointer shrink-0 ${
+                        formData.isMultiSession ? 'bg-[#ffe17c] text-[#171e19]' : 'bg-slate-100 text-slate-600'
+                      }`}
+                    >
+                      {formData.isMultiSession ? '✓ Multi-Session Enabled' : 'Standard (Single Range)'}
+                    </button>
+                  </div>
+
                   {/* Overlap Error Alert */}
                   {(() => {
-                    const overlap = getBlockedOverlap(formData.startDate, formData.endDate);
-                    if (!overlap) return null;
-                    return (
-                      <div className="p-3.5 bg-red-100 border-2 border-red-500 text-red-900 font-satoshi text-xs font-bold uppercase tracking-wide flex items-center gap-2.5">
-                        <IconBan className="w-5 h-5 text-red-600 shrink-0" />
-                        <span>DATE RESTRICTED: Selected timing overlaps with Admin-Blocked period "{overlap.reason}". You cannot submit proposals for blocked dates.</span>
-                      </div>
-                    );
-                  })()}
-
-                  <div className="bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c] relative" ref={popoverRef}>
-                    {/* Compact 4-Field Row Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-
-                      {/* 1. START DATE */}
-                      <div className="flex flex-col gap-1.5 relative">
-                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Start Date *</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const dateObj = formData.startDate ? new Date(formData.startDate) : new Date();
-                            if (!isNaN(dateObj.getTime())) setStartCalMonth(dateObj);
-                            setActivePopover(prev => prev === 'startDate' ? null : 'startDate');
-                          }}
-                          className="w-full bg-white border-2 border-[#171e19] px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase"
-                        >
-                          <span>
-                            {formData.startDate ? format(new Date(formData.startDate), 'MMM dd, yyyy') : 'SELECT START DATE'}
-                          </span>
-                          <IconCalendar className="w-4 h-4 text-[#171e19] shrink-0" />
-                        </button>
-
-                        {/* Calendar Popover for Start Date */}
-                        {activePopover === 'startDate' && (
-                          <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-white border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#171e19] p-3 animate-fade-in">
-                            <div className="flex items-center justify-between border-b-2 border-[#171e19] pb-2 mb-2">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setStartCalMonth(new Date(startCalMonth.getFullYear(), startCalMonth.getMonth() - 1, 1));
-                                }}
-                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
-                              >
-                                &larr;
-                              </button>
-                              <span className="font-anton text-xs uppercase tracking-wider text-[#171e19]">
-                                {format(startCalMonth, 'MMMM yyyy')}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setStartCalMonth(new Date(startCalMonth.getFullYear(), startCalMonth.getMonth() + 1, 1));
-                                }}
-                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
-                              >
-                                &rarr;
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-7 text-center font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] mb-1.5">
-                              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, idx) => <div key={idx}>{w}</div>)}
-                            </div>
-
-                            <div className="grid grid-cols-7 gap-1 text-center font-satoshi text-xs font-bold">
-                              {(() => {
-                                const year = startCalMonth.getFullYear();
-                                const month = startCalMonth.getMonth();
-                                const firstDay = new Date(year, month, 1);
-                                const startWeekDay = firstDay.getDay();
-                                const totalDays = new Date(year, month + 1, 0).getDate();
-
-                                const dayButtons = [];
-                                for (let i = 0; i < startWeekDay; i++) {
-                                  dayButtons.push(<div key={`pad-${i}`} className="h-6" />);
-                                }
-
-                                const selectedDateStr = getSplitDateTime(formData.startDate).date;
-                                for (let i = 1; i <= totalDays; i++) {
-                                  const currentDayObj = new Date(year, month, i);
-                                  const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                                  const isSelected = selectedDateStr === currentDayStr;
-                                  const isToday = currentDayObj.toDateString() === new Date().toDateString();
-                                  const blocked = isDateBlocked(currentDayObj);
-
-                                  dayButtons.push(
-                                    <button
-                                      type="button"
-                                      key={`day-${i}`}
-                                      disabled={!!blocked}
-                                      title={blocked ? `BLOCKED BY ADMIN: ${blocked.reason}` : undefined}
-                                      onClick={(e) => {
-                                        if (blocked) return;
-                                        e.stopPropagation();
-                                        handleSelectCalendarDate('startDate', currentDayObj);
-                                        setActivePopover(null);
-                                      }}
-                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${blocked
-                                          ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
-                                          : isSelected
-                                            ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
-                                            : isToday
-                                              ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
-                                              : 'border-transparent hover:border-[#171e19] text-[#171e19]'
-                                        }`}
-                                    >
-                                      {i}
-                                    </button>
-                                  );
-                                }
-                                return dayButtons;
-                              })()}
-                            </div>
-                          </div>
-                        )}
-                        {errors.startDate && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.startDate}</p>}
-                      </div>
-
-                      {/* 2. START TIME */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Start Time *</label>
-                        <select
-                          value={getSplitDateTime(formData.startDate).time || '09:00'}
-                          onChange={(e) => handleSplitDateTimeChange('startDate', 'time', e.target.value)}
-                          className="w-full bg-white border-2 border-[#171e19] px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase"
-                        >
-                          {timeOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {/* 3. END DATE */}
-                      <div className="flex flex-col gap-1.5 relative">
-                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">End Date *</label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const dateObj = formData.endDate ? new Date(formData.endDate) : new Date();
-                            if (!isNaN(dateObj.getTime())) setEndCalMonth(dateObj);
-                            setActivePopover(prev => prev === 'endDate' ? null : 'endDate');
-                          }}
-                          className="w-full bg-white border-2 border-[#171e19] px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase"
-                        >
-                          <span>
-                            {formData.endDate ? format(new Date(formData.endDate), 'MMM dd, yyyy') : 'SELECT END DATE'}
-                          </span>
-                          <IconCalendar className="w-4 h-4 text-[#171e19] shrink-0" />
-                        </button>
-
-                        {/* Calendar Popover for End Date */}
-                        {activePopover === 'endDate' && (
-                          <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-white border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#171e19] p-3 animate-fade-in">
-                            <div className="flex items-center justify-between border-b-2 border-[#171e19] pb-2 mb-2">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEndCalMonth(new Date(endCalMonth.getFullYear(), endCalMonth.getMonth() - 1, 1));
-                                }}
-                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
-                              >
-                                &larr;
-                              </button>
-                              <span className="font-anton text-xs uppercase tracking-wider text-[#171e19]">
-                                {format(endCalMonth, 'MMMM yyyy')}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setEndCalMonth(new Date(endCalMonth.getFullYear(), endCalMonth.getMonth() + 1, 1));
-                                }}
-                                className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal"
-                              >
-                                &rarr;
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-7 text-center font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] mb-1.5">
-                              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, idx) => <div key={idx}>{w}</div>)}
-                            </div>
-
-                            <div className="grid grid-cols-7 gap-1 text-center font-satoshi text-xs font-bold">
-                              {(() => {
-                                const year = endCalMonth.getFullYear();
-                                const month = endCalMonth.getMonth();
-                                const firstDay = new Date(year, month, 1);
-                                const startWeekDay = firstDay.getDay();
-                                const totalDays = new Date(year, month + 1, 0).getDate();
-
-                                const dayButtons = [];
-                                for (let i = 0; i < startWeekDay; i++) {
-                                  dayButtons.push(<div key={`pad-${i}`} className="h-6" />);
-                                }
-
-                                const selectedDateStr = getSplitDateTime(formData.endDate).date;
-                                for (let i = 1; i <= totalDays; i++) {
-                                  const currentDayObj = new Date(year, month, i);
-                                  const currentDayStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-                                  const isSelected = selectedDateStr === currentDayStr;
-                                  const isToday = currentDayObj.toDateString() === new Date().toDateString();
-                                  const blocked = isDateBlocked(currentDayObj);
-
-                                  dayButtons.push(
-                                    <button
-                                      type="button"
-                                      key={`day-${i}`}
-                                      disabled={!!blocked}
-                                      title={blocked ? `BLOCKED BY ADMIN: ${blocked.reason}` : undefined}
-                                      onClick={(e) => {
-                                        if (blocked) return;
-                                        e.stopPropagation();
-                                        handleSelectCalendarDate('endDate', currentDayObj);
-                                        setActivePopover(null);
-                                      }}
-                                      className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 ${blocked
-                                          ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
-                                          : isSelected
-                                            ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
-                                            : isToday
-                                              ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
-                                              : 'border-transparent hover:border-[#171e19] text-[#171e19]'
-                                        }`}
-                                    >
-                                      {i}
-                                    </button>
-                                  );
-                                }
-                                return dayButtons;
-                              })()}
-                            </div>
-                          </div>
-                        )}
-                        {errors.endDate && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.endDate}</p>}
-                      </div>
-
-                      {/* 4. END TIME */}
-                      <div className="flex flex-col gap-1.5">
-                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">End Time *</label>
-                        <select
-                          value={getSplitDateTime(formData.endDate).time || '17:00'}
-                          onChange={(e) => handleSplitDateTimeChange('endDate', 'time', e.target.value)}
-                          className={`w-full bg-white border-2 px-3 py-2.5 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase ${getEventDuration()?.isInvalid ? 'border-red-500 bg-red-50/30' : 'border-[#171e19]'
-                            }`}
-                        >
-                          {timeOptions.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label}
-                            </option>
-                          ))}
-                        </select>
-
-                        {/* Inline error for End < Start */}
-                        {getEventDuration()?.isInvalid && (
-                          <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide mt-1">
-                            End date/time must be after start date/time.
-                          </p>
-                        )}
-                      </div>
-
-                    </div>
-
-                    {/* Computed Duration Summary Line */}
-                    {(() => {
-                      const dur = getEventDuration();
-                      if (!dur || dur.isInvalid) return null;
+                    if (!formData.isMultiSession) {
+                      const overlap = getBlockedOverlap(formData.startDate, formData.endDate);
+                      if (!overlap) return null;
                       return (
-                        <div className="mt-4 pt-3 border-t border-[#171e19]/15 flex items-center gap-2 font-satoshi text-xs font-bold text-[#171e19]">
-                          <span className="w-2.5 h-2.5 bg-[#ffe17c] border border-[#171e19] shrink-0" />
-                          <span className="uppercase tracking-wide">Calculated Duration: {dur.text}</span>
+                        <div className="p-3.5 bg-red-100 border-2 border-red-500 text-red-900 font-satoshi text-xs font-bold uppercase tracking-wide flex items-center gap-2.5">
+                          <IconBan className="w-5 h-5 text-red-600 shrink-0" />
+                          <span>DATE RESTRICTED: Selected timing overlaps with Admin-Blocked period "{overlap.reason}". You cannot submit proposals for blocked dates.</span>
                         </div>
                       );
-                    })()}
-                  </div>
+                    } else {
+                      let blockedReason = null;
+                      if (formData.eventSessions && formData.eventSessions.length > 0) {
+                        for (const sess of formData.eventSessions) {
+                          const ov = getBlockedOverlap(sess.startDate, sess.endDate);
+                          if (ov) { blockedReason = ov.reason; break; }
+                        }
+                      }
+                      if (!blockedReason) return null;
+                      return (
+                        <div className="p-3.5 bg-red-100 border-2 border-red-500 text-red-900 font-satoshi text-xs font-bold uppercase tracking-wide flex items-center gap-2.5">
+                          <IconBan className="w-5 h-5 text-red-600 shrink-0" />
+                          <span>DATE RESTRICTED: One of your sessions overlaps with Admin-Blocked period "{blockedReason}".</span>
+                        </div>
+                      );
+                    }
+                  })()}
+
+                  {/* Multi-Session Builder OR Standard Date Picker */}
+                  {formData.isMultiSession ? (
+                    <div className="space-y-4 bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c]">
+                      <span className="font-anton text-sm uppercase tracking-wider text-[#171e19] block">Event Sessions &amp; Dates</span>
+                      {(formData.eventSessions || []).map((sess, sIdx) => (
+                        <div key={sIdx} className="bg-white border-2 border-[#171e19] p-4 space-y-3 shadow-[3px_3px_0px_0px_#171e19]">
+                          <div className="flex justify-between items-center border-b border-[#171e19]/10 pb-2">
+                            <input
+                              type="text"
+                              value={sess.sessionName}
+                              onChange={e => {
+                                const updated = [...(formData.eventSessions || [])];
+                                updated[sIdx] = { ...updated[sIdx], sessionName: e.target.value };
+                                setFormData(p => ({ ...p, eventSessions: updated }));
+                              }}
+                              placeholder={`Session ${sIdx + 1} Name (e.g. Day 1–4 Hackathon)`}
+                              className="font-anton text-sm uppercase text-[#171e19] border-b border-[#171e19]/30 focus:border-[#171e19] focus:outline-none bg-transparent px-1 py-0.5"
+                            />
+                            {formData.eventSessions.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(p => ({
+                                    ...p,
+                                    eventSessions: p.eventSessions.filter((_, i) => i !== sIdx)
+                                  }));
+                                }}
+                                className="text-red-500 hover:text-red-700 font-satoshi text-xs font-bold uppercase tracking-wider"
+                              >
+                                ✕ Remove
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-satoshi">
+                            <BrutalistDateTimePicker
+                              label="Session Start Date & Time *"
+                              value={sess.startDate}
+                              onChange={(newVal) => {
+                                const updated = [...(formData.eventSessions || [])];
+                                updated[sIdx] = { ...updated[sIdx], startDate: newVal };
+                                setFormData(p => ({ ...p, eventSessions: updated }));
+                              }}
+                              isDateBlocked={isDateBlocked}
+                              timeOptions={timeOptions}
+                            />
+                            <BrutalistDateTimePicker
+                              label="Session End Date & Time *"
+                              value={sess.endDate}
+                              onChange={(newVal) => {
+                                const updated = [...(formData.eventSessions || [])];
+                                updated[sIdx] = { ...updated[sIdx], endDate: newVal };
+                                setFormData(p => ({ ...p, eventSessions: updated }));
+                              }}
+                              isDateBlocked={isDateBlocked}
+                              timeOptions={timeOptions}
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(p => ({
+                            ...p,
+                            eventSessions: [
+                              ...(p.eventSessions || []),
+                              { sessionName: `Session ${(p.eventSessions?.length || 0) + 1}`, startDate: '', endDate: '' }
+                            ]
+                          }));
+                        }}
+                        className="w-full py-3 bg-white hover:bg-[#ffe17c]/20 border-2 border-dashed border-[#171e19] font-anton text-xs uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer"
+                      >
+                        + Add Another Session / Date Range (e.g. Dec 18)
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="bg-[#b7c6c2]/5 border-2 border-[#171e19] p-5 shadow-[4px_4px_0px_0px_#ffe17c] relative" ref={popoverRef}>
+                      {/* Compact 4-Field Row Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <BrutalistDateTimePicker
+                          label="Start Date & Time *"
+                          value={formData.startDate}
+                          onChange={(newVal) => handleStartDateChange(newVal)}
+                          isDateBlocked={isDateBlocked}
+                          timeOptions={timeOptions}
+                        />
+                        <BrutalistDateTimePicker
+                          label="End Date & Time *"
+                          value={formData.endDate}
+                          onChange={(newVal) => setFormData(p => ({ ...p, endDate: newVal }))}
+                          isDateBlocked={isDateBlocked}
+                          timeOptions={timeOptions}
+                        />
+                      </div>
+
+                      {/* Inline error for End < Start */}
+                      {getEventDuration()?.isInvalid && (
+                        <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide mt-2">
+                          End date/time must be after start date/time.
+                        </p>
+                      )}
+
+                      {/* Computed Duration Summary Line */}
+                      {(() => {
+                        const dur = getEventDuration();
+                        if (!dur || dur.isInvalid) return null;
+                        return (
+                          <div className="mt-4 pt-3 border-t border-[#171e19]/15 flex items-center gap-2 font-satoshi text-xs font-bold text-[#171e19]">
+                            <span className="w-2.5 h-2.5 bg-[#ffe17c] border border-[#171e19] shrink-0" />
+                            <span className="uppercase tracking-wide">Calculated Duration: {dur.text}</span>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
 
                 {/* SECTION 3: Required Attachments */}
@@ -2472,8 +2365,8 @@ export default function CouncilPortal() {
 
             {councilMembers.length === 0 ? (
               <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none shadow-[4px_4px_0px_0px_#ffe17c] space-y-4">
-                <div className="w-16 h-16 bg-[#ffe17c]/30 border-2 border-[#171e19] rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
-                  👥
+                <div className="w-16 h-16 bg-[#ffe17c]/30 border-2 border-[#171e19] rounded-full flex items-center justify-center mx-auto text-[#171e19]">
+                  <IconUsers className="w-8 h-8 text-[#171e19]" />
                 </div>
                 <div>
                   <h3 className="font-anton text-xl text-[#171e19] uppercase tracking-wide">NO COUNCIL MEMBERS ADDED YET</h3>
