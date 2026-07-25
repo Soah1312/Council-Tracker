@@ -265,6 +265,7 @@ export default function CouncilPortal() {
   const [submitting, setSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
   const [submittedEventId, setSubmittedEventId] = useState(null);
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
 
   // Edit / Resubmit Tracking State
   const [editingEventId, setEditingEventId] = useState(null);
@@ -298,6 +299,17 @@ export default function CouncilPortal() {
   const [memberForm, setMemberForm] = useState({ name: '', designation: '', contactNumber: '' });
   const [memberErrors, setMemberErrors] = useState({});
   const [memberSubmitting, setMemberSubmitting] = useState(false);
+
+  const filteredContactMembers = useMemo(() => {
+    if (!councilMembers || councilMembers.length === 0) return [];
+    const q = (formData.studentContactName || '').toLowerCase().trim();
+    if (!q) return []; // Only display search results when user starts typing
+    return councilMembers.filter(m =>
+      (m.name || '').toLowerCase().includes(q) ||
+      (m.designation || '').toLowerCase().includes(q) ||
+      (m.contactNumber || '').includes(q)
+    );
+  }, [councilMembers, formData.studentContactName]);
 
   // Calendar State
   const [calMonth, setCalMonth] = useState(new Date());
@@ -1092,6 +1104,9 @@ export default function CouncilPortal() {
         councilEmail: auth.currentUser?.email || '',
         eventName: formData.eventName.trim(),
         expectedFootfall: Number(formData.expectedFootfall),
+        studentContactName: (formData.studentContactName || '').trim(),
+        studentContactPhone: (formData.studentContactPhone || '').trim(),
+        facultyCoordinatorName: (formData.facultyCoordinatorName || '').trim(),
         isMultiSession: Boolean(formData.isMultiSession),
         eventSessions: formData.isMultiSession ? formData.eventSessions : null,
         startDate: formData.isMultiSession ? null : formData.startDate,
@@ -1134,6 +1149,9 @@ export default function CouncilPortal() {
       venue: event.venue || '',
       venuePermissionApplicable: Boolean(event.venuePermissionApplicable),
       expectedFootfall: event.expectedFootfall ? String(event.expectedFootfall) : '',
+      studentContactName: event.studentContactName || '',
+      studentContactPhone: event.studentContactPhone || '',
+      facultyCoordinatorName: event.facultyCoordinatorName || '',
       prizeMoneyApplicable: Boolean(event.prizeMoneyApplicable),
       prizeMoneyAmount: event.prizeMoneyAmount ? String(event.prizeMoneyAmount) : '',
       registrationFeeApplicable: Boolean(event.registrationFeeApplicable),
@@ -1196,6 +1214,9 @@ export default function CouncilPortal() {
       venue: '',
       venuePermissionApplicable: false,
       expectedFootfall: '',
+      studentContactName: '',
+      studentContactPhone: '',
+      facultyCoordinatorName: '',
       prizeMoneyApplicable: false,
       prizeMoneyAmount: '',
       registrationFeeApplicable: false,
@@ -1720,6 +1741,76 @@ export default function CouncilPortal() {
                         className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
                       />
                       {errors.expectedFootfall && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.expectedFootfall}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mt-4 pt-4 border-t border-[#171e19]/10">
+                    <div className="flex flex-col gap-1.5 relative">
+                      <div className="flex justify-between items-center">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">
+                          Student Point of Contact (Name)
+                        </label>
+                        {councilMembers && councilMembers.length > 0 && (
+                          <span className="text-[9px] font-bold uppercase text-[#171e19] bg-[#ffe17c] px-1.5 py-0.5 border border-[#171e19]">
+                            {councilMembers.length} Member{councilMembers.length > 1 ? 's' : ''} in Roster
+                          </span>
+                        )}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Type or search council members..."
+                        value={formData.studentContactName}
+                        onChange={e => {
+                          setFormData(p => ({ ...p, studentContactName: e.target.value }));
+                          setShowContactDropdown(true);
+                        }}
+                        onFocus={() => setShowContactDropdown(true)}
+                        onBlur={() => setTimeout(() => setShowContactDropdown(false), 200)}
+                        className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
+                      />
+
+                      {/* Autocomplete Dropdown */}
+                      {showContactDropdown && filteredContactMembers.length > 0 && (
+                        <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border-2 border-[#171e19] shadow-[6px_6px_0px_0px_#ffe17c] max-h-56 overflow-y-auto divide-y divide-[#171e19]/10">
+                          {filteredContactMembers.map(m => (
+                            <button
+                              type="button"
+                              key={m.id}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                setFormData(p => ({
+                                  ...p,
+                                  studentContactName: m.name,
+                                  studentContactPhone: m.contactNumber
+                                }));
+                                setShowContactDropdown(false);
+                              }}
+                              className="w-full text-left p-3 hover:bg-[#ffe17c]/20 transition-colors flex items-center justify-between cursor-pointer group"
+                            >
+                              <div>
+                                <p className="font-anton text-sm text-[#171e19] uppercase tracking-wide group-hover:text-[#000]">{m.name}</p>
+                                <p className="font-satoshi text-[10px] font-bold uppercase text-[#171e19]/60">{m.designation}</p>
+                              </div>
+                              <div className="text-right">
+                                <span className="font-satoshi text-xs font-bold text-[#171e19] bg-[#ffe17c] px-2 py-0.5 border border-[#171e19] shrink-0">
+                                  {m.contactNumber}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2]">Student Contact Number</label>
+                      <input
+                        type="tel"
+                        placeholder="e.g. +91 9876543210"
+                        value={formData.studentContactPhone}
+                        onChange={e => setFormData(p => ({ ...p, studentContactPhone: e.target.value }))}
+                        className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
+                      />
                     </div>
                   </div>
                 </div>

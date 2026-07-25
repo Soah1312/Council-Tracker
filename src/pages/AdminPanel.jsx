@@ -80,10 +80,26 @@ export default function AdminPanel() {
     startDate: '',
     endDate: '',
     venue: '',
+    studentContactName: '',
+    studentContactPhone: '',
     status: 'report_pending',
     description: ''
   });
   const [pastEventSubmitting, setPastEventSubmitting] = useState(false);
+  const [showAdminPastContactDropdown, setShowAdminPastContactDropdown] = useState(false);
+
+  const adminPastContactMembers = useMemo(() => {
+    if (!allCouncilMembers || !pastEventForm.councilId) return [];
+    const targetCId = pastEventForm.councilId.toLowerCase().trim();
+    const query = (pastEventForm.studentContactName || '').toLowerCase().trim();
+    if (!query) return []; // Only display search results when user starts typing
+    const members = allCouncilMembers.filter(m => String(m.councilId || '').toLowerCase().trim() === targetCId);
+    return members.filter(m =>
+      (m.name || '').toLowerCase().includes(query) ||
+      (m.designation || '').toLowerCase().includes(query) ||
+      (m.contactNumber || '').includes(query)
+    );
+  }, [allCouncilMembers, pastEventForm.councilId, pastEventForm.studentContactName]);
 
   const handleAddPastSession = () => {
     setPastEventForm(prev => ({
@@ -158,6 +174,8 @@ export default function AdminPanel() {
         startDate: pastEventForm.isMultiSession ? null : new Date(pastEventForm.startDate),
         endDate: pastEventForm.isMultiSession ? null : new Date(pastEventForm.endDate),
         venue: pastEventForm.venue.trim() || 'CRCE Campus',
+        studentContactName: (pastEventForm.studentContactName || '').trim(),
+        studentContactPhone: (pastEventForm.studentContactPhone || '').trim(),
         eventDescription: pastEventForm.description.trim(),
         status: eventStatus,
         isPastEvent: true,
@@ -177,6 +195,8 @@ export default function AdminPanel() {
         startDate: '',
         endDate: '',
         venue: '',
+        studentContactName: '',
+        studentContactPhone: '',
         status: 'report_pending',
         description: ''
       });
@@ -1390,64 +1410,74 @@ export default function AdminPanel() {
         </div>
       )}
 
-      {/* ADD PAST / ARCHIVAL EVENT MODAL OVERLAY */}
+      {/* ADD PAST / ARCHIVAL EVENT FULL SCREEN MODAL */}
       {showAddPastEventModal && (
-        <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19] max-h-[90vh] overflow-y-auto">
-            <div>
-              <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Superadmin Archival Tool</p>
-              <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
-                ADD PAST / HISTORICAL EVENT
-              </h3>
-              <p className="font-satoshi text-xs text-[#6b7280] mt-1 font-medium leading-relaxed">
-                Add an event from the past to record it in the central registry and display it on the college calendar.
-              </p>
+        <div className="fixed inset-0 z-50 bg-[#171e19]/90 backdrop-blur-md flex justify-center items-center p-2 sm:p-6 overflow-y-auto">
+          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-5xl p-6 sm:p-10 space-y-6 shadow-[12px_12px_0px_0px_#ffe17c] text-[#171e19] my-auto">
+            <div className="flex justify-between items-start border-b-4 border-[#171e19] pb-4">
+              <div>
+                <p className="font-satoshi text-xs uppercase font-extrabold tracking-widest text-[#171e19]/60">Superadmin Archival Tool</p>
+                <h3 className="font-anton text-3xl sm:text-4xl text-[#171e19] mt-1 tracking-tight">
+                  ADD PAST / HISTORICAL EVENT
+                </h3>
+                <p className="font-satoshi text-xs sm:text-sm text-[#6b7280] mt-1 font-medium leading-relaxed">
+                  Record historical events in the central registry and publish them on the public calendar.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddPastEventModal(false)}
+                className="px-4 py-2 bg-red-100 hover:bg-red-200 border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider text-red-700 transition-brutal"
+              >
+                ✕ Close
+              </button>
             </div>
 
-            <form onSubmit={handleAddPastEventSubmit} className="space-y-4 font-satoshi">
-              {/* Council Selection */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
-                  Organizing Council *
-                </label>
-                <select
-                  required
-                  value={pastEventForm.councilId}
-                  onChange={(e) => setPastEventForm(prev => ({ ...prev, councilId: e.target.value }))}
-                  className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
-                >
-                  <option value="">-- Select Organizing Council --</option>
-                  {COUNCILS.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} ({c.category})</option>
-                  ))}
-                </select>
+            <form onSubmit={handleAddPastEventSubmit} className="space-y-6 font-satoshi">
+              {/* Organizing Council & Event Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
+                    Organizing Council *
+                  </label>
+                  <select
+                    required
+                    value={pastEventForm.councilId}
+                    onChange={(e) => setPastEventForm(prev => ({ ...prev, councilId: e.target.value }))}
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  >
+                    <option value="">-- Select Organizing Council --</option>
+                    {COUNCILS.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.category})</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
+                    Event Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Annual TechFest 2025"
+                    value={pastEventForm.eventName}
+                    onChange={(e) => setPastEventForm(prev => ({ ...prev, eventName: e.target.value }))}
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  />
+                </div>
               </div>
 
-              {/* Event Name */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
-                  Event Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Annual TechFest 2025"
-                  value={pastEventForm.eventName}
-                  onChange={(e) => setPastEventForm(prev => ({ ...prev, eventName: e.target.value }))}
-                  className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
-                />
-              </div>
-
-              {/* Category & Status */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+              {/* Category & Archive Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
                     Category *
                   </label>
                   <select
                     value={pastEventForm.category}
                     onChange={(e) => setPastEventForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
                   >
                     <option value="technical">Technical</option>
                     <option value="non_technical">Non-Technical</option>
@@ -1459,14 +1489,14 @@ export default function AdminPanel() {
                   </select>
                 </div>
 
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
                     Archive Status *
                   </label>
                   <select
                     value={pastEventForm.status}
                     onChange={(e) => setPastEventForm(prev => ({ ...prev, status: e.target.value }))}
-                    className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
                   >
                     <option value="report_pending">Stage 3 Report Pending (Require Council Report)</option>
                     <option value="approved">Stage 2 Approved / Published</option>
@@ -1476,48 +1506,48 @@ export default function AdminPanel() {
               </div>
 
               {/* Schedule Type Toggle */}
-              <div className="flex items-center justify-between bg-slate-50 border-2 border-[#171e19] p-3">
+              <div className="flex items-center justify-between bg-slate-50 border-2 border-[#171e19] p-4">
                 <div>
-                  <span className="font-anton text-xs text-[#171e19] uppercase tracking-wider block">Multi-Phase / Split Dates?</span>
-                  <span className="font-satoshi text-[10px] text-[#6b7280] font-medium">Enable for split date ranges (e.g. March 10–13 &amp; Dec 18).</span>
+                  <span className="font-anton text-sm text-[#171e19] uppercase tracking-wider block">Multi-Phase / Split Dates?</span>
+                  <span className="font-satoshi text-xs text-[#6b7280] font-medium">Enable for multi-day or non-contiguous date ranges (e.g. Jan 10 &amp; March 19).</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setPastEventForm(p => ({ ...p, isMultiSession: !p.isMultiSession }))}
-                  className={`px-3 py-1.5 font-anton text-xs uppercase tracking-wider border-2 border-[#171e19] transition-all cursor-pointer ${
+                  className={`px-4 py-2 font-anton text-xs uppercase tracking-wider border-2 border-[#171e19] transition-all cursor-pointer ${
                     pastEventForm.isMultiSession ? 'bg-[#ffe17c] text-[#171e19]' : 'bg-white text-slate-700'
                   }`}
                 >
-                  {pastEventForm.isMultiSession ? '✓ Multi-Session' : 'Single Range'}
+                  {pastEventForm.isMultiSession ? '✓ Multi-Session Enabled' : 'Single Range'}
                 </button>
               </div>
 
               {/* Multi-Session Builder OR Standard Start & End Date */}
               {pastEventForm.isMultiSession ? (
-                <div className="space-y-3 bg-[#b7c6c2]/10 border-2 border-[#171e19] p-3">
-                  <span className="font-anton text-xs uppercase tracking-wider text-[#171e19] block">Event Sessions / Date Ranges</span>
+                <div className="space-y-4 bg-[#b7c6c2]/10 border-2 border-[#171e19] p-4">
+                  <span className="font-anton text-sm uppercase tracking-wider text-[#171e19] block">Event Sessions / Date Ranges</span>
                   {pastEventForm.eventSessions.map((sess, sIdx) => (
-                    <div key={sIdx} className="bg-white border-2 border-[#171e19] p-3 space-y-2">
-                      <div className="flex justify-between items-center border-b border-[#171e19]/10 pb-1">
+                    <div key={sIdx} className="bg-white border-2 border-[#171e19] p-4 space-y-3">
+                      <div className="flex justify-between items-center border-b border-[#171e19]/10 pb-2">
                         <input
                           type="text"
                           value={sess.sessionName}
                           onChange={e => handlePastSessionChange(sIdx, 'sessionName', e.target.value)}
                           placeholder={`Session ${sIdx + 1} Title`}
-                          className="font-anton text-xs uppercase text-[#171e19] border-b border-[#171e19]/30 focus:border-[#171e19] focus:outline-none bg-transparent px-1 py-0.5"
+                          className="font-anton text-sm uppercase text-[#171e19] border-b border-[#171e19]/30 focus:border-[#171e19] focus:outline-none bg-transparent px-2 py-1"
                         />
                         {pastEventForm.eventSessions.length > 1 && (
                           <button
                             type="button"
                             onClick={() => handleRemovePastSession(sIdx)}
-                            className="text-red-500 hover:text-red-700 text-[10px] font-bold uppercase tracking-wider"
+                            className="text-red-500 hover:text-red-700 text-xs font-bold uppercase tracking-wider"
                           >
-                            ✕ Remove
+                            ✕ Remove Session
                           </button>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <BrutalistDateTimePicker
                           label="Start Date & Time *"
                           value={sess.startDate}
@@ -1535,13 +1565,13 @@ export default function AdminPanel() {
                   <button
                     type="button"
                     onClick={handleAddPastSession}
-                    className="w-full py-2 bg-white hover:bg-[#ffe17c]/20 border-2 border-dashed border-[#171e19] font-anton text-xs uppercase tracking-wider text-[#171e19] transition-all cursor-pointer"
+                    className="w-full py-3 bg-white hover:bg-[#ffe17c]/20 border-2 border-dashed border-[#171e19] font-anton text-xs uppercase tracking-wider text-[#171e19] transition-all cursor-pointer"
                   >
                     + Add Another Session / Date Range
                   </button>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <BrutalistDateTimePicker
                     label="Start Date & Time *"
                     value={pastEventForm.startDate}
@@ -1555,49 +1585,121 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* Venue */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
-                  Venue Location
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Samartha Hall / Main Auditorium"
-                  value={pastEventForm.venue}
-                  onChange={(e) => setPastEventForm(prev => ({ ...prev, venue: e.target.value }))}
-                  className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
-                />
+              {/* Venue & Student Contact */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
+                    Venue Location
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Samartha Hall / Main Auditorium"
+                    value={pastEventForm.venue}
+                    onChange={(e) => setPastEventForm(prev => ({ ...prev, venue: e.target.value }))}
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2 relative">
+                  <div className="flex justify-between items-center">
+                    <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
+                      Student Contact Name
+                    </label>
+                    {adminPastContactMembers && adminPastContactMembers.length > 0 && (
+                      <span className="text-[9px] font-bold uppercase text-[#171e19] bg-[#ffe17c] px-1.5 py-0.5 border border-[#171e19]">
+                        {adminPastContactMembers.length} Member{adminPastContactMembers.length > 1 ? 's' : ''} Found
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Type or search member..."
+                    value={pastEventForm.studentContactName}
+                    onChange={(e) => {
+                      setPastEventForm(prev => ({ ...prev, studentContactName: e.target.value }));
+                      setShowAdminPastContactDropdown(true);
+                    }}
+                    onFocus={() => setShowAdminPastContactDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowAdminPastContactDropdown(false), 200)}
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  />
+
+                  {/* Autocomplete Dropdown */}
+                  {showAdminPastContactDropdown && adminPastContactMembers.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border-2 border-[#171e19] shadow-[6px_6px_0px_0px_#ffe17c] max-h-56 overflow-y-auto divide-y divide-[#171e19]/10">
+                      {adminPastContactMembers.map(m => (
+                        <button
+                          type="button"
+                          key={m.id}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setPastEventForm(p => ({
+                              ...p,
+                              studentContactName: m.name,
+                              studentContactPhone: m.contactNumber
+                            }));
+                            setShowAdminPastContactDropdown(false);
+                          }}
+                          className="w-full text-left p-3 hover:bg-[#ffe17c]/20 transition-colors flex items-center justify-between cursor-pointer group"
+                        >
+                          <div>
+                            <p className="font-anton text-sm text-[#171e19] uppercase tracking-wide group-hover:text-[#000]">{m.name}</p>
+                            <p className="font-satoshi text-[10px] font-bold uppercase text-[#171e19]/60">{m.designation}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-satoshi text-xs font-bold text-[#171e19] bg-[#ffe17c] px-2 py-0.5 border border-[#171e19] shrink-0">
+                              {m.contactNumber}
+                            </span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
+                    Student Contact Phone
+                  </label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. +91 9876543210"
+                    value={pastEventForm.studentContactPhone}
+                    onChange={(e) => setPastEventForm(prev => ({ ...prev, studentContactPhone: e.target.value }))}
+                    className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm font-semibold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none"
+                  />
+                </div>
               </div>
 
               {/* Description */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
                   Event Description / Summary
                 </label>
                 <textarea
-                  rows="3"
+                  rows="4"
                   placeholder="Summary of the event outcome or description..."
                   value={pastEventForm.description}
                   onChange={(e) => setPastEventForm(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full bg-white border-2 border-[#171e19] p-3 text-xs font-medium text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none resize-none"
+                  className="w-full bg-white border-2 border-[#171e19] p-4 text-sm font-medium text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none resize-none"
                 />
               </div>
 
-              <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
+              <div className="flex justify-end gap-4 pt-4 border-t-2 border-[#171e19]/10">
                 <button
                   type="button"
                   disabled={pastEventSubmitting}
                   onClick={() => setShowAddPastEventModal(false)}
-                  className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                  className="px-6 py-3 border-2 border-[#171e19] hover:bg-slate-100 text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pastEventSubmitting}
-                  className="px-5 py-2 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
+                  className="px-8 py-3 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-base uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
                 >
-                  {pastEventSubmitting ? 'ADDING...' : 'ADD PAST EVENT'}
+                  {pastEventSubmitting ? 'ADDING PAST EVENT...' : 'ADD PAST EVENT'}
                 </button>
               </div>
             </form>
