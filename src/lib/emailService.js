@@ -164,7 +164,7 @@ export async function notifyProposalReopened(event, councilName) {
     council_email:  event.councilEmail || '',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
-    extra_notes:    'The proposal is active again for review and clearance uploads.',
+    extra_notes:    'The proposal is active again for review. You may now update and resubmit your proposal.',
     admin_url:      `${getBaseUrl()}/admin`,
   });
 }
@@ -189,13 +189,13 @@ export async function notifyProposalResubmitted(event, councilName) {
 }
 
 /**
- * Stage 2 — Council uploads clearance/permission letters.
+ * Stage 2 — Council uploads clearance/permission documents.
  */
 export async function notifyPermissionsSubmitted(event, councilName) {
   await dispatch({
-    subject:        `[Stage 2] Clearance Documents Uploaded: ${event.eventName}`,
-    stage_label:    'Stage 2 — Permission Letters Submitted',
-    action_type:    'The council has uploaded permission/clearance documents for review.',
+    subject:        `[Stage 2] Documents Uploaded: ${event.eventName}`,
+    stage_label:    'Stage 2 — Documents Submitted',
+    action_type:    'The council has uploaded clearance and permission documents for review.',
     event_id:       event.eventId,
     event_name:     event.eventName,
     council_name:   councilName,
@@ -247,7 +247,7 @@ export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes =
   switch (statusType) {
     case 'proposal_approved':
       stageLabel = 'Stage 1 — Proposal Accepted';
-      actionType = 'Your event proposal has been accepted by the administration. You may now proceed to Stage 2 (Upload Clearances/Permission Letters).';
+      actionType = 'Your event proposal has been accepted by the administration. You may now proceed to Stage 2: Upload your clearance and permission documents.';
       subject = `[Stage 1 Accepted] Proposal Approved: ${event.eventName}`;
       break;
     case 'revision_needed':
@@ -262,13 +262,13 @@ export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes =
       break;
     case 'approved':
       stageLabel = 'Stage 2 — Fully Approved';
-      actionType = 'All clearances have been verified and your event is fully approved! You may conduct the event.';
+      actionType = 'All documents have been verified and your event is fully approved! You may now conduct the event.';
       subject = `[Stage 2 Approved] Event Fully Approved: ${event.eventName}`;
       break;
     case 'permissions_revision_needed':
-      stageLabel = 'Stage 2 — Clearance Revision Needed';
-      actionType = 'Revisions requested on uploaded clearance/permission documents. Please re-upload corrected documents.';
-      subject = `[Action Required] Clearance Revisions Needed: ${event.eventName}`;
+      stageLabel = 'Stage 2 — Document Revision Needed';
+      actionType = 'Revisions have been requested on your uploaded documents. Please re-upload the corrected files.';
+      subject = `[Action Required] Document Revisions Needed: ${event.eventName}`;
       break;
     case 'submitted':
       stageLabel = 'Stage 1 — Proposal Re-opened';

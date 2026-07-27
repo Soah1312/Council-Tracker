@@ -29,8 +29,8 @@ const COUNCIL_COLORS = {
 const STATUS_CONFIG = {
   approved: { label: 'Approved', color: '#10b981', icon: CheckCircle },
   proposal_approved: { label: 'Awaiting Council Documents', color: '#6366f1', icon: Clock },
-  permissions_submitted: { label: 'Permissions Submitted', color: '#8b5cf6', icon: Clock },
-  permissions_revision_needed: { label: 'Permissions Revision Needed', color: '#f97316', icon: AlertCircle },
+  permissions_submitted: { label: 'Documents Submitted', color: '#8b5cf6', icon: Clock },
+  permissions_revision_needed: { label: 'Document Revision Needed', color: '#f97316', icon: AlertCircle },
   submitted: { label: 'Proposal Submitted', color: '#f59e0b', icon: Clock },
   revision_needed: { label: 'Proposal Revision Needed', color: '#f97316', icon: AlertCircle },
   rejected: { label: 'Proposal Rejected', color: '#ef4444', icon: X },

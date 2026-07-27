@@ -925,7 +925,7 @@ export default function CouncilPortal() {
 
     const stages = [
       { num: 1, name: 'Proposal', desc: 'Stage 1: Concept & Description' },
-      { num: 2, name: 'Clearances', desc: 'Stage 2: Letters Uploaded' },
+      { num: 2, name: 'Documents', desc: 'Stage 2: Documents Uploaded' },
       { num: 3, name: 'Report', desc: 'Stage 3: Wrap-up & Completion' }
     ];
 
@@ -1009,9 +1009,9 @@ export default function CouncilPortal() {
       case 'proposal_approved':
         return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_submitted':
-        return { label: 'Permissions Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+        return { label: 'Documents Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_revision_needed':
-        return { label: 'Permissions Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
+        return { label: 'Document Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
         return {
           label: 'Fully Approved',
@@ -2264,43 +2264,52 @@ export default function CouncilPortal() {
                           <span className={statusInfo.colorClass}>
                             {statusInfo.label}
                           </span>
-                          {/* Stage 1 Edit Button */}
-                          <button
-                            onClick={(e) => handleEditClick(event, e)}
-                            className="px-3 py-1.5 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-brutal rounded-none"
-                            title="Edit Stage 1 Proposal details & PDF"
-                          >
-                            Edit Proposal (Stage 1)
-                          </button>
+                          {/* Stage 1 Edit Button — shown during Stage 1 statuses */}
+                          {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
+                            <button
+                              onClick={(e) => handleEditClick(event, e)}
+                              className="px-3 py-1.5 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-brutal rounded-none"
+                              title="Edit Stage 1 Proposal details & PDF"
+                            >
+                              Edit Proposal (Stage 1)
+                            </button>
+                          )}
 
-                          {/* Stage 2 Upload Permissions Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setPermissionsUploadEvent(event);
-                              setPermissionsFiles({ doswLetter: null, councilLetter: null, venueLetter: null });
-                              setPermissionsErrors({});
-                            }}
-                            className="px-3 py-1.5 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-brutal rounded-none"
-                            title="Upload Stage 2 clearance & permission letters"
-                          >
-                            Upload Permissions (Stage 2)
-                          </button>
+                          {/* Stage 2 Upload Documents Button — shown during Stage 2, or if event was reset but has prior Stage 2 docs */}
+                          {(['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(event.status) ||
+                            (event.status === 'submitted' && (event.doswPermissionLetterUrl || (event.customPermissionLetters && event.customPermissionLetters.length > 0)))) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPermissionsUploadEvent(event);
+                                setPermissionsFiles({ doswLetter: null });
+                                setCustomPermissionDocs([]);
+                                setPermissionsErrors({});
+                              }}
+                              className="px-3 py-1.5 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-brutal rounded-none"
+                              title="Upload Stage 2 clearance & permission documents"
+                            >
+                              Upload Documents (Stage 2)
+                            </button>
+                          )}
 
-                          {/* Stage 3 Submit Report Button */}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setReportingEvent(event);
-                              setReportPdf(null);
-                              setReportImages([]);
-                              setActiveTab('report');
-                            }}
-                            className="px-3 py-1.5 bg-emerald-700 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-800 transition-brutal rounded-none"
-                            title="Upload Stage 3 post-event summary report & photos"
-                          >
-                            Submit Report (Stage 3)
-                          </button>
+                          {/* Stage 3 Submit Report Button — shown during Stage 3, or if event was reset but has prior report */}
+                          {(['approved', 'report_pending'].includes(event.status) ||
+                            (event.status === 'submitted' && event.reportPdfUrl)) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setReportingEvent(event);
+                                setReportPdf(null);
+                                setReportImages([]);
+                                setActiveTab('report');
+                              }}
+                              className="px-3 py-1.5 bg-emerald-700 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-800 transition-brutal rounded-none"
+                              title="Submit Stage 3 post-event summary report & photos"
+                            >
+                              Submit Report (Stage 3)
+                            </button>
+                          )}
 
                           {/* Delete Proposal Button - Only allowed before Stage 1 approval */}
                           {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
@@ -2388,7 +2397,7 @@ export default function CouncilPortal() {
 
                           {/* Documents grid */}
                           <div className="space-y-3">
-                            <span className="font-bold text-[#b7c6c2] uppercase tracking-wider block text-xs">Clearance Documents</span>
+                            <span className="font-bold text-[#b7c6c2] uppercase tracking-wider block text-xs">Uploaded Documents</span>
                             <div className="flex flex-wrap gap-3 font-bold text-sm uppercase">
                               {event.eventDescriptionUrl && (
                                 <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
@@ -2492,38 +2501,49 @@ export default function CouncilPortal() {
 
                           {/* Bottom Right Action Bar inside Drawer for Stage 1, Stage 2 & Stage 3 Uploads */}
                           <div className="flex flex-wrap justify-end items-center gap-3 pt-4 border-t-2 border-[#171e19]">
-                            <button
-                              onClick={(e) => handleEditClick(event, e)}
-                              className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-all rounded-none"
-                            >
-                              Edit Proposal (Stage 1)
-                            </button>
+                            {/* Stage 1 Edit — only in Stage 1 */}
+                            {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
+                              <button
+                                onClick={(e) => handleEditClick(event, e)}
+                                className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-all rounded-none"
+                              >
+                                Edit Proposal (Stage 1)
+                              </button>
+                            )}
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPermissionsUploadEvent(event);
-                                setPermissionsFiles({ doswLetter: null });
-                                setCustomPermissionDocs([]);
-                                setPermissionsErrors({});
-                              }}
-                              className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[3px_3px_0px_0px_#171e19] transition-all rounded-none"
-                            >
-                              Upload Permissions (Stage 2)
-                            </button>
+                            {/* Stage 2 Upload — shown in Stage 2 or if reset event has prior Stage 2 docs */}
+                            {(['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(event.status) ||
+                              (event.status === 'submitted' && (event.doswPermissionLetterUrl || (event.customPermissionLetters && event.customPermissionLetters.length > 0)))) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPermissionsUploadEvent(event);
+                                  setPermissionsFiles({ doswLetter: null });
+                                  setCustomPermissionDocs([]);
+                                  setPermissionsErrors({});
+                                }}
+                                className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[3px_3px_0px_0px_#171e19] transition-all rounded-none"
+                              >
+                                Upload Documents (Stage 2)
+                              </button>
+                            )}
 
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setReportingEvent(event);
-                                setReportPdf(null);
-                                setReportImages([]);
-                                setActiveTab('report');
-                              }}
-                              className="px-4 py-2 bg-emerald-800 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-900 transition-all rounded-none"
-                            >
-                              Submit Report (Stage 3)
-                            </button>
+                            {/* Stage 3 Submit — shown in Stage 3 or if reset event has prior report */}
+                            {(['approved', 'report_pending'].includes(event.status) ||
+                              (event.status === 'submitted' && event.reportPdfUrl)) && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReportingEvent(event);
+                                  setReportPdf(null);
+                                  setReportImages([]);
+                                  setActiveTab('report');
+                                }}
+                                className="px-4 py-2 bg-emerald-800 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-900 transition-all rounded-none"
+                              >
+                                Submit Report (Stage 3)
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -2632,7 +2652,7 @@ export default function CouncilPortal() {
             {/* Legend */}
             <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Approved / Closed</div>
-              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 1 Approved / Under Clearances</div>
+              <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 1 Approved / Under Document Review</div>
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#b7c6c2] border border-[#171e19]/20"></span> Your Council's Event</div>
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
             </div>
@@ -2897,7 +2917,7 @@ export default function CouncilPortal() {
           <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
             <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19] max-h-[90vh] overflow-y-auto">
               <div>
-                <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Stage 2: Upload Permission Letters</p>
+                <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Stage 2: Upload Clearance & Permission Documents</p>
                 <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
                   {permissionsUploadEvent.eventName.toUpperCase()}
                 </h3>
@@ -2934,7 +2954,7 @@ export default function CouncilPortal() {
                 <div className="space-y-3 pt-3 border-t-2 border-[#171e19]">
                   <div className="flex items-center justify-between">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]">
-                      Additional Permission Letters (Optional)
+                      Additional Clearance Documents (Optional)
                     </span>
                     <button
                       type="button"

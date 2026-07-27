@@ -366,7 +366,7 @@ export default function AdminPanel() {
       statusType === 'submitted'
         ? 'Proposal re-opened by administration for re-evaluation.'
         : statusType === 'permissions_submitted'
-        ? 'Stage 2 approvals reverted by administration. Clearances under re-evaluation.'
+        ? 'Stage 2 approvals reverted by administration. Documents are under re-evaluation.'
         : event.reviewNotes || ''
     );
   };
@@ -690,7 +690,7 @@ export default function AdminPanel() {
 
     const stages = [
       { num: 1, name: 'Proposal', desc: 'Stage 1: Concept & Description' },
-      { num: 2, name: 'Clearances', desc: 'Stage 2: Letters Uploaded' },
+      { num: 2, name: 'Documents', desc: 'Stage 2: Documents Uploaded' },
       { num: 3, name: 'Report', desc: 'Stage 3: Wrap-up & Completion' }
     ];
 
@@ -739,9 +739,9 @@ export default function AdminPanel() {
       case 'proposal_approved':
         return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_submitted':
-        return { label: 'Permissions Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+        return { label: 'Documents Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_revision_needed':
-        return { label: 'Permissions Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
+        return { label: 'Document Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
         return { label: 'Approved', colorClass: 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'rejected':
@@ -1288,7 +1288,7 @@ export default function AdminPanel() {
 
                   {/* Document Clearance Links */}
                   <div className="border border-[#171e19]/15 p-5 space-y-3">
-                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Clearances</span>
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Documents</span>
                     <div className="grid grid-cols-1 gap-2 font-satoshi">
                       {selectedEventDetail.eventDescriptionUrl && (
                         <a href={selectedEventDetail.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
@@ -1366,7 +1366,7 @@ export default function AdminPanel() {
                     onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
                     className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
                   >
-                    {selectedEventDetail.status === 'proposal_approved' ? 'Update Stage 1 Approval' : 'Accept Proposal'}
+                    {selectedEventDetail.status === 'proposal_approved' ? 'Re-confirm Stage 1 Approval' : 'Accept Proposal (Stage 1)'}
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
@@ -1387,13 +1387,13 @@ export default function AdminPanel() {
                     onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
                     className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
                   >
-                    {selectedEventDetail.status === 'approved' ? 'Update Stage 2 Approval' : 'Approve Permissions'}
+                    {selectedEventDetail.status === 'approved' ? 'Re-confirm Stage 2 Approval' : 'Approve Documents (Stage 2)'}
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
                     className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
                   >
-                    Request Clearance Revision
+                    Request Document Revision
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
@@ -2043,7 +2043,7 @@ export default function AdminPanel() {
                             )}
                             {event.attentionReason === 'pending_permissions' && (
                               <span className="px-2.5 py-1 bg-blue-900 border border-[#171e19]/30 text-white text-xs font-bold uppercase rounded-none">
-                                Permissions Submitted — Needs Review
+                                Documents Submitted — Pending Review
                               </span>
                             )}
                             {event.attentionReason === 'awaiting_docs' && (
@@ -2103,7 +2103,7 @@ export default function AdminPanel() {
               <div>
                 <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">Review Queue</h2>
                 <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider mt-1">
-                  Verify logistics, target venues, and official clearances. Approve requests or request revisions back to the student councils.
+                  Verify logistics, venues, and uploaded documents. Accept proposals or request revisions from councils.
                 </p>
               </div>
 
@@ -2167,19 +2167,19 @@ export default function AdminPanel() {
                                   onClick={() => openReviewDialog(event, 'proposal_approved')}
                                   className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
                                 >
-                                  Accept Proposal
+                                  Accept Proposal (Stage 1)
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'revision_needed')}
                                   className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
                                 >
-                                  Revision
+                                  Request Revision
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'rejected')}
                                   className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
                                 >
-                                  Reject
+                                  Reject Proposal
                                 </button>
                               </div>
                             </div>
@@ -2271,19 +2271,19 @@ export default function AdminPanel() {
                                   onClick={() => openReviewDialog(event, 'approved')}
                                   className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
                                 >
-                                  Approve Permissions
+                                  Approve Documents (Stage 2)
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'permissions_revision_needed')}
                                   className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
                                 >
-                                  Request Letters Revision
+                                  Request Document Revision
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'rejected')}
                                   className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
                                 >
-                                  Reject
+                                  Reject Request
                                 </button>
                               </div>
                             </div>
@@ -2402,12 +2402,15 @@ export default function AdminPanel() {
                         className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full"
                       >
                         <option value="All">All Statuses</option>
-                        <option value="submitted">Submitted (Pending Review)</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="revision_needed">Revision Needed</option>
-                        <option value="report_pending">Report Pending</option>
-                        <option value="closed">Closed (Report Submitted)</option>
+                        <option value="submitted">Stage 1 — Proposal Submitted (Pending Review)</option>
+                        <option value="revision_needed">Stage 1 — Revision Requested</option>
+                        <option value="rejected">Stage 1 — Proposal Rejected</option>
+                        <option value="proposal_approved">Stage 2 — Proposal Accepted (Awaiting Documents)</option>
+                        <option value="permissions_submitted">Stage 2 — Documents Submitted (Pending Review)</option>
+                        <option value="permissions_revision_needed">Stage 2 — Documents Revision Requested</option>
+                        <option value="approved">Stage 3 — Fully Approved (Upcoming)</option>
+                        <option value="report_pending">Stage 3 — Post-Event Report Pending</option>
+                        <option value="closed">Closed — Report Submitted</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -2633,7 +2636,7 @@ export default function AdminPanel() {
                 {/* Legend */}
                 <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/35"></span> Stage 1 (Proposal)</div>
-                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 2 (Clearances)</div>
+                  <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 2 (Documents)</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Closed</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 border-2 border-dashed border-red-500"></span> Venue Conflict</div>
