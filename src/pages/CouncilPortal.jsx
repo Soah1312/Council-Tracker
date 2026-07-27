@@ -1005,31 +1005,31 @@ export default function CouncilPortal() {
 
     switch (status) {
       case 'submitted':
-        return { label: 'proposal submitted', colorClass: 'bg-[#b7c6c2]/50 text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/20' };
+        return { label: 'Proposal Submitted', colorClass: 'bg-[#b7c6c2]/50 text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/20' };
       case 'proposal_approved':
-        return { label: 'proposal accepted', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+        return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_submitted':
-        return { label: 'permissions pending', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+        return { label: 'Permissions Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_revision_needed':
-        return { label: 'permissions revision needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
+        return { label: 'Permissions Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
         return {
-          label: 'fully approved',
+          label: 'Fully Approved',
           colorClass: 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold',
           isReportPending: true
         };
       case 'rejected':
-        return { label: 'rejected', colorClass: 'bg-red-800 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+        return { label: 'Proposal Rejected', colorClass: 'bg-red-800 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'revision_needed':
-        return { label: 'revision needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
+        return { label: 'Proposal Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'report_pending':
         return {
-          label: 'report pending',
+          label: 'Post-Event Report Pending',
           colorClass: 'bg-[#171e19] text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold',
           isReportPending: true
         };
       case 'closed':
-        return { label: 'closed', colorClass: 'bg-[#b7c6c2] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/10' };
+        return { label: 'Event Closed', colorClass: 'bg-[#b7c6c2] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/10' };
       default:
         return { label: status, colorClass: 'bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
     }

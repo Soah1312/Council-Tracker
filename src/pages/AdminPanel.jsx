@@ -718,30 +718,34 @@ export default function AdminPanel() {
     );
   };
 
-  const getBadgeClass = (event) => {
+  const getStatusDetails = (event) => {
     const isRepPending = isReportPending(event);
-    if (isRepPending) return 'bg-[#171e19] text-white border-2 border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+    if (isRepPending) {
+      return { label: 'Post-Event Report Pending', colorClass: 'bg-[#171e19] text-white border-2 border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+    }
     switch (event.status) {
       case 'submitted':
-        return 'bg-[#b7c6c2]/50 text-[#171e19] border border-[#171e19]/25 px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: 'Proposal Submitted', colorClass: 'bg-[#b7c6c2]/50 text-[#171e19] border border-[#171e19]/25 px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'proposal_approved':
-        return 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_submitted':
-        return 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: 'Permissions Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_revision_needed':
-        return 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]';
+        return { label: 'Permissions Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
-        return 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: 'Approved', colorClass: 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'rejected':
-        return 'bg-red-800 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: 'Proposal Rejected', colorClass: 'bg-red-800 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'revision_needed':
-        return 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]';
+        return { label: 'Proposal Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'closed':
-        return 'bg-[#b7c6c2] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: 'Event Closed', colorClass: 'bg-[#b7c6c2] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       default:
-        return 'bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] uppercase font-bold';
+        return { label: String(event.status || '').replace(/_/g, ' '), colorClass: 'bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
     }
   };
+
+  const getBadgeClass = (event) => getStatusDetails(event).colorClass;
 
   const renderApprovalBadges = (event, stageNum) => {
     const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
@@ -1098,7 +1102,7 @@ export default function AdminPanel() {
                   );
                 })()}
                 <span className={getBadgeClass(selectedEventDetail)}>
-                  {selectedEventDetail.status}
+                  {getStatusDetails(selectedEventDetail).label}
                 </span>
               </div>
               <button
@@ -1899,7 +1903,7 @@ export default function AdminPanel() {
                   </div>
                   <div className="mt-2">
                     <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countPendingReview}</p>
-                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Pending Review</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Pending Approvals</p>
                   </div>
                 </div>
                 
@@ -2039,7 +2043,7 @@ export default function AdminPanel() {
                             )}
                             {event.attentionReason === 'pending_proposal' && (
                               <span className="px-2.5 py-1 bg-slate-100 border border-[#171e19]/30 text-[#171e19] text-xs font-bold uppercase rounded-none">
-                                Proposal Awaiting ({getDaysDiffFuture(event.startDate)}d)
+                                Proposal Submitted ({getDaysDiffFuture(event.startDate)}d)
                               </span>
                             )}
                             {event.attentionReason === 'report_pending' && (() => {
@@ -2504,7 +2508,7 @@ export default function AdminPanel() {
                               </td>
                               <td className="p-4 whitespace-nowrap">
                                 <span className={getBadgeClass(event)}>
-                                  {isRepPending ? 'report pending' : event.status}
+                                  {getStatusDetails(event).label}
                                 </span>
                               </td>
                               <td className="p-4 pr-6 whitespace-nowrap">

@@ -28,14 +28,14 @@ const COUNCIL_COLORS = {
 
 const STATUS_CONFIG = {
   approved: { label: 'Approved', color: '#10b981', icon: CheckCircle },
-  proposal_approved: { label: 'Stage 1 Approved', color: '#6366f1', icon: CheckCircle },
-  permissions_submitted: { label: 'Clearances Submitted', color: '#8b5cf6', icon: Clock },
-  permissions_revision_needed: { label: 'Clearances Revision', color: '#f97316', icon: AlertCircle },
-  submitted: { label: 'Pending Proposal', color: '#f59e0b', icon: Clock },
-  revision_needed: { label: 'Revision Needed', color: '#f97316', icon: AlertCircle },
-  rejected: { label: 'Rejected', color: '#ef4444', icon: X },
-  report_pending: { label: 'Report Pending', color: '#3b82f6', icon: Activity },
-  closed: { label: 'Closed', color: '#94a3b8', icon: CheckCircle },
+  proposal_approved: { label: 'Awaiting Council Documents', color: '#6366f1', icon: Clock },
+  permissions_submitted: { label: 'Permissions Submitted', color: '#8b5cf6', icon: Clock },
+  permissions_revision_needed: { label: 'Permissions Revision Needed', color: '#f97316', icon: AlertCircle },
+  submitted: { label: 'Proposal Submitted', color: '#f59e0b', icon: Clock },
+  revision_needed: { label: 'Proposal Revision Needed', color: '#f97316', icon: AlertCircle },
+  rejected: { label: 'Proposal Rejected', color: '#ef4444', icon: X },
+  report_pending: { label: 'Post-Event Report Pending', color: '#3b82f6', icon: Activity },
+  closed: { label: 'Event Closed', color: '#94a3b8', icon: CheckCircle },
 };
 
 const toDate = (field) => {
