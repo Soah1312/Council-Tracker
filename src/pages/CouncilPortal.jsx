@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
-import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail } from '../lib/auth';
+import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, COUNCILS } from '../lib/auth';
+import { Link } from 'react-router-dom';
 import { auth } from '../lib/firebase';
 import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
@@ -549,10 +550,52 @@ export default function CouncilPortal() {
   const [showPassword, setShowPassword] = useState(false);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
+  const [selectedLoginCouncilId, setSelectedLoginCouncilId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [resetMessage, setResetMessage] = useState(null);
+
+  const handleAuthSubmit = async (e) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!authEmail.trim() || !authPassword) {
+      setAuthError('EMAIL AND PASSWORD ARE REQUIRED.');
+      return;
+    }
+    setAuthSubmitting(true);
+    try {
+      const user = await loginWithEmail(authEmail, authPassword);
+      if (user && user.email?.toLowerCase() === 'superadmin@gmail.com') {
+        const targetCouncil = COUNCILS.find(c => c.id === selectedLoginCouncilId) || COUNCILS[0];
+        setCouncil(targetCouncil);
+        sessionStorage.setItem('active_council', JSON.stringify(targetCouncil));
+      }
+    } catch (err) {
+      console.error(err);
+      setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
+    } finally {
+      setAuthSubmitting(false);
+    }
+  };
+
+  const handleSendResetLink = async (e) => {
+    e.preventDefault();
+    const target = resetEmail.trim() || authEmail.trim();
+    if (!target) {
+      setResetMessage({ type: 'error', text: 'Please enter a valid email address.' });
+      return;
+    }
+    setResetSubmitting(true);
+    try {
+      await sendPasswordReset(target);
+      setResetMessage({ type: 'success', text: `Password reset link sent to ${target}. Check Inbox & Spam!` });
+    } catch (err) {
+      setResetMessage({ type: 'error', text: err.message || 'Failed to send password reset link.' });
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const unsubscribeAuth = onAuthChange((user) => {
@@ -753,29 +796,7 @@ export default function CouncilPortal() {
     }
   };
 
-  const handleAuthSubmit = async (e) => {
-    e.preventDefault();
-    setAuthError('');
-    if (!authEmail.trim() || !authPassword) {
-      setAuthError('EMAIL AND PASSWORD ARE REQUIRED.');
-      return;
-    }
 
-    setAuthSubmitting(true);
-    try {
-      await loginWithEmail(authEmail, authPassword);
-      showNotification('AUTHENTICATED SUCCESSFULLY!');
-    } catch (err) {
-      console.error('Login error:', err);
-      if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
-        setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
-      } else {
-        setAuthError(err.message || 'AUTHENTICATION FAILED.');
-      }
-    } finally {
-      setAuthSubmitting(false);
-    }
-  };
 
   const handleLogout = async () => {
     try {
@@ -788,27 +809,7 @@ export default function CouncilPortal() {
     handleResetForm();
   };
 
-  const handleSendResetLink = async (e) => {
-    e.preventDefault();
-    const targetEmail = resetEmail.trim() || authEmail.trim();
-    if (!targetEmail) {
-      setResetMessage({ type: 'error', text: 'Please enter your registered email address.' });
-      return;
-    }
 
-    setResetSubmitting(true);
-    setResetMessage(null);
-    try {
-      await sendPasswordReset(targetEmail);
-      setResetMessage({ type: 'success', text: `Password reset link sent to ${targetEmail}. Please check your Inbox and Spam/Junk folder!` });
-      showNotification(`Password reset link sent to ${targetEmail}. Check Inbox & Spam folder!`);
-    } catch (err) {
-      console.error(err);
-      setResetMessage({ type: 'error', text: err.message || 'Failed to send password reset email.' });
-    } finally {
-      setResetSubmitting(false);
-    }
-  };
 
   const getEventStage = (status) => {
     switch (status) {
@@ -1371,6 +1372,24 @@ export default function CouncilPortal() {
             </div>
 
             <div className="space-y-1.5">
+              <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2] block">
+                Target Council / Account (For Superadmin Login)
+              </label>
+              <select
+                value={selectedLoginCouncilId}
+                onChange={(e) => setSelectedLoginCouncilId(e.target.value)}
+                className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-xs text-[#171e19] font-satoshi font-bold focus:outline-none focus:border-[#ffe17c] rounded-none uppercase cursor-pointer"
+              >
+                <option value="">-- Auto-Detect Council from Email --</option>
+                {COUNCILS.map(c => (
+                  <option key={c.id} value={c.id}>
+                    {c.name.toUpperCase()} ({c.category.toUpperCase()})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
               <div className="flex justify-between items-center">
                 <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2] block">
                   Account Password *
@@ -1484,9 +1503,49 @@ export default function CouncilPortal() {
     );
   }
 
+  const isSuperAdmin = (auth?.currentUser?.email?.toLowerCase() === 'superadmin@gmail.com') || (sessionStorage.getItem('admin_authenticated') === 'true') || (localStorage.getItem('admin_authenticated') === 'true');
+
   // 2. MAIN LOGGED IN SCREEN
   return (
     <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
+      {/* Superadmin Universal Council Override Switcher */}
+      {isSuperAdmin && (
+        <div className="bg-[#171e19] text-[#ffe17c] p-4 border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#ffe17c] flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-satoshi text-xs mb-4">
+          <div className="flex items-center gap-2">
+            <span className="font-anton text-sm uppercase tracking-wider text-[#171e19] bg-[#ffe17c] px-2.5 py-1 border border-[#171e19]">
+              ⚡ SUPERADMIN OVERRIDE ACTIVE
+            </span>
+            <span className="font-bold text-white text-xs">Switch Council Portal Context:</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <select
+              value={council?.id || ''}
+              onChange={(e) => {
+                const selected = COUNCILS.find(c => c.id === e.target.value);
+                if (selected) {
+                  setCouncil(selected);
+                  sessionStorage.setItem('active_council', JSON.stringify(selected));
+                  showNotification(`Switched active portal context to: ${selected.name}`, 'warning');
+                }
+              }}
+              className="bg-[#ffe17c] text-[#171e19] font-anton text-xs uppercase px-3 py-2 border-2 border-[#171e19] focus:outline-none cursor-pointer"
+            >
+              {COUNCILS.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name.toUpperCase()} ({c.category.toUpperCase()})
+                </option>
+              ))}
+            </select>
+            <Link
+              to="/admin"
+              className="px-3 py-1.5 bg-white border border-[#171e19] text-[#171e19] font-anton text-xs uppercase hover:bg-slate-100 transition-colors"
+            >
+              Admin Console &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* Toast Notification */}
       {notification && (
         <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 p-4 border shadow-xl transition-all duration-300 transform translate-y-0 rounded-none ${

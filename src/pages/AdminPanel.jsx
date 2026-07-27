@@ -214,6 +214,11 @@ export default function AdminPanel() {
 
     const unsubscribe = subscribeToAllEvents((data) => {
       const processed = data.map(event => {
+        // Auto-fix Genesis EVT-2026-003 to report_pending if missing report PDF
+        if ((event.eventId === 'EVT-2026-003' || event.eventName?.toLowerCase().includes('genesis')) && event.status === 'closed' && !event.reportPdfUrl) {
+          updateEventStatus(event.id || event.eventId, 'report_pending', 'Moved to Stage 3 Report Pending per admin').catch(console.error);
+          return { ...event, status: 'report_pending' };
+        }
         if (event.status === 'approved' && !event.isPastEvent) {
           const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
           if (endDate < new Date()) {
@@ -1402,14 +1407,22 @@ export default function AdminPanel() {
                   </button>
                 )}
 
-                {(selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'closed') && (
+                {(selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'closed') && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_submitted')}
                     className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
                   >
                     Revert Stage 2 Approval
                   </button>
-                )}
+                  {selectedEventDetail.status !== 'report_pending' && (
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'report_pending')}
+                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[160px]"
+                    >
+                      Mark Stage 3 (Report Pending)
+                    </button>
+                  )}
+                </>)}
               </div>
             )}
           </div>

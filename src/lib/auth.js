@@ -104,6 +104,15 @@ export function getAdminRoleByEmail(email) {
 export function getCouncilByEmail(email) {
   if (!email) return null;
   const cleanEmail = email.trim().toLowerCase();
+
+  // Superadmin universal override
+  if (cleanEmail === 'superadmin@gmail.com') {
+    const saved = sessionStorage.getItem('active_council');
+    if (saved) {
+      try { return JSON.parse(saved); } catch (e) {}
+    }
+    return COUNCILS[0]; // Default to Students' Council
+  }
   
   // 1. Explicit email match
   const matched = COUNCILS.find(c => c.email && c.email.trim().toLowerCase() === cleanEmail);
