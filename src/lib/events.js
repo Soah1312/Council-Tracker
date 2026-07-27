@@ -521,3 +521,18 @@ export async function updateEventDetails(eventId, details) {
   const eventRef = doc(db, 'events', eventId);
   await updateDoc(eventRef, details);
 }
+
+/**
+ * Resets an event status to target stage and clears all review history / feedback notes.
+ */
+export async function resetEventStageAndClearHistory(eventId, targetStatus = 'proposal_approved') {
+  const eventRef = doc(db, 'events', eventId);
+  await updateDoc(eventRef, {
+    status: targetStatus,
+    reviewNotes: null,
+    reviewHistory: [],
+    reviewedByRole: null,
+    reviewedByName: null,
+    reviewedAt: null
+  });
+}

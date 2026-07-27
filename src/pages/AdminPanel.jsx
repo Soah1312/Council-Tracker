@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
@@ -214,10 +214,20 @@ export default function AdminPanel() {
 
     const unsubscribe = subscribeToAllEvents((data) => {
       const processed = data.map(event => {
-        // Auto-fix Genesis EVT-2026-003 to report_pending if missing report PDF
-        if ((event.eventId === 'EVT-2026-003' || event.eventName?.toLowerCase().includes('genesis')) && event.status === 'closed' && !event.reportPdfUrl) {
-          updateEventStatus(event.id || event.eventId, 'report_pending', 'Moved to Stage 3 Report Pending per admin').catch(console.error);
-          return { ...event, status: 'report_pending' };
+        // Reset Genesis EVT-2026-003 to Stage 1 submitted (Proposal Submitted - pending admin review) and clear feedback history
+        if (event.eventId === 'EVT-2026-003' || event.eventName?.toLowerCase().includes('genesis')) {
+          if (event.status !== 'submitted' || event.reviewNotes || (event.reviewHistory && event.reviewHistory.length > 0)) {
+            resetEventStageAndClearHistory(event.id || event.eventId, 'submitted').catch(console.error);
+            return {
+              ...event,
+              status: 'submitted',
+              reviewNotes: null,
+              reviewHistory: [],
+              reviewedByRole: null,
+              reviewedByName: null,
+              reviewedAt: null
+            };
+          }
         }
         if (event.status === 'approved' && !event.isPastEvent) {
           const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
