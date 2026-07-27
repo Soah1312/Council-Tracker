@@ -45,6 +45,19 @@ function formatDate(value) {
   }
 }
 
+function getBaseUrl() {
+  if (import.meta.env.VITE_APP_URL) {
+    return import.meta.env.VITE_APP_URL.replace(/\/$/, '');
+  }
+  if (typeof window !== 'undefined' && window.location?.origin && !window.location.origin.includes('localhost')) {
+    return window.location.origin;
+  }
+  if (typeof window !== 'undefined' && window.location?.origin) {
+    return window.location.origin;
+  }
+  return 'https://crce-councils.vercel.app';
+}
+
 // Deduplication lock map to prevent duplicate emails triggered within short intervals
 const recentDispatches = new Set();
 
@@ -91,7 +104,12 @@ async function dispatch(params) {
   recentDispatches.add(lockKey);
   setTimeout(() => recentDispatches.delete(lockKey), 5000);
 
-  const action_url = params.action_url || params.portal_url || params.admin_url || `${window.location.origin}/admin`;
+  const defaultAdminUrl = `${getBaseUrl()}/admin`;
+  const defaultPortalUrl = `${getBaseUrl()}/portal`;
+
+  const action_url = params.action_url || params.portal_url || params.admin_url || defaultAdminUrl;
+  const admin_url = params.admin_url || defaultAdminUrl;
+  const portal_url = params.portal_url || defaultPortalUrl;
   const button_text = params.button_text || (params.portal_url ? 'OPEN COUNCIL PORTAL →' : 'OPEN ADMIN PANEL →');
 
   const targetTemplateId = params.template_id || import.meta.env.VITE_EMAILJS_COUNCIL_TEMPLATE_ID || TEMPLATE_ID;
@@ -100,7 +118,7 @@ async function dispatch(params) {
     await emailjs.send(
       SERVICE_ID,
       targetTemplateId,
-      { ...params, action_url, button_text, admin_url: action_url, to_email: toEmailString },
+      { ...params, action_url, button_text, admin_url, portal_url, to_email: toEmailString },
       { publicKey: PUBLIC_KEY }
     );
     console.log(`[EmailJS] Notification successfully sent to ${toEmailString} for ${params.event_id}`);
@@ -128,7 +146,7 @@ export async function notifyProposalSubmitted(event, councilName) {
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review and respond.',
-    admin_url:      `${window.location.origin}/admin`,
+    admin_url:      `${getBaseUrl()}/admin`,
   });
 }
 
@@ -147,7 +165,7 @@ export async function notifyProposalReopened(event, councilName) {
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'The proposal is active again for review and clearance uploads.',
-    admin_url:      `${window.location.origin}/admin`,
+    admin_url:      `${getBaseUrl()}/admin`,
   });
 }
 
@@ -166,7 +184,7 @@ export async function notifyProposalResubmitted(event, councilName) {
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review the updated proposal.',
-    admin_url:      `${window.location.origin}/admin`,
+    admin_url:      `${getBaseUrl()}/admin`,
   });
 }
 
@@ -185,7 +203,7 @@ export async function notifyPermissionsSubmitted(event, councilName) {
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to verify the uploaded documents.',
-    admin_url:      `${window.location.origin}/admin`,
+    admin_url:      `${getBaseUrl()}/admin`,
   });
 }
 
@@ -204,7 +222,7 @@ export async function notifyReportSubmitted(event, councilName) {
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review the report and close the event.',
-    admin_url:      `${window.location.origin}/admin`,
+    admin_url:      `${getBaseUrl()}/admin`,
   });
 }
 
@@ -272,8 +290,8 @@ export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes =
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    reviewNotes ? `Admin Review Notes: ${reviewNotes}` : 'No additional notes provided.',
-    portal_url:     `${window.location.origin}/portal`,
-    admin_url:      `${window.location.origin}/admin`,
+    portal_url:     `${getBaseUrl()}/portal`,
+    admin_url:      `${getBaseUrl()}/admin`,
     template_id:    import.meta.env.VITE_EMAILJS_COUNCIL_TEMPLATE_ID || TEMPLATE_ID,
   });
 }

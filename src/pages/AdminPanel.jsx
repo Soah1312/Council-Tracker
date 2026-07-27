@@ -13,10 +13,10 @@ import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 export default function AdminPanel() {
   // Passcode Security Gate State
   const [authenticated, setAuthenticated] = useState(() => {
-    return sessionStorage.getItem('admin_authenticated') === 'true';
+    return sessionStorage.getItem('admin_authenticated') === 'true' || localStorage.getItem('admin_authenticated') === 'true';
   });
   const [adminUser, setAdminUser] = useState(() => {
-    const saved = sessionStorage.getItem('admin_user');
+    const saved = sessionStorage.getItem('admin_user') || localStorage.getItem('admin_user');
     return saved ? JSON.parse(saved) : null;
   });
   const [adminEmail, setAdminEmail] = useState('');
@@ -256,7 +256,9 @@ export default function AdminPanel() {
           setAdminUser(roleObj);
           setAuthenticated(true);
           sessionStorage.setItem('admin_authenticated', 'true');
+          localStorage.setItem('admin_authenticated', 'true');
           sessionStorage.setItem('admin_user', JSON.stringify(roleObj));
+          localStorage.setItem('admin_user', JSON.stringify(roleObj));
         }
       }
     });
@@ -289,7 +291,9 @@ export default function AdminPanel() {
       setAdminUser(roleObj);
       setAuthenticated(true);
       sessionStorage.setItem('admin_authenticated', 'true');
+      localStorage.setItem('admin_authenticated', 'true');
       sessionStorage.setItem('admin_user', JSON.stringify(roleObj));
+      localStorage.setItem('admin_user', JSON.stringify(roleObj));
       showNotification(`WELCOME BACK, ${roleObj.name.toUpperCase()}!`);
     } catch (err) {
       console.error(err);
@@ -329,6 +333,8 @@ export default function AdminPanel() {
     }
     sessionStorage.removeItem('admin_authenticated');
     sessionStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_authenticated');
+    localStorage.removeItem('admin_user');
     setAuthenticated(false);
     setAdminUser(null);
     setAdminPassword('');
