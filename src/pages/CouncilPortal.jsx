@@ -550,7 +550,6 @@ export default function CouncilPortal() {
   const [showPassword, setShowPassword] = useState(false);
   const [authSubmitting, setAuthSubmitting] = useState(false);
   const [authError, setAuthError] = useState('');
-  const [selectedLoginCouncilId, setSelectedLoginCouncilId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSubmitting, setResetSubmitting] = useState(false);
@@ -565,12 +564,7 @@ export default function CouncilPortal() {
     }
     setAuthSubmitting(true);
     try {
-      const user = await loginWithEmail(authEmail, authPassword);
-      if (user && user.email?.toLowerCase() === 'superadmin@gmail.com') {
-        const targetCouncil = COUNCILS.find(c => c.id === selectedLoginCouncilId) || COUNCILS[0];
-        setCouncil(targetCouncil);
-        sessionStorage.setItem('active_council', JSON.stringify(targetCouncil));
-      }
+      await loginWithEmail(authEmail, authPassword);
     } catch (err) {
       console.error(err);
       setAuthError('INVALID EMAIL OR PASSWORD. ACCESS DENIED.');
@@ -1371,23 +1365,7 @@ export default function CouncilPortal() {
               />
             </div>
 
-            <div className="space-y-1.5">
-              <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#b7c6c2] block">
-                Target Council / Account (For Superadmin Login)
-              </label>
-              <select
-                value={selectedLoginCouncilId}
-                onChange={(e) => setSelectedLoginCouncilId(e.target.value)}
-                className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-xs text-[#171e19] font-satoshi font-bold focus:outline-none focus:border-[#ffe17c] rounded-none uppercase cursor-pointer"
-              >
-                <option value="">-- Auto-Detect Council from Email --</option>
-                {COUNCILS.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.name.toUpperCase()} ({c.category.toUpperCase()})
-                  </option>
-                ))}
-              </select>
-            </div>
+
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
