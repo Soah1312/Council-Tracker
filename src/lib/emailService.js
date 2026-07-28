@@ -70,22 +70,27 @@ const recentDispatches = new Set();
 async function dispatch(params) {
   // Check if action is performed by or targeting Test Council or test account
   const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
-  const councilEmail = (params.council_email || params.councilEmail || '').toLowerCase();
-  const councilName = (params.council_name || params.councilName || '').toLowerCase();
-  const councilId = (params.council_id || params.councilId || '').toLowerCase();
+  const councilEmail = (params.council_email || params.councilEmail || params.event?.councilEmail || '').toLowerCase();
+  const councilName = (params.council_name || params.councilName || params.event?.councilName || '').toLowerCase();
+  const councilId = (params.council_id || params.councilId || params.event?.councilId || '').toLowerCase();
+  const eventName = (params.event_name || params.eventName || params.event?.eventName || '').toLowerCase();
+  const eventId = (params.event_id || params.eventId || params.event?.eventId || params.event?.id || '').toLowerCase();
   const toEmail = (params.to_email || '').toLowerCase();
 
   const isTestCouncil = 
     Boolean(params.isTestCouncil) ||
     Boolean(params.is_test) ||
-    currentUserEmail === 'test@gmail.com' ||
-    councilEmail === 'test@gmail.com' ||
-    toEmail.includes('test@gmail.com') ||
-    councilId === 'test-council' ||
-    councilName.includes('test council');
+    Boolean(params.event?.isTestCouncil) ||
+    Boolean(params.event?.is_test) ||
+    currentUserEmail.includes('test') ||
+    councilEmail.includes('test') ||
+    councilId.includes('test') ||
+    councilName.includes('test') ||
+    eventName.includes('test') ||
+    eventId.includes('test');
 
   if (isTestCouncil) {
-    console.log(`[EmailJS] Skipped email notification — test council (${params.event_id || params.event_name || 'Test Proposal'})`);
+    console.log(`[EmailJS] Skipped email notification — test council/proposal (${params.event_id || params.event_name || 'Test Proposal'})`);
     return;
   }
 

@@ -147,9 +147,18 @@ export async function createEventRequest(data) {
     finalEndDate = sorted[sorted.length - 1].endDate;
   }
 
+  const isTest = Boolean(
+    data.isTestCouncil ||
+    data.is_test ||
+    (data.councilId || '').toLowerCase().includes('test') ||
+    (data.councilName || '').toLowerCase().includes('test') ||
+    (data.councilEmail || '').toLowerCase().includes('test')
+  );
+
   const finalData = {
     ...data,
     eventId,
+    isTestCouncil: isTest,
     isMultiSession: Boolean(data.isMultiSession && processedSessions && processedSessions.length > 0),
     eventSessions: processedSessions,
     startDate: finalStartDate,
