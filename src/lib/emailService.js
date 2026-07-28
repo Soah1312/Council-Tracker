@@ -254,7 +254,8 @@ export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes =
     || (COUNCILS.find(c => c.id === event.councilId)?.email)
     || '';
 
-  const recipientList = [councilEmail, ...RECIPIENTS].filter(Boolean);
+  // Send status update email ONLY to the council (admins do not need copies of their own actions)
+  const recipientList = [councilEmail].filter(Boolean);
   const uniqueRecipients = [...new Set(recipientList)].join(', ');
 
   let stageLabel = 'Status Updated';
