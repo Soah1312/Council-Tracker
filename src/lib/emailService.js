@@ -68,17 +68,24 @@ const recentDispatches = new Set();
  * @param {Object} params  - Template variables forwarded to EmailJS
  */
 async function dispatch(params) {
-  // Check if action is performed by or targeting test@gmail.com
+  // Check if action is performed by or targeting Test Council or test account
   const currentUserEmail = auth.currentUser?.email?.toLowerCase() || '';
   const councilEmail = (params.council_email || params.councilEmail || '').toLowerCase();
+  const councilName = (params.council_name || params.councilName || '').toLowerCase();
+  const councilId = (params.council_id || params.councilId || '').toLowerCase();
   const toEmail = (params.to_email || '').toLowerCase();
 
-  if (
+  const isTestCouncil = 
+    Boolean(params.isTestCouncil) ||
+    Boolean(params.is_test) ||
     currentUserEmail === 'test@gmail.com' ||
     councilEmail === 'test@gmail.com' ||
-    toEmail.includes('test@gmail.com')
-  ) {
-    console.log(`[EmailJS] Action performed by or for test account (test@gmail.com) — skipping email dispatch.`);
+    toEmail.includes('test@gmail.com') ||
+    councilId === 'test-council' ||
+    councilName.includes('test council');
+
+  if (isTestCouncil) {
+    console.log(`[EmailJS] Skipped email notification — test council (${params.event_id || params.event_name || 'Test Proposal'})`);
     return;
   }
 
@@ -141,8 +148,10 @@ export async function notifyProposalSubmitted(event, councilName) {
     action_type:    'New event proposal has been submitted and awaits admin review.',
     event_id:       event.eventId,
     event_name:     event.eventName,
-    council_name:   councilName,
+    council_name:   councilName || event.councilName,
+    council_id:     event.councilId,
     council_email:  event.councilEmail || '',
+    isTestCouncil:  event.isTestCouncil || event.is_test || event.councilId === 'test-council',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review and respond.',
@@ -160,8 +169,10 @@ export async function notifyProposalReopened(event, councilName) {
     action_type:    'A previously rejected proposal has been re-opened by administration.',
     event_id:       event.eventId,
     event_name:     event.eventName,
-    council_name:   councilName,
+    council_name:   councilName || event.councilName,
+    council_id:     event.councilId,
     council_email:  event.councilEmail || '',
+    isTestCouncil:  event.isTestCouncil || event.is_test || event.councilId === 'test-council',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'The proposal is active again for review. You may now update and resubmit your proposal.',
@@ -179,8 +190,10 @@ export async function notifyProposalResubmitted(event, councilName) {
     action_type:    'A revised event proposal has been resubmitted following a revision request.',
     event_id:       event.eventId,
     event_name:     event.eventName,
-    council_name:   councilName,
+    council_name:   councilName || event.councilName,
+    council_id:     event.councilId,
     council_email:  event.councilEmail || '',
+    isTestCouncil:  event.isTestCouncil || event.is_test || event.councilId === 'test-council',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review the updated proposal.',
@@ -198,8 +211,10 @@ export async function notifyPermissionsSubmitted(event, councilName) {
     action_type:    'The council has uploaded clearance and permission documents for review.',
     event_id:       event.eventId,
     event_name:     event.eventName,
-    council_name:   councilName,
+    council_name:   councilName || event.councilName,
+    council_id:     event.councilId,
     council_email:  event.councilEmail || '',
+    isTestCouncil:  event.isTestCouncil || event.is_test || event.councilId === 'test-council',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to verify the uploaded documents.',
@@ -217,8 +232,10 @@ export async function notifyReportSubmitted(event, councilName) {
     action_type:    'The post-event report has been submitted. The event is ready to be closed.',
     event_id:       event.eventId,
     event_name:     event.eventName,
-    council_name:   councilName,
+    council_name:   councilName || event.councilName,
+    council_id:     event.councilId,
     council_email:  event.councilEmail || '',
+    isTestCouncil:  event.isTestCouncil || event.is_test || event.councilId === 'test-council',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    'Please log into the admin panel to review the report and close the event.',
@@ -287,6 +304,9 @@ export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes =
     event_id:       event.eventId || event.id,
     event_name:     event.eventName,
     council_name:   event.councilName,
+    council_id:     event.councilId,
+    council_email:  councilEmail,
+    isTestCouncil:  event.isTestCouncil || event.is_test || event.councilId === 'test-council',
     start_date:     formatDate(event.startDate),
     end_date:       formatDate(event.endDate),
     extra_notes:    reviewNotes ? `Admin Review Notes: ${reviewNotes}` : 'No additional notes provided.',

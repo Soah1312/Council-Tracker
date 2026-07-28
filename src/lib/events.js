@@ -344,34 +344,26 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       ...currentStage1Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
     };
-    updates.stage1Approvals = updatedStage1;
-
-    const doswApproved = updatedStage1.dosw?.approved || role === 'super_admin';
-    const stucoApproved = updatedStage1.stuco?.approved || role === 'super_admin';
-
-    if (doswApproved && stucoApproved) {
-      updates.status = 'proposal_approved';
-    } else {
-      updates.status = 'submitted';
+    if (role === 'super_admin') {
+      updatedStage1.dosw = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
+      updatedStage1.stuco = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
     }
+    updates.stage1Approvals = updatedStage1;
+    updates.status = 'proposal_approved';
   } else if (actionStatus === 'approved') {
     // Stage 2 Approval (Clearances Approved)
     const updatedStage2 = {
       ...currentStage2Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
     };
-    updates.stage2Approvals = updatedStage2;
-
-    const doswApproved = updatedStage2.dosw?.approved || role === 'super_admin';
-    const stucoApproved = updatedStage2.stuco?.approved || role === 'super_admin';
-
-    if (doswApproved && stucoApproved) {
-      updates.status = 'approved';
-      const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
-      updates.reportDueDate = Timestamp.fromDate(dueDateJS);
-    } else {
-      updates.status = 'permissions_submitted';
+    if (role === 'super_admin') {
+      updatedStage2.dosw = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
+      updatedStage2.stuco = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
     }
+    updates.stage2Approvals = updatedStage2;
+    updates.status = 'approved';
+    const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+    updates.reportDueDate = Timestamp.fromDate(dueDateJS);
   } else if (actionStatus === 'revision_needed') {
     updates.status = 'revision_needed';
     updates.stage1Approvals = {};

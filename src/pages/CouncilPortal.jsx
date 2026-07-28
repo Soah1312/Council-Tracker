@@ -832,12 +832,17 @@ export default function CouncilPortal() {
 
     const stageNum = isStage1Pending ? 1 : 2;
     const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
-    const dosw = approvals.dosw?.approved;
-    const stuco = approvals.stuco?.approved;
+    const isSuperAdminApproved = Boolean(
+      approvals.super_admin?.approved || 
+      (event.status === 'proposal_approved' && stageNum === 1) || 
+      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
+    );
+    const doswApproved = Boolean(approvals.dosw?.approved || isSuperAdminApproved);
+    const stucoApproved = Boolean(approvals.stuco?.approved || isSuperAdminApproved);
 
     let count = 0;
-    if (dosw) count++;
-    if (stuco) count++;
+    if (doswApproved) count++;
+    if (stucoApproved) count++;
 
     return (
       <div className="p-3 bg-[#171e19]/5 border border-[#171e19]/20 rounded-none space-y-1.5 font-satoshi">
@@ -847,21 +852,21 @@ export default function CouncilPortal() {
           </span>
           <span className={`px-2 py-0.5 text-[9px] font-bold uppercase border ${count === 2 ? 'bg-emerald-950 text-white border-emerald-900' : 'bg-[#ffe17c] text-[#171e19] border-[#171e19]'
             }`}>
-            {count === 2 ? 'FULLY APPROVED' : '1/2 APPROVALS PENDING'}
+            {count === 2 ? 'FULLY APPROVED' : `${count}/2 APPROVALS`}
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold uppercase tracking-wide">
-          <div className={`p-2 border flex items-center justify-between ${dosw ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+          <div className={`p-2 border flex items-center justify-between ${doswApproved ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
             }`}>
             <span>Dean of Students' Welfare (DOSW)</span>
-            <span>{dosw ? '✓ Approved' : '⏳ Pending'}</span>
+            <span>{approvals.dosw?.approved && !approvals.dosw?.viaSuperAdmin ? '✓ Approved' : doswApproved ? '✓ Approved (Super Admin)' : '⏳ Pending'}</span>
           </div>
 
-          <div className={`p-2 border flex items-center justify-between ${stuco ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+          <div className={`p-2 border flex items-center justify-between ${stucoApproved ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
             }`}>
             <span>Students' Council (StuCo)</span>
-            <span>{stuco ? '✓ Approved' : '⏳ Pending'}</span>
+            <span>{approvals.stuco?.approved && !approvals.stuco?.viaSuperAdmin ? '✓ Approved' : stucoApproved ? '✓ Approved (Super Admin)' : '⏳ Pending'}</span>
           </div>
         </div>
       </div>

@@ -362,13 +362,7 @@ export default function AdminPanel() {
     }
     setReviewingEvent(event);
     setReviewStatusType(statusType);
-    setReviewNotes(
-      statusType === 'submitted'
-        ? 'Proposal re-opened by administration for re-evaluation.'
-        : statusType === 'permissions_submitted'
-        ? 'Stage 2 approvals reverted by administration. Documents are under re-evaluation.'
-        : event.reviewNotes || ''
-    );
+    setReviewNotes('');
   };
 
   const submitReview = async () => {
@@ -402,6 +396,7 @@ export default function AdminPanel() {
         showNotification(`Proposal marked as ${reviewStatusType.replace(/_/g, ' ')}.`);
       }
       setReviewingEvent(null);
+      setReviewNotes('');
       // Close the details modal drawer on success
       setSelectedEventDetail(null);
     } catch {
@@ -759,8 +754,13 @@ export default function AdminPanel() {
 
   const renderApprovalBadges = (event, stageNum) => {
     const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
-    const dosw = approvals.dosw?.approved;
-    const stuco = approvals.stuco?.approved;
+    const isSuperAdminApproved = Boolean(
+      approvals.super_admin?.approved || 
+      (event.status === 'proposal_approved' && stageNum === 1) || 
+      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
+    );
+    const dosw = Boolean(approvals.dosw?.approved || isSuperAdminApproved);
+    const stuco = Boolean(approvals.stuco?.approved || isSuperAdminApproved);
 
     let count = 0;
     if (dosw) count++;
@@ -772,10 +772,10 @@ export default function AdminPanel() {
           {count}/2 APPROVALS
         </span>
         <span className={`px-2 py-0.5 border ${dosw ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-[#171e19]/50 border-slate-300'}`}>
-          {dosw ? '✓ DOSW' : '⏳ DOSW'}
+          {dosw ? (approvals.dosw?.viaSuperAdmin || (isSuperAdminApproved && !approvals.dosw?.approved) ? '✓ DOSW (SA)' : '✓ DOSW') : '⏳ DOSW'}
         </span>
         <span className={`px-2 py-0.5 border ${stuco ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-slate-100 text-[#171e19]/50 border-slate-300'}`}>
-          {stuco ? '✓ STUCO' : '⏳ STUCO'}
+          {stuco ? (approvals.stuco?.viaSuperAdmin || (isSuperAdminApproved && !approvals.stuco?.approved) ? '✓ STUCO (SA)' : '✓ STUCO') : '⏳ STUCO'}
         </span>
       </div>
     );
@@ -1075,7 +1075,10 @@ export default function AdminPanel() {
             <div className="flex justify-end gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setReviewingEvent(null)}
+                onClick={() => {
+                  setReviewingEvent(null);
+                  setReviewNotes('');
+                }}
                 className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
               >
                 Cancel
@@ -1249,27 +1252,27 @@ export default function AdminPanel() {
                       <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19] block">
                         Official Admin Review Notes &amp; Feedback History
                       </span>
-                      {selectedEventDetail.reviewNotes && (
+                      {(!selectedEventDetail.reviewHistory || selectedEventDetail.reviewHistory.length === 0) && selectedEventDetail.reviewNotes && (
                         <p className="text-sm font-bold text-[#171e19] leading-relaxed bg-white border border-[#171e19] p-3">
                           "{selectedEventDetail.reviewNotes}"
                         </p>
                       )}
                       {selectedEventDetail.reviewHistory && selectedEventDetail.reviewHistory.length > 0 && (
-                        <div className="space-y-2 pt-2 border-t border-[#171e19]/15">
-                          {selectedEventDetail.reviewHistory.map((item, idx) => {
+                        <div className="space-y-2 pt-2">
+                          {selectedEventDetail.reviewHistory.slice().reverse().map((item, idx) => {
                             const dateStr = item.timestamp?.toDate
                               ? formatEventDate(item.timestamp)
                               : formatEventDate(item.timestamp || new Date());
                             return (
-                              <div key={idx} className="text-xs bg-white/70 border border-[#171e19]/20 p-2.5 space-y-1">
+                              <div key={idx} className="text-xs bg-white border-2 border-[#171e19] p-3 space-y-1 shadow-[2px_2px_0px_0px_#171e19]">
                                 <div className="flex justify-between items-center font-bold text-[#171e19] flex-wrap">
                                   <span>{item.adminName} ({item.adminRole?.toUpperCase()})</span>
                                   <span className="text-[10px] text-[#171e19]/60">{dateStr}</span>
                                 </div>
                                 <p className="font-semibold text-[11px] text-[#171e19]/80 uppercase">
-                                  Action: <span className="underline">{item.status?.replace(/_/g, ' ')}</span>
+                                  Action: <span className="underline font-bold">{item.status?.replace(/_/g, ' ')}</span>
                                 </p>
-                                {item.notes && <p className="italic text-[#171e19] font-medium text-xs mt-1">"{item.notes}"</p>}
+                                {item.notes && <p className="italic text-[#171e19] font-semibold text-xs mt-1 bg-[#ffe17c]/20 p-2 border border-[#171e19]/20">"{item.notes}"</p>}
                               </div>
                             );
                           })}
@@ -1358,15 +1361,18 @@ export default function AdminPanel() {
               </div>
             </div>
 
-            {/* Sticky Action Footer — Available for ALL proposals to allow re-reviewing & comments */}
+            {/* Sticky Action Footer — Mutually Exclusive Action Buttons per Stage */}
             {!adminUser?.readOnly && (
               <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0 flex-wrap">
-                {(selectedEventDetail.status === 'submitted' || selectedEventDetail.status === 'proposal_approved' || selectedEventDetail.status === 'revision_needed') && (<>
+                {/* STAGE 1: Unapproved / Reverted / Pending Review */}
+                {['submitted', 'revision_needed'].includes(selectedEventDetail.status) && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
                     className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
                   >
-                    {selectedEventDetail.status === 'proposal_approved' ? 'Re-confirm Stage 1 Approval' : 'Accept Proposal (Stage 1)'}
+                    {selectedEventDetail.reviewHistory?.some(h => h.status === 'proposal_approved') || selectedEventDetail.stage1Approvals?.dosw?.approved
+                      ? 'Re-confirm Stage 1 Approval'
+                      : 'Accept Proposal (Stage 1)'}
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
@@ -1382,12 +1388,37 @@ export default function AdminPanel() {
                   </button>
                 </>)}
 
-                {(selectedEventDetail.status === 'permissions_submitted' || selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'permissions_revision_needed' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'closed') && (<>
+                {/* STAGE 1: Approved */}
+                {selectedEventDetail.status === 'proposal_approved' && (<>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                  >
+                    Revert Stage 1 Approval
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                  >
+                    Request Revision
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                  >
+                    Reject Proposal
+                  </button>
+                </>)}
+
+                {/* STAGE 2: Pending Clearances Review / Revision Needed */}
+                {['permissions_submitted', 'permissions_revision_needed'].includes(selectedEventDetail.status) && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
                     className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
                   >
-                    {selectedEventDetail.status === 'approved' ? 'Re-confirm Stage 2 Approval' : 'Approve Documents (Stage 2)'}
+                    {selectedEventDetail.reviewHistory?.some(h => h.status === 'approved') || selectedEventDetail.stage2Approvals?.dosw?.approved
+                      ? 'Re-confirm Stage 2 Approval'
+                      : 'Approve Documents (Stage 2)'}
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
@@ -1403,32 +1434,27 @@ export default function AdminPanel() {
                   </button>
                 </>)}
 
-                {selectedEventDetail.status === 'rejected' && (
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
-                  >
-                    Re-Open Proposal for Evaluation
-                  </button>
-                )}
-
-                {selectedEventDetail.status === 'proposal_approved' && (
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
-                  >
-                    Revert Stage 1 Approval
-                  </button>
-                )}
-
-                {(selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'closed') && (<>
+                {/* STAGE 2: Approved / Stage 3 Active */}
+                {['approved', 'report_pending', 'closed'].includes(selectedEventDetail.status) && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_submitted')}
                     className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
                   >
                     Revert Stage 2 Approval
                   </button>
-                  {selectedEventDetail.status !== 'report_pending' && (
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                  >
+                    Request Document Revision
+                  </button>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                  >
+                    Reject Request
+                  </button>
+                  {selectedEventDetail.status !== 'report_pending' && selectedEventDetail.status !== 'closed' && (
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'report_pending')}
                       className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[160px]"
@@ -1437,6 +1463,16 @@ export default function AdminPanel() {
                     </button>
                   )}
                 </>)}
+
+                {/* REJECTED PROPOSAL ACTION */}
+                {selectedEventDetail.status === 'rejected' && (
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
+                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
+                  >
+                    Re-Open Proposal for Evaluation
+                  </button>
+                )}
               </div>
             )}
           </div>
