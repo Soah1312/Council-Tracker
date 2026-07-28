@@ -379,6 +379,7 @@ export default function LandingPage() {
       const data = await getAllEvents();
       const resolved = data
         .map(e => ({ ...e, _status: resolveStatus(e), _startDate: toDate(e.startDate) }))
+        .filter(e => e.councilId !== 'test-council' && !e.isTestCouncil && (e.councilName || '').toLowerCase() !== 'test council')
         .filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(e._status))
         .sort((a, b) => (a._startDate || 0) - (b._startDate || 0));
       setEvents(resolved);
