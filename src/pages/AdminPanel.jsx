@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
@@ -85,6 +85,14 @@ export default function AdminPanel() {
     status: 'report_pending',
     description: ''
   });
+  const [pastEventFiles, setPastEventFiles] = useState({
+    proposalFile: null,
+    doswFile: null,
+    otherFile: null,
+    waiverFile: null,
+    reportPdfFile: null,
+    reportPhotos: []
+  });
   const [pastEventSubmitting, setPastEventSubmitting] = useState(false);
   const [showAdminPastContactDropdown, setShowAdminPastContactDropdown] = useState(false);
 
@@ -156,7 +164,49 @@ export default function AdminPanel() {
       const normalizedCouncilId = String(pastEventForm.councilId).trim().toLowerCase();
       const selectedCouncilObj = COUNCILS.find(c => c.id === normalizedCouncilId);
       const councilName = selectedCouncilObj ? selectedCouncilObj.name : pastEventForm.councilId.toUpperCase();
-      const eventStatus = pastEventForm.status || 'report_pending';
+      const eventId = await generateEventId();
+
+      // Upload Stage 1 Proposal Document
+      let eventDescriptionUrl = null;
+      if (pastEventFiles.proposalFile) {
+        eventDescriptionUrl = await uploadFile(pastEventFiles.proposalFile, `events/${eventId}/proposals`);
+      }
+
+      // Upload Stage 2 Clearance Letters
+      let doswPermissionLetterUrl = null;
+      if (pastEventFiles.doswFile) {
+        doswPermissionLetterUrl = await uploadFile(pastEventFiles.doswFile, `events/${eventId}/permissions`);
+      }
+
+      let otherDocumentUrl = null;
+      if (pastEventFiles.otherFile) {
+        otherDocumentUrl = await uploadFile(pastEventFiles.otherFile, `events/${eventId}/permissions`);
+      }
+
+      let attendanceWaiverUrl = null;
+      if (pastEventFiles.waiverFile) {
+        attendanceWaiverUrl = await uploadFile(pastEventFiles.waiverFile, `events/${eventId}/permissions`);
+      }
+
+      // Upload Stage 3 Post-Event Report & Photos
+      let reportPdfUrl = null;
+      if (pastEventFiles.reportPdfFile) {
+        reportPdfUrl = await uploadFile(pastEventFiles.reportPdfFile, `events/${eventId}/report`);
+      }
+
+      const reportImageUrls = [];
+      if (pastEventFiles.reportPhotos && pastEventFiles.reportPhotos.length > 0) {
+        for (const img of pastEventFiles.reportPhotos) {
+          const imgUrl = await uploadFile(img, `events/${eventId}/report`);
+          reportImageUrls.push(imgUrl);
+        }
+      }
+
+      // Auto-set status to closed if Stage 3 report is uploaded
+      let eventStatus = pastEventForm.status || 'report_pending';
+      if (reportPdfUrl && eventStatus === 'report_pending') {
+        eventStatus = 'closed';
+      }
 
       const endDateVal = pastEventForm.isMultiSession
         ? (pastEventForm.eventSessions?.[pastEventForm.eventSessions.length - 1]?.endDate ? new Date(pastEventForm.eventSessions[pastEventForm.eventSessions.length - 1].endDate) : new Date())
@@ -165,6 +215,7 @@ export default function AdminPanel() {
       const reportDueDate = new Date(endDateVal.getTime() + 7 * 24 * 60 * 60 * 1000);
 
       await createEventRequest({
+        eventId,
         councilId: normalizedCouncilId,
         councilName,
         eventName: pastEventForm.eventName.trim(),
@@ -179,13 +230,27 @@ export default function AdminPanel() {
         eventDescription: pastEventForm.description.trim(),
         status: eventStatus,
         isPastEvent: true,
-        reportDueDate: reportDueDate,
+        reportDueDate,
+        eventDescriptionUrl,
+        doswPermissionLetterUrl,
+        otherDocumentUrl,
+        attendanceWaiverUrl,
+        reportPdfUrl,
+        reportImageUrls,
         stage1Approvals: { dosw: { status: 'approved', timestamp: new Date() } },
         stage2Approvals: { admin: { status: 'approved', timestamp: new Date() } }
       });
 
-      showNotification('Past / Archival event added successfully! Council Stage 3 report is now pending.', 'success');
+      showNotification('Past / Archival event and documents added successfully!', 'success');
       setShowAddPastEventModal(false);
+      setPastEventFiles({
+        proposalFile: null,
+        doswFile: null,
+        otherFile: null,
+        waiverFile: null,
+        reportPdfFile: null,
+        reportPhotos: []
+      });
       setPastEventForm({
         councilId: '',
         eventName: '',
@@ -1731,6 +1796,254 @@ export default function AdminPanel() {
                 </div>
               </div>
 
+              {/* Stage 1, Stage 2 & Stage 3 Document Uploads */}
+              <div className="border-2 border-[#171e19] bg-slate-50 p-5 space-y-4">
+                <div className="border-b border-[#171e19]/15 pb-2">
+                  <h4 className="font-anton text-base text-[#171e19] uppercase tracking-wider flex items-center gap-2">
+                    <IconFile className="w-5 h-5 text-[#171e19]" /> Document Attachments & Archival Clearances (Stages 1 – 3)
+                  </h4>
+                  <p className="font-satoshi text-xs text-[#6b7280]">
+                    Attach archival event documents including proposal PDFs, clearance letters, waiver lists, and post-event reports.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 font-satoshi">
+                  {/* Stage 1: Proposal Document */}
+                  <div className="bg-white border-2 border-[#171e19] p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-[#ffe17c] text-[#171e19] font-bold text-xs flex items-center justify-center border border-[#171e19]">1</span>
+                      <span className="font-anton text-sm uppercase text-[#171e19]">Stage 1 Proposal PDF</span>
+                    </div>
+                    <p className="text-[11px] text-[#171e19]/60">Event proposal description document</p>
+                    
+                    <label className="block cursor-pointer">
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={e => {
+                          const f = e.target.files?.[0];
+                          if (f) setPastEventFiles(prev => ({ ...prev, proposalFile: f }));
+                        }}
+                        className="hidden"
+                      />
+                      <div className="border-2 border-dashed border-[#171e19] hover:bg-[#ffe17c]/10 p-3 text-center transition-colors">
+                        {pastEventFiles.proposalFile ? (
+                          <div className="flex items-center justify-between text-xs font-bold text-[#171e19]">
+                            <span className="truncate max-w-[160px]">📄 {pastEventFiles.proposalFile.name}</span>
+                            <button
+                              type="button"
+                              onClick={(ev) => {
+                                ev.preventDefault();
+                                setPastEventFiles(prev => ({ ...prev, proposalFile: null }));
+                              }}
+                              className="text-red-600 font-bold hover:underline ml-2"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs font-bold text-[#171e19]/70 uppercase tracking-wider">+ Select Proposal PDF</span>
+                        )}
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Stage 2: Clearance Letters & Permits */}
+                  <div className="bg-white border-2 border-[#171e19] p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-indigo-900 text-white font-bold text-xs flex items-center justify-center border border-[#171e19]">2</span>
+                      <span className="font-anton text-sm uppercase text-[#171e19]">Stage 2 Clearance Docs</span>
+                    </div>
+                    <p className="text-[11px] text-[#171e19]/60">Permission letters, permits & waivers</p>
+
+                    {/* DoSW Clearance File */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-[#171e19]/70 block">DoSW & Principal Clearance PDF</label>
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) setPastEventFiles(prev => ({ ...prev, doswFile: f }));
+                          }}
+                          className="hidden"
+                        />
+                        <div className="border border-[#171e19]/30 hover:border-[#171e19] p-2 text-center transition-colors bg-slate-50">
+                          {pastEventFiles.doswFile ? (
+                            <div className="flex items-center justify-between text-xs font-bold text-[#171e19]">
+                              <span className="truncate max-w-[140px]">📄 {pastEventFiles.doswFile.name}</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setPastEventFiles(prev => ({ ...prev, doswFile: null }));
+                                }}
+                                className="text-red-600 font-bold hover:underline ml-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-bold text-[#171e19]/60 uppercase">+ DoSW PDF</span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Other Document File */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-[#171e19]/70 block">Other Clearance Letter PDF</label>
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) setPastEventFiles(prev => ({ ...prev, otherFile: f }));
+                          }}
+                          className="hidden"
+                        />
+                        <div className="border border-[#171e19]/30 hover:border-[#171e19] p-2 text-center transition-colors bg-slate-50">
+                          {pastEventFiles.otherFile ? (
+                            <div className="flex items-center justify-between text-xs font-bold text-[#171e19]">
+                              <span className="truncate max-w-[140px]">📄 {pastEventFiles.otherFile.name}</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setPastEventFiles(prev => ({ ...prev, otherFile: null }));
+                                }}
+                                className="text-red-600 font-bold hover:underline ml-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-bold text-[#171e19]/60 uppercase">+ Other PDF</span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Attendance Waiver File */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-[#171e19]/70 block">Attendance Waiver Request PDF</label>
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) setPastEventFiles(prev => ({ ...prev, waiverFile: f }));
+                          }}
+                          className="hidden"
+                        />
+                        <div className="border border-[#171e19]/30 hover:border-[#171e19] p-2 text-center transition-colors bg-slate-50">
+                          {pastEventFiles.waiverFile ? (
+                            <div className="flex items-center justify-between text-xs font-bold text-[#171e19]">
+                              <span className="truncate max-w-[140px]">📄 {pastEventFiles.waiverFile.name}</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setPastEventFiles(prev => ({ ...prev, waiverFile: null }));
+                                }}
+                                className="text-red-600 font-bold hover:underline ml-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-bold text-[#171e19]/60 uppercase">+ Waiver PDF</span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Stage 3: Post-Event Report & Photos */}
+                  <div className="bg-white border-2 border-[#171e19] p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-full bg-emerald-900 text-white font-bold text-xs flex items-center justify-center border border-[#171e19]">3</span>
+                      <span className="font-anton text-sm uppercase text-[#171e19]">Stage 3 Post-Event Report</span>
+                    </div>
+                    <p className="text-[11px] text-[#171e19]/60">Completion report & event gallery</p>
+
+                    {/* Post-Event Report PDF */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-[#171e19]/70 block">Post-Event Report PDF</label>
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".pdf"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) setPastEventFiles(prev => ({ ...prev, reportPdfFile: f }));
+                          }}
+                          className="hidden"
+                        />
+                        <div className="border border-[#171e19]/30 hover:border-[#171e19] p-2 text-center transition-colors bg-slate-50">
+                          {pastEventFiles.reportPdfFile ? (
+                            <div className="flex items-center justify-between text-xs font-bold text-[#171e19]">
+                              <span className="truncate max-w-[140px]">📄 {pastEventFiles.reportPdfFile.name}</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setPastEventFiles(prev => ({ ...prev, reportPdfFile: null }));
+                                }}
+                                className="text-red-600 font-bold hover:underline ml-2"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-bold text-[#171e19]/60 uppercase">+ Report PDF</span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+
+                    {/* Event Photos */}
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold uppercase text-[#171e19]/70 block">Event Photos (Multiple Images)</label>
+                      <label className="block cursor-pointer">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={e => {
+                            const filesArr = Array.from(e.target.files || []);
+                            if (filesArr.length > 0) setPastEventFiles(prev => ({ ...prev, reportPhotos: [...prev.reportPhotos, ...filesArr] }));
+                          }}
+                          className="hidden"
+                        />
+                        <div className="border border-[#171e19]/30 hover:border-[#171e19] p-2 text-center transition-colors bg-slate-50">
+                          {pastEventFiles.reportPhotos.length > 0 ? (
+                            <div className="flex items-center justify-between text-xs font-bold text-[#171e19]">
+                              <span>📷 {pastEventFiles.reportPhotos.length} Photo{pastEventFiles.reportPhotos.length > 1 ? 's' : ''} Selected</span>
+                              <button
+                                type="button"
+                                onClick={(ev) => {
+                                  ev.preventDefault();
+                                  setPastEventFiles(prev => ({ ...prev, reportPhotos: [] }));
+                                }}
+                                className="text-red-600 font-bold hover:underline ml-2"
+                              >
+                                Clear
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-bold text-[#171e19]/60 uppercase">+ Attach Event Photos</span>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Description */}
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
@@ -1759,7 +2072,7 @@ export default function AdminPanel() {
                   disabled={pastEventSubmitting}
                   className="px-8 py-3 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-base uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
                 >
-                  {pastEventSubmitting ? 'ADDING PAST EVENT...' : 'ADD PAST EVENT'}
+                  {pastEventSubmitting ? 'UPLOADING & ADDING EVENT...' : 'ADD PAST EVENT'}
                 </button>
               </div>
             </form>
