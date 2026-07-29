@@ -2391,8 +2391,8 @@ export default function CouncilPortal() {
                           <div className="space-y-3">
                             <span className="font-bold text-[#b7c6c2] uppercase tracking-wider block text-xs">Uploaded Documents</span>
                             <div className="flex flex-wrap gap-3 font-bold text-sm uppercase">
-                              {event.eventDescriptionUrl && (
-                                <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
+                              {(event.eventDescriptionUrl || event.proposalDocumentUrl || (event.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
+                                <a href={event.eventDescriptionUrl || event.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
                                   <IconFile className="w-4 h-4 shrink-0" /> PROPOSAL DOCUMENT
                                 </a>
                               )}

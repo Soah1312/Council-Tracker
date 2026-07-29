@@ -214,21 +214,6 @@ export default function AdminPanel() {
 
     const unsubscribe = subscribeToAllEvents((data) => {
       const processed = data.map(event => {
-        // Reset Genesis EVT-2026-003 to Stage 1 submitted (Proposal Submitted - pending admin review) and clear feedback history
-        if (event.eventId === 'EVT-2026-003' || event.eventName?.toLowerCase().includes('genesis')) {
-          if (event.status !== 'submitted' || event.reviewNotes || (event.reviewHistory && event.reviewHistory.length > 0)) {
-            resetEventStageAndClearHistory(event.id || event.eventId, 'submitted').catch(console.error);
-            return {
-              ...event,
-              status: 'submitted',
-              reviewNotes: null,
-              reviewHistory: [],
-              reviewedByRole: null,
-              reviewedByName: null,
-              reviewedAt: null
-            };
-          }
-        }
         if (event.status === 'approved' && !event.isPastEvent) {
           const endDate = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
           if (endDate < new Date()) {
@@ -1293,8 +1278,8 @@ export default function AdminPanel() {
                   <div className="border border-[#171e19]/15 p-5 space-y-3">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Documents</span>
                     <div className="grid grid-cols-1 gap-2 font-satoshi">
-                      {selectedEventDetail.eventDescriptionUrl && (
-                        <a href={selectedEventDetail.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl || (selectedEventDetail.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
+                        <a href={selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
                           <IconFile className="w-5 h-5 shrink-0" /> Proposal Document
                         </a>
                       )}
@@ -1323,7 +1308,7 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
                         </a>
                       )}
-                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
+                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.proposalDocumentUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && !selectedEventDetail.eventName?.toLowerCase().includes('genesis') && (
                         <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
                     </div>
@@ -2246,12 +2231,29 @@ export default function AdminPanel() {
                             <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
                               <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Files</h4>
                               <div className="flex flex-wrap gap-4">
-                                <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
-                                  <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
-                                </a>
+                                {(event.eventDescriptionUrl || event.proposalDocumentUrl || (event.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
+                                  <a href={event.eventDescriptionUrl || event.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
+                                  </a>
+                                )}
                                 {event.eventOutcomeUrl && (
                                   <a href={event.eventOutcomeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> EVENT OUTCOME PDF
+                                  </a>
+                                )}
+                                {event.doswPermissionLetterUrl && (
+                                  <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> DOSW CLEARANCE PDF
+                                  </a>
+                                )}
+                                {event.customPermissionLetters && event.customPermissionLetters.map((docItem, idx) => (
+                                  <a key={idx} href={docItem.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> {String(docItem.title || `CLEARANCE ${idx + 1}`).toUpperCase()} PDF
+                                  </a>
+                                ))}
+                                {event.otherDocumentUrl && (
+                                  <a href={event.otherDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> OTHER RELEVANT DOCUMENT PDF
                                   </a>
                                 )}
                                 {event.attendanceWaiverUrl && (
@@ -2350,9 +2352,11 @@ export default function AdminPanel() {
                             <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
                               <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Clearance Letters</h4>
                               <div className="flex flex-wrap gap-4">
-                                <a href={event.eventDescriptionUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
-                                  <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
-                                </a>
+                                {(event.eventDescriptionUrl || event.proposalDocumentUrl || (event.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
+                                  <a href={event.eventDescriptionUrl || event.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
+                                  </a>
+                                )}
                                 {event.eventOutcomeUrl && (
                                   <a href={event.eventOutcomeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> EVENT OUTCOME PDF
@@ -2363,9 +2367,19 @@ export default function AdminPanel() {
                                     <IconFile className="w-3 h-3 shrink-0" /> DOSW CLEARANCE PDF
                                   </a>
                                 )}
+                                {event.customPermissionLetters && event.customPermissionLetters.map((docItem, idx) => (
+                                  <a key={idx} href={docItem.url} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> {String(docItem.title || `CLEARANCE ${idx + 1}`).toUpperCase()} PDF
+                                  </a>
+                                ))}
                                 {event.otherDocumentUrl && (
                                   <a href={event.otherDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> OTHER RELEVANT DOCUMENT PDF
+                                  </a>
+                                )}
+                                {event.attendanceWaiverUrl && (
+                                  <a href={event.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> WAIVER REQUEST LIST PDF
                                   </a>
                                 )}
                               </div>
