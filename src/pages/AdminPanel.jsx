@@ -5,8 +5,6 @@ import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
 import { subscribeToAllCouncilMembers } from '../lib/members';
-import { seedAllEvents } from '../lib/seedData';
-import { clearAllEvents } from '../lib/clearData';
 import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers } from '../lib/icons';
 import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 
@@ -434,14 +432,25 @@ export default function AdminPanel() {
     }
     
     try {
-      await updateEventStatus(reviewingEvent.id, reviewStatusType, reviewNotes, { role: adminUser?.role, name: adminUser?.name });
+      const updatedEvent = await updateEventStatus(reviewingEvent.id, reviewStatusType, reviewNotes, { role: adminUser?.role, name: adminUser?.name });
+      const dualResult = updatedEvent?._dualApprovalResult;
+
       if (reviewStatusType === 'submitted') {
         notifyProposalReopened(reviewingEvent, reviewingEvent.councilName).catch(console.error);
       }
-      notifyCouncilStatusUpdate(reviewingEvent, reviewStatusType, reviewNotes).catch(console.error);
+
+      // Only send council email if fully approved, rejected, revision requested, etc. (do NOT send full approval email on partial approval)
+      if (dualResult !== 'partial') {
+        notifyCouncilStatusUpdate(reviewingEvent, reviewStatusType, reviewNotes).catch(console.error);
+      }
 
       if (reviewStatusType === 'submitted') {
         showNotification(`Proposal ${reviewingEvent.eventId || reviewingEvent.id} re-opened successfully!`);
+      } else if (dualResult === 'partial') {
+        const remainingAdmin = adminUser?.role === 'dosw' ? "Students' Council (StuCo)" : "Dean of Students' Welfare (DOSW)";
+        showNotification(`Your approval has been recorded (1/2 Approvals). Awaiting approval from ${remainingAdmin}.`, 'info');
+      } else if (dualResult === 'fully_approved') {
+        showNotification(`Proposal ${reviewingEvent.eventId || reviewingEvent.id} is now FULLY APPROVED (2/2 Approvals)!`);
       } else {
         showNotification(`Proposal marked as ${reviewStatusType.replace(/_/g, ' ')}.`);
       }
@@ -780,17 +789,35 @@ export default function AdminPanel() {
     }
     const hasDoc = Boolean(event?.eventDescriptionUrl || event?.proposalDocumentUrl);
     switch (event.status) {
-      case 'submitted':
+      case 'submitted': {
+        const stage1 = event.stage1Approvals || {};
+        const count1 = (stage1.dosw?.approved ? 1 : 0) + (stage1.stuco?.approved ? 1 : 0);
+        if (count1 > 0) {
+          return {
+            label: `Stage 1 — Partial Approval (${count1}/2)`,
+            colorClass: 'bg-amber-500 text-[#171e19] border border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold'
+          };
+        }
         return {
           label: hasDoc ? 'Proposal Submitted' : 'Proposal Submitted (Doc Pending)',
           colorClass: hasDoc
             ? 'bg-[#b7c6c2]/50 text-[#171e19] border border-[#171e19]/25 px-3 py-1 rounded-full text-[10px] uppercase font-bold'
             : 'bg-amber-100 text-amber-900 border border-amber-400 px-3 py-1 rounded-full text-[10px] uppercase font-bold'
         };
+      }
       case 'proposal_approved':
         return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
-      case 'permissions_submitted':
+      case 'permissions_submitted': {
+        const stage2 = event.stage2Approvals || {};
+        const count2 = (stage2.dosw?.approved ? 1 : 0) + (stage2.stuco?.approved ? 1 : 0);
+        if (count2 > 0) {
+          return {
+            label: `Stage 2 — Partial Approval (${count2}/2)`,
+            colorClass: 'bg-amber-500 text-[#171e19] border border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold'
+          };
+        }
         return { label: 'Documents Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+      }
       case 'permissions_revision_needed':
         return { label: 'Document Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
@@ -1421,28 +1448,39 @@ export default function AdminPanel() {
             {!adminUser?.readOnly && (
               <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0 flex-wrap">
                 {/* STAGE 1: Unapproved / Reverted / Pending Review */}
-                {['submitted', 'revision_needed'].includes(selectedEventDetail.status) && (<>
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
-                  >
-                    {selectedEventDetail.reviewHistory?.some(h => h.status === 'proposal_approved') || selectedEventDetail.stage1Approvals?.dosw?.approved
-                      ? 'Re-confirm Stage 1 Approval'
-                      : 'Accept Proposal (Stage 1)'}
-                  </button>
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
-                  >
-                    Request Revision
-                  </button>
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
-                  >
-                    Reject Proposal
-                  </button>
-                </>)}
+                {['submitted', 'revision_needed'].includes(selectedEventDetail.status) && (() => {
+                  const role = adminUser?.role;
+                  const myApproval = role === 'dosw' ? selectedEventDetail.stage1Approvals?.dosw?.approved : role === 'stuco' ? selectedEventDetail.stage1Approvals?.stuco?.approved : false;
+                  const otherApproval = role === 'dosw' ? selectedEventDetail.stage1Approvals?.stuco?.approved : role === 'stuco' ? selectedEventDetail.stage1Approvals?.dosw?.approved : false;
+
+                  let label = 'Accept Proposal (Stage 1)';
+                  if (myApproval) {
+                    label = 'Re-confirm Stage 1 Approval';
+                  } else if (otherApproval) {
+                    label = 'Approve Proposal (Final Sign-off)';
+                  }
+
+                  return (<>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
+                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
+                    >
+                      {label}
+                    </button>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
+                      className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    >
+                      Request Revision
+                    </button>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                      className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                    >
+                      Reject Proposal
+                    </button>
+                  </>);
+                })()}
 
                 {/* STAGE 1: Approved */}
                 {selectedEventDetail.status === 'proposal_approved' && (<>
@@ -1467,28 +1505,39 @@ export default function AdminPanel() {
                 </>)}
 
                 {/* STAGE 2: Pending Clearances Review / Revision Needed */}
-                {['permissions_submitted', 'permissions_revision_needed'].includes(selectedEventDetail.status) && (<>
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
-                  >
-                    {selectedEventDetail.reviewHistory?.some(h => h.status === 'approved') || selectedEventDetail.stage2Approvals?.dosw?.approved
-                      ? 'Re-confirm Stage 2 Approval'
-                      : 'Approve Documents (Stage 2)'}
-                  </button>
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
-                  >
-                    Request Document Revision
-                  </button>
-                  <button
-                    onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
-                  >
-                    Reject Request
-                  </button>
-                </>)}
+                {['permissions_submitted', 'permissions_revision_needed'].includes(selectedEventDetail.status) && (() => {
+                  const role = adminUser?.role;
+                  const myApproval = role === 'dosw' ? selectedEventDetail.stage2Approvals?.dosw?.approved : role === 'stuco' ? selectedEventDetail.stage2Approvals?.stuco?.approved : false;
+                  const otherApproval = role === 'dosw' ? selectedEventDetail.stage2Approvals?.stuco?.approved : role === 'stuco' ? selectedEventDetail.stage2Approvals?.dosw?.approved : false;
+
+                  let label = 'Approve Documents (Stage 2)';
+                  if (myApproval) {
+                    label = 'Re-confirm Stage 2 Approval';
+                  } else if (otherApproval) {
+                    label = 'Approve Documents (Final Sign-off)';
+                  }
+
+                  return (<>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
+                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
+                    >
+                      {label}
+                    </button>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
+                      className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    >
+                      Request Document Revision
+                    </button>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                      className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                    >
+                      Reject Request
+                    </button>
+                  </>);
+                })()}
 
                 {/* STAGE 2: Approved / Stage 3 Active */}
                 {['approved', 'report_pending', 'closed'].includes(selectedEventDetail.status) && (<>
@@ -2191,51 +2240,6 @@ export default function AdminPanel() {
           >
             <span>Council Directory</span>
           </button>
-
-          {/* Developer Seeding Utility */}
-
-          <div className="mt-8 p-4 bg-red-50 border-2 border-red-500 space-y-3 font-satoshi text-xs text-left">
-            <p className="font-bold text-red-800 uppercase tracking-wide">Developer Seeding Console</p>
-            <p className="text-red-950 font-medium leading-relaxed">
-              Resets the database by clearing all records and optionally reseeding with mock events.
-            </p>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to CLEAR the database and reseed with clean 3-stage data?")) {
-                    try {
-                      showNotification("Clearing database events...");
-                      await clearAllEvents();
-                      showNotification("Seeding new mock events...");
-                      await seedAllEvents();
-                      showNotification("Database reseeded successfully!");
-                    } catch (e) {
-                      showNotification("Error reseeding database: " + e.message, "error");
-                    }
-                  }
-                }}
-                className="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-anton text-xs uppercase tracking-widest transition-colors rounded-none border border-red-700 cursor-pointer"
-              >
-                Clear & Reseed System
-              </button>
-              <button
-                onClick={async () => {
-                  if (window.confirm("Are you sure you want to completely CLEAR all events from the database? This action is irreversible and starts you fresh.")) {
-                    try {
-                      showNotification("Clearing all database events...");
-                      const deletedCount = await clearAllEvents();
-                      showNotification(`Successfully cleared ${deletedCount} events from the database!`);
-                    } catch (e) {
-                      showNotification("Error clearing database: " + e.message, "error");
-                    }
-                  }
-                }}
-                className="w-full py-2 bg-[#171e19] hover:bg-black text-white font-anton text-xs uppercase tracking-widest transition-colors rounded-none border border-[#171e19] cursor-pointer"
-              >
-                Clear Database (Start Fresh)
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Content Area */}
@@ -2507,7 +2511,14 @@ export default function AdminPanel() {
                                   onClick={() => openReviewDialog(event, 'proposal_approved')}
                                   className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
                                 >
-                                  Accept Proposal (Stage 1)
+                                  {(() => {
+                                    const role = adminUser?.role;
+                                    const myApp = role === 'dosw' ? event.stage1Approvals?.dosw?.approved : role === 'stuco' ? event.stage1Approvals?.stuco?.approved : false;
+                                    const otherApp = role === 'dosw' ? event.stage1Approvals?.stuco?.approved : role === 'stuco' ? event.stage1Approvals?.dosw?.approved : false;
+                                    if (myApp) return 'Re-confirm Stage 1 Approval';
+                                    if (otherApp) return 'Approve Proposal (Final Sign-off)';
+                                    return 'Accept Proposal (Stage 1)';
+                                  })()}
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'revision_needed')}
@@ -2628,7 +2639,14 @@ export default function AdminPanel() {
                                   onClick={() => openReviewDialog(event, 'approved')}
                                   className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
                                 >
-                                  Approve Documents (Stage 2)
+                                  {(() => {
+                                    const role = adminUser?.role;
+                                    const myApp = role === 'dosw' ? event.stage2Approvals?.dosw?.approved : role === 'stuco' ? event.stage2Approvals?.stuco?.approved : false;
+                                    const otherApp = role === 'dosw' ? event.stage2Approvals?.stuco?.approved : role === 'stuco' ? event.stage2Approvals?.dosw?.approved : false;
+                                    if (myApp) return 'Re-confirm Stage 2 Approval';
+                                    if (otherApp) return 'Approve Documents (Final Sign-off)';
+                                    return 'Approve Documents (Stage 2)';
+                                  })()}
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'permissions_revision_needed')}

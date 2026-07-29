@@ -845,7 +845,7 @@ export default function CouncilPortal() {
     if (stucoApproved) count++;
 
     return (
-      <div className="p-3 bg-[#171e19]/5 border border-[#171e19]/20 rounded-none space-y-1.5 font-satoshi">
+      <div className="p-3 bg-[#171e19]/5 border border-[#171e19]/20 rounded-none space-y-2 font-satoshi">
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <span className="font-bold text-[10px] uppercase tracking-wider text-[#171e19]/70">
             Stage {stageNum} Administrative Approvals ({count}/2):
@@ -857,16 +857,30 @@ export default function CouncilPortal() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-bold uppercase tracking-wide">
-          <div className={`p-2 border flex items-center justify-between ${doswApproved ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+          <div className={`p-2 border flex flex-col justify-between space-y-1 ${doswApproved ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
             }`}>
-            <span>Dean of Students' Welfare (DOSW)</span>
-            <span>{approvals.dosw?.approved && !approvals.dosw?.viaSuperAdmin ? '✓ Approved' : doswApproved ? '✓ Approved (Super Admin)' : '⏳ Pending'}</span>
+            <div className="flex items-center justify-between">
+              <span>Dean of Students' Welfare (DOSW)</span>
+              <span>{approvals.dosw?.approved && !approvals.dosw?.viaSuperAdmin ? '✓ Approved' : doswApproved ? '✓ Approved (Super Admin)' : '⏳ Pending'}</span>
+            </div>
+            {approvals.dosw?.notes && (
+              <p className="text-[10px] text-emerald-950 font-medium normal-case italic bg-emerald-200/50 p-1.5 border border-emerald-300">
+                "{approvals.dosw.notes}"
+              </p>
+            )}
           </div>
 
-          <div className={`p-2 border flex items-center justify-between ${stucoApproved ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
+          <div className={`p-2 border flex flex-col justify-between space-y-1 ${stucoApproved ? 'bg-emerald-100 border-emerald-300 text-emerald-900' : 'bg-white border-[#171e19]/20 text-[#171e19]/60'
             }`}>
-            <span>Students' Council (StuCo)</span>
-            <span>{approvals.stuco?.approved && !approvals.stuco?.viaSuperAdmin ? '✓ Approved' : stucoApproved ? '✓ Approved (Super Admin)' : '⏳ Pending'}</span>
+            <div className="flex items-center justify-between">
+              <span>Students' Council (StuCo)</span>
+              <span>{approvals.stuco?.approved && !approvals.stuco?.viaSuperAdmin ? '✓ Approved' : stucoApproved ? '✓ Approved (Super Admin)' : '⏳ Pending'}</span>
+            </div>
+            {approvals.stuco?.notes && (
+              <p className="text-[10px] text-emerald-950 font-medium normal-case italic bg-emerald-200/50 p-1.5 border border-emerald-300">
+                "{approvals.stuco.notes}"
+              </p>
+            )}
           </div>
         </div>
       </div>

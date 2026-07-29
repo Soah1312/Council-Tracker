@@ -315,6 +315,11 @@ export async function getAllEvents(filters = {}) {
 /**
  * Updates status and notes for an event proposal with dual approval tracking.
  * Stage 1 or Stage 2 transitions to fully approved ONLY when both DOSW and StuCo approve.
+ *
+ * Returns the updated event data including a `_dualApprovalResult` field:
+ *   - 'fully_approved' — both admins approved, status transitioned
+ *   - 'partial' — only one admin approved so far, status unchanged
+ *   - null — action was not an approval (rejection, revision, etc.)
  */
 export async function updateEventStatus(eventId, actionStatus, reviewNotes = '', adminInfo = {}) {
   const eventRef = doc(db, 'events', eventId);
@@ -347,8 +352,10 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     reviewHistory: [...currentHistory, newHistoryEntry]
   };
 
+  let dualApprovalResult = null;
+
   if (actionStatus === 'proposal_approved') {
-    // Stage 1 Approval
+    // Stage 1 Approval — record individual approval
     const updatedStage1 = {
       ...currentStage1Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
@@ -358,9 +365,18 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       updatedStage1.stuco = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
     }
     updates.stage1Approvals = updatedStage1;
-    updates.status = 'proposal_approved';
+
+    // Check if BOTH approvals are now present
+    const bothApproved = Boolean(updatedStage1.dosw?.approved && updatedStage1.stuco?.approved);
+    if (bothApproved) {
+      updates.status = 'proposal_approved';
+      dualApprovalResult = 'fully_approved';
+    } else {
+      // Partial approval — status stays at 'submitted' so it remains visible to the other admin
+      dualApprovalResult = 'partial';
+    }
   } else if (actionStatus === 'approved') {
-    // Stage 2 Approval (Clearances Approved)
+    // Stage 2 Approval (Clearances) — record individual approval
     const updatedStage2 = {
       ...currentStage2Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
@@ -370,9 +386,18 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       updatedStage2.stuco = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
     }
     updates.stage2Approvals = updatedStage2;
-    updates.status = 'approved';
-    const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
-    updates.reportDueDate = Timestamp.fromDate(dueDateJS);
+
+    // Check if BOTH approvals are now present
+    const bothApproved = Boolean(updatedStage2.dosw?.approved && updatedStage2.stuco?.approved);
+    if (bothApproved) {
+      updates.status = 'approved';
+      const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+      updates.reportDueDate = Timestamp.fromDate(dueDateJS);
+      dualApprovalResult = 'fully_approved';
+    } else {
+      // Partial approval — status stays at 'permissions_submitted' so other admin can still review
+      dualApprovalResult = 'partial';
+    }
   } else if (actionStatus === 'revision_needed') {
     updates.status = 'revision_needed';
     updates.stage1Approvals = {};
@@ -393,7 +418,7 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
   }
 
   await updateDoc(eventRef, updates);
-  return { ...currentData, ...updates };
+  return { ...currentData, ...updates, _dualApprovalResult: dualApprovalResult };
 }
 
 /**
