@@ -1001,10 +1001,16 @@ export default function CouncilPortal() {
   // Dynamic report pending and color calculations
   const getStatusDetails = (event) => {
     const status = event.status;
+    const hasDoc = Boolean(event?.eventDescriptionUrl || event?.proposalDocumentUrl);
 
     switch (status) {
       case 'submitted':
-        return { label: 'Proposal Submitted', colorClass: 'bg-[#b7c6c2]/50 text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/20' };
+        return {
+          label: hasDoc ? 'Proposal Submitted' : 'Proposal Submitted (Doc Pending)',
+          colorClass: hasDoc
+            ? 'bg-[#b7c6c2]/50 text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/20'
+            : 'bg-amber-100 text-amber-900 px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-amber-400'
+        };
       case 'proposal_approved':
         return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_submitted':
@@ -2391,8 +2397,8 @@ export default function CouncilPortal() {
                           <div className="space-y-3">
                             <span className="font-bold text-[#b7c6c2] uppercase tracking-wider block text-xs">Uploaded Documents</span>
                             <div className="flex flex-wrap gap-3 font-bold text-sm uppercase">
-                              {(event.eventDescriptionUrl || event.proposalDocumentUrl || (event.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
-                                <a href={event.eventDescriptionUrl || event.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
+                              {(event.eventDescriptionUrl || event.proposalDocumentUrl) && (
+                                <a href={event.eventDescriptionUrl || event.proposalDocumentUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
                                   <IconFile className="w-4 h-4 shrink-0" /> PROPOSAL DOCUMENT
                                 </a>
                               )}

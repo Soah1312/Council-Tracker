@@ -713,9 +713,15 @@ export default function AdminPanel() {
     if (isRepPending) {
       return { label: 'Post-Event Report Pending', colorClass: 'bg-[#171e19] text-white border-2 border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
     }
+    const hasDoc = Boolean(event?.eventDescriptionUrl || event?.proposalDocumentUrl);
     switch (event.status) {
       case 'submitted':
-        return { label: 'Proposal Submitted', colorClass: 'bg-[#b7c6c2]/50 text-[#171e19] border border-[#171e19]/25 px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+        return {
+          label: hasDoc ? 'Proposal Submitted' : 'Proposal Submitted (Doc Pending)',
+          colorClass: hasDoc
+            ? 'bg-[#b7c6c2]/50 text-[#171e19] border border-[#171e19]/25 px-3 py-1 rounded-full text-[10px] uppercase font-bold'
+            : 'bg-amber-100 text-amber-900 border border-amber-400 px-3 py-1 rounded-full text-[10px] uppercase font-bold'
+        };
       case 'proposal_approved':
         return { label: 'Awaiting Council Documents', colorClass: 'bg-indigo-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'permissions_submitted':
@@ -1278,8 +1284,8 @@ export default function AdminPanel() {
                   <div className="border border-[#171e19]/15 p-5 space-y-3">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Documents</span>
                     <div className="grid grid-cols-1 gap-2 font-satoshi">
-                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl || (selectedEventDetail.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
-                        <a href={selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
+                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl) && (
+                        <a href={selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
                           <IconFile className="w-5 h-5 shrink-0" /> Proposal Document
                         </a>
                       )}
@@ -1308,7 +1314,7 @@ export default function AdminPanel() {
                           <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
                         </a>
                       )}
-                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.proposalDocumentUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && !selectedEventDetail.eventName?.toLowerCase().includes('genesis') && (
+                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.proposalDocumentUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
                         <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
                     </div>
@@ -2074,7 +2080,7 @@ export default function AdminPanel() {
                             )}
                             {event.attentionReason === 'pending_proposal' && (
                               <span className="px-2.5 py-1 bg-slate-100 border border-[#171e19]/30 text-[#171e19] text-xs font-bold uppercase rounded-none">
-                                Proposal Submitted ({getDaysDiffFuture(event.startDate)}d)
+                                {(event.eventDescriptionUrl || event.proposalDocumentUrl) ? 'Proposal Submitted' : 'Proposal Submitted (Doc Pending)'} ({getDaysDiffFuture(event.startDate)}d)
                               </span>
                             )}
                             {event.attentionReason === 'report_pending' && (() => {
@@ -2231,8 +2237,8 @@ export default function AdminPanel() {
                             <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
                               <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Files</h4>
                               <div className="flex flex-wrap gap-4">
-                                {(event.eventDescriptionUrl || event.proposalDocumentUrl || (event.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
-                                  <a href={event.eventDescriptionUrl || event.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                {(event.eventDescriptionUrl || event.proposalDocumentUrl) && (
+                                  <a href={event.eventDescriptionUrl || event.proposalDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
                                   </a>
                                 )}
@@ -2352,8 +2358,8 @@ export default function AdminPanel() {
                             <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
                               <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Clearance Letters</h4>
                               <div className="flex flex-wrap gap-4">
-                                {(event.eventDescriptionUrl || event.proposalDocumentUrl || (event.eventName?.toLowerCase().includes('genesis') && 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf')) && (
-                                  <a href={event.eventDescriptionUrl || event.proposalDocumentUrl || 'https://res.cloudinary.com/dbbtznrpy/raw/upload/v1785158450/events/EVT-2026-002/proposals/InternshipExpoProposalStage1_p6r5mx.pdf'} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                {(event.eventDescriptionUrl || event.proposalDocumentUrl) && (
+                                  <a href={event.eventDescriptionUrl || event.proposalDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> PROPOSAL DOCUMENT PDF
                                   </a>
                                 )}
