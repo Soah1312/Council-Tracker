@@ -816,8 +816,10 @@ export default function CouncilPortal() {
       case 'permissions_revision_needed':
         return { num: 2, label: 'STAGE 2: DOCUMENTS & CLEARANCES', colorClass: 'bg-indigo-900 text-white' };
       case 'approved':
+      case 'report_pending':
       case 'report_submitted':
       case 'report_revision_needed':
+      case 'report_approved':
         return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING (PENDING)', colorClass: 'bg-emerald-950 text-white' };
       case 'closed':
         return { num: 3, label: 'STAGE 3: COMPLETED / ARCHIVED', colorClass: 'bg-[#b7c6c2] text-[#171e19]' };

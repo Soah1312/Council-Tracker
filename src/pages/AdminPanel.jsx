@@ -692,7 +692,7 @@ export default function AdminPanel() {
   };
 
   const getEventStageChipClass = (status) => {
-    const isApproved = ['approved', 'report_pending', 'closed'].includes(status);
+    const isApproved = ['approved', 'report_pending', 'report_submitted', 'report_revision_needed', 'report_approved', 'closed'].includes(status);
     const isStage2 = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status);
     if (isApproved) return 'bg-emerald-600 text-white';
     if (isStage2) return 'bg-indigo-700 text-white';
@@ -729,6 +729,10 @@ export default function AdminPanel() {
       case 'permissions_revision_needed':
         return { num: 2, label: 'STAGE 2: DOCUMENTS & CLEARANCES', colorClass: 'bg-indigo-900 text-white' };
       case 'approved':
+      case 'report_pending':
+      case 'report_submitted':
+      case 'report_revision_needed':
+      case 'report_approved':
         return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING (PENDING)', colorClass: 'bg-emerald-950 text-white' };
       case 'closed':
         return { num: 3, label: 'STAGE 3: COMPLETED / ARCHIVED', colorClass: 'bg-[#b7c6c2] text-[#171e19]' };
