@@ -572,16 +572,19 @@ export default function AdminPanel() {
       'permissions_revision_needed',
       'approved',
       'report_pending',
+      'report_submitted',
+      'report_revision_needed',
+      'report_approved',
       'closed'
     ].includes(status);
   };
 
   const isReportPending = (event) => {
-    return event.status === 'approved' || event.status === 'report_pending';
+    return event.status === 'approved' || event.status === 'report_pending' || event.status === 'report_revision_needed';
   };
 
   const isReportOverdue = (event) => {
-    if (event.status !== 'approved' && event.status !== 'report_pending') return false;
+    if (event.status !== 'approved' && event.status !== 'report_pending' && event.status !== 'report_revision_needed') return false;
     if (!event.reportDueDate) return false;
     const dueDate = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
     return dueDate < new Date();
@@ -822,6 +825,21 @@ export default function AdminPanel() {
         return { label: 'Document Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
       case 'approved':
         return { label: 'Approved', colorClass: 'bg-emerald-950 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+      case 'report_submitted': {
+        const stage3 = event.stage3Approvals || {};
+        const count3 = (stage3.dosw?.approved ? 1 : 0) + (stage3.stuco?.approved ? 1 : 0);
+        if (count3 > 0) {
+          return {
+            label: `Stage 3 — Partial Approval (${count3}/2)`,
+            colorClass: 'bg-amber-500 text-[#171e19] border border-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold'
+          };
+        }
+        return { label: 'Report Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+      }
+      case 'report_revision_needed':
+        return { label: 'Report Revision Needed', colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]' };
+      case 'report_approved':
+        return { label: 'Report Approved (Awaiting Council Close)', colorClass: 'bg-emerald-800 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-emerald-900' };
       case 'rejected':
         return { label: 'Proposal Rejected', colorClass: 'bg-red-800 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
       case 'revision_needed':
@@ -836,11 +854,15 @@ export default function AdminPanel() {
   const getBadgeClass = (event) => getStatusDetails(event).colorClass;
 
   const renderApprovalBadges = (event, stageNum) => {
-    const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
+    const approvals = 
+      stageNum === 1 ? (event.stage1Approvals || {}) : 
+      stageNum === 2 ? (event.stage2Approvals || {}) : 
+      (event.stage3Approvals || {});
     const isSuperAdminApproved = Boolean(
       approvals.super_admin?.approved || 
       (event.status === 'proposal_approved' && stageNum === 1) || 
-      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
+      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin)) ||
+      (event.status === 'closed' && stageNum === 3 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
     );
     const dosw = Boolean(approvals.dosw?.approved || isSuperAdminApproved);
     const stuco = Boolean(approvals.stuco?.approved || isSuperAdminApproved);
@@ -865,7 +887,7 @@ export default function AdminPanel() {
   };
 
   // Dynamic Dashboard Stats Counters
-  const countPendingReview = allEvents.filter(e => e.status === 'submitted' || e.status === 'permissions_submitted').length;
+  const countPendingReview = allEvents.filter(e => e.status === 'submitted' || e.status === 'permissions_submitted' || e.status === 'report_submitted').length;
   const countAwaitingDocs = allEvents.filter(e => e.status === 'proposal_approved').length;
   const countApprovedUpcoming = allEvents.filter(isUpcoming).length;
   const countReportPending = allEvents.filter(isReportPending).length;
@@ -876,6 +898,7 @@ export default function AdminPanel() {
     const overdue = allEvents.filter(isReportOverdue);
     const pendingProposals = allEvents.filter(e => e.status === 'submitted');
     const pendingPermissions = allEvents.filter(e => e.status === 'permissions_submitted');
+    const pendingReports = allEvents.filter(e => e.status === 'report_submitted');
     
     const sortedOverdue = overdue.sort((a, b) => {
       const dateA = a.reportDueDate?.toDate ? a.reportDueDate.toDate() : new Date(a.reportDueDate);
@@ -892,6 +915,12 @@ export default function AdminPanel() {
     const sortedPendingPermissions = pendingPermissions.sort((a, b) => {
       const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
       const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
+      return dateA - dateB;
+    });
+
+    const sortedPendingReports = pendingReports.sort((a, b) => {
+      const dateA = a.reportSubmittedAt?.toDate ? a.reportSubmittedAt.toDate() : new Date(a.reportSubmittedAt || 0);
+      const dateB = b.reportSubmittedAt?.toDate ? b.reportSubmittedAt.toDate() : new Date(b.reportSubmittedAt || 0);
       return dateA - dateB;
     });
     
@@ -914,6 +943,7 @@ export default function AdminPanel() {
 
     return [
       ...sortedOverdue.map(e => ({ ...e, attentionReason: 'overdue' })),
+      ...sortedPendingReports.map(e => ({ ...e, attentionReason: 'pending_report' })),
       ...sortedPendingPermissions.map(e => ({ ...e, attentionReason: 'pending_permissions' })),
       ...sortedPendingProposals.map(e => ({ ...e, attentionReason: 'pending_proposal' })),
       ...sortedAwaitingDocs.map(e => ({ ...e, attentionReason: 'awaiting_docs' })),
@@ -954,9 +984,10 @@ export default function AdminPanel() {
     return matchesSearch;
   });
 
-  const pendingEvents = allEvents.filter(e => e.status === 'submitted' || e.status === 'permissions_submitted');
+  const pendingEvents = allEvents.filter(e => e.status === 'submitted' || e.status === 'permissions_submitted' || e.status === 'report_submitted');
   const pendingProposals = allEvents.filter(e => e.status === 'submitted' || e.status === 'revision_needed');
   const pendingPermissions = allEvents.filter(e => e.status === 'permissions_submitted' || e.status === 'permissions_revision_needed');
+  const pendingReports = allEvents.filter(e => e.status === 'report_submitted' || e.status === 'report_revision_needed');
 
   // PASSCODE / EMAIL LOCK SCREEN RENDER
   if (!authenticated) {
@@ -1412,10 +1443,12 @@ export default function AdminPanel() {
                     </div>
                   </div>
 
-                  {/* Post-Event Report (if closed) */}
-                  {selectedEventDetail.status === 'closed' && selectedEventDetail.reportPdfUrl && (
+                  {/* Post-Event Report (if closed or report submitted) */}
+                  {['closed', 'report_submitted', 'report_revision_needed', 'report_approved'].includes(selectedEventDetail.status) && selectedEventDetail.reportPdfUrl && (
                     <div className="space-y-3 border-t-2 border-dashed border-[#171e19] pt-4 bg-[#ffe17c]/5 p-5 font-satoshi">
-                      <h4 className="font-bold text-[#171e19] uppercase tracking-wider text-xs">Archived Post-Event Report</h4>
+                      <h4 className="font-bold text-[#171e19] uppercase tracking-wider text-xs">
+                        {selectedEventDetail.status === 'closed' ? 'Archived Post-Event Report' : 'Submitted Post-Event Report'}
+                      </h4>
                       <div className="space-y-2 font-bold">
                         <a href={selectedEventDetail.reportPdfUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm">
                           <IconFile className="w-4 h-4 shrink-0" /> Download Final Wrap-Up Report PDF
@@ -1559,7 +1592,7 @@ export default function AdminPanel() {
                   >
                     Reject Request
                   </button>
-                  {selectedEventDetail.status !== 'report_pending' && selectedEventDetail.status !== 'closed' && (
+                  {!['report_pending', 'report_submitted', 'report_revision_needed', 'closed'].includes(selectedEventDetail.status) && (
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'report_pending')}
                       className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[160px]"
@@ -1568,6 +1601,41 @@ export default function AdminPanel() {
                     </button>
                   )}
                 </>)}
+
+                {/* STAGE 3: Report Submitted & Pending Review / Revision Needed */}
+                {['report_submitted', 'report_revision_needed'].includes(selectedEventDetail.status) && (() => {
+                  const role = adminUser?.role;
+                  const myApproval = role === 'dosw' ? selectedEventDetail.stage3Approvals?.dosw?.approved : role === 'stuco' ? selectedEventDetail.stage3Approvals?.stuco?.approved : false;
+                  const otherApproval = role === 'dosw' ? selectedEventDetail.stage3Approvals?.stuco?.approved : role === 'stuco' ? selectedEventDetail.stage3Approvals?.dosw?.approved : false;
+
+                  let label = 'Approve Report (Stage 3)';
+                  if (myApproval) {
+                    label = 'Re-confirm Stage 3 Approval';
+                  } else if (otherApproval) {
+                    label = 'Approve Report (Final Sign-off)';
+                  }
+
+                  return (<>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'closed')}
+                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
+                    >
+                      {label}
+                    </button>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'report_revision_needed')}
+                      className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    >
+                      Request Report Revision
+                    </button>
+                    <button
+                      onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
+                      className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                    >
+                      Reject Report
+                    </button>
+                  </>);
+                })()}
 
                 {/* REJECTED PROPOSAL ACTION */}
                 {selectedEventDetail.status === 'rejected' && (
@@ -2370,8 +2438,8 @@ export default function AdminPanel() {
                                 );
                               })()}
                               {/* Dual Approvals Badge */}
-                              {(event.status === 'submitted' || event.status === 'permissions_submitted') && (
-                                renderApprovalBadges(event, event.status === 'permissions_submitted' ? 2 : 1)
+                              {(event.status === 'submitted' || event.status === 'permissions_submitted' || event.status === 'report_submitted') && (
+                                renderApprovalBadges(event, event.status === 'report_submitted' ? 3 : event.status === 'permissions_submitted' ? 2 : 1)
                               )}
                             </div>
                             <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wide">
@@ -2383,6 +2451,11 @@ export default function AdminPanel() {
                             {event.attentionReason === 'overdue' && (
                               <span className="px-2.5 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] text-xs font-bold uppercase rounded-none">
                                 Report Overdue ({getDaysDiff(event.reportDueDate)}d)
+                              </span>
+                            )}
+                            {event.attentionReason === 'pending_report' && (
+                              <span className="px-2.5 py-1 bg-blue-900 border border-[#171e19]/30 text-white text-xs font-bold uppercase rounded-none">
+                                Report Submitted — Pending Review
                               </span>
                             )}
                             {event.attentionReason === 'pending_permissions' && (
@@ -2465,7 +2538,7 @@ export default function AdminPanel() {
                     </div>
                   ))}
                 </div>
-              ) : (pendingProposals.length === 0 && pendingPermissions.length === 0) ? (
+              ) : (pendingProposals.length === 0 && pendingPermissions.length === 0 && pendingReports.length === 0) ? (
                 <div className="bg-white border-2 border-[#171e19] p-12 text-center rounded-none">
                   <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">Clear queue! No pending items to review.</p>
                 </div>
@@ -2718,6 +2791,121 @@ export default function AdminPanel() {
                                   <a href={event.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                     <IconFile className="w-3 h-3 shrink-0" /> WAIVER REQUEST LIST PDF
                                   </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stage 3 Queue */}
+                  {pendingReports.length > 0 && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 border-b border-[#171e19]/10 pb-2 pt-4">
+                        <span className="w-2.5 h-2.5 bg-blue-900 border border-[#171e19]" />
+                        <h3 className="font-anton text-lg text-[#171e19] tracking-tight uppercase">Stage 3: Post-Event Report Review Queue ({pendingReports.length})</h3>
+                      </div>
+
+                      <div className="space-y-4">
+                        {pendingReports.map(event => (
+                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#171e19]/10 pb-4">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-anton text-xl text-[#171e19] tracking-tight">
+                                    {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
+                                  </h3>
+                                  <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
+                                    {event.eventId}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 flex-wrap mt-1">
+                                  <p className="font-satoshi text-xs text-white bg-[#171e19] px-2.5 py-1 inline-block uppercase font-bold tracking-wider">{event.councilName}</p>
+                                  {(() => {
+                                    const stage = getEventStage(event.status);
+                                    return (
+                                      <span className={`px-2 py-0.5 font-satoshi text-[9px] font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
+                                        {stage.label}
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
+                                <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                              </div>
+                              
+                              <div className="flex gap-2 sm:self-start flex-wrap">
+                                <button
+                                  onClick={() => openReviewDialog(event, 'closed')}
+                                  className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                >
+                                  {(() => {
+                                    const role = adminUser?.role;
+                                    const myApp = role === 'dosw' ? event.stage3Approvals?.dosw?.approved : role === 'stuco' ? event.stage3Approvals?.stuco?.approved : false;
+                                    const otherApp = role === 'dosw' ? event.stage3Approvals?.stuco?.approved : role === 'stuco' ? event.stage3Approvals?.dosw?.approved : false;
+                                    if (myApp) return 'Re-confirm Stage 3 Approval';
+                                    if (otherApp) return 'Approve Report (Final Sign-off)';
+                                    return 'Approve Report (Stage 3)';
+                                  })()}
+                                </button>
+                                <button
+                                  onClick={() => openReviewDialog(event, 'report_revision_needed')}
+                                  className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                >
+                                  Request Report Revision
+                                </button>
+                                <button
+                                  onClick={() => openReviewDialog(event, 'rejected')}
+                                  className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
+                                >
+                                  Reject Report
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Logistical Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-xs text-[#171e19]/90 bg-[#b7c6c2]/10 border border-[#171e19]/10 p-4 rounded-none font-satoshi font-semibold">
+                              <div>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Start Date</span>
+                                <span className="text-[11px]">{formatEventDate(event.startDate)}</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue</span>
+                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Expected Crowd</span>
+                                <span className="text-[11px]">{event.expectedFootfall} ATTENDEES</span>
+                              </div>
+                              <div>
+                                <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Submission Date</span>
+                                <span className="text-[11px]">
+                                  {event.reportSubmittedAt ? formatEventDate(event.reportSubmittedAt) : 'N/A'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Report links */}
+                            <div className="space-y-2 font-satoshi text-xs font-bold uppercase">
+                              <h4 className="text-[9px] uppercase font-bold text-[#171e19]/60 tracking-wider">Uploaded Report Assets</h4>
+                              <div className="flex flex-wrap gap-4">
+                                {event.reportPdfUrl && (
+                                  <a href={event.reportPdfUrl} target="_blank" rel="noreferrer" className="flex items-center gap-1.5 text-[#171e19] hover:underline">
+                                    <IconFile className="w-3 h-3 shrink-0" /> DOWNLOAD WRAP-UP REPORT PDF
+                                  </a>
+                                )}
+                                {event.reportImageUrls && event.reportImageUrls.length > 0 && (
+                                  <div className="w-full space-y-1.5 pt-2 normal-case">
+                                    <p className="font-semibold text-xs text-[#171e19]/60">Uploaded Photos ({event.reportImageUrls.length}):</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {event.reportImageUrls.map((url, index) => (
+                                        <a href={url} target="_blank" rel="noreferrer" key={index} className="w-12 h-12 bg-white border border-[#171e19] overflow-hidden flex items-center justify-center shrink-0">
+                                          <img src={url} alt={`event-${index}`} className="object-cover w-full h-full" />
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </div>
                                 )}
                               </div>
                             </div>

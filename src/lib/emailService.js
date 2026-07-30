@@ -298,6 +298,16 @@ export async function notifyCouncilStatusUpdate(event, statusType, reviewNotes =
       actionType = 'Your event proposal has been re-opened by administration for re-evaluation.';
       subject = `[Status Update] Proposal Re-opened: ${event.eventName}`;
       break;
+    case 'closed':
+      stageLabel = 'Stage 3 — Report Approved & Event Closed';
+      actionType = 'Your post-event report has been verified and approved by the administration. The event is now fully closed and archived.';
+      subject = `[Stage 3 Closed] Event Report Approved: ${event.eventName}`;
+      break;
+    case 'report_revision_needed':
+      stageLabel = 'Stage 3 — Report Revision Needed';
+      actionType = 'Revisions have been requested on your post-event wrap-up report. Please review the comments and re-submit the report.';
+      subject = `[Action Required] Report Revision Needed: ${event.eventName}`;
+      break;
     default:
       break;
   }

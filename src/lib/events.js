@@ -177,6 +177,7 @@ export async function createEventRequest(data) {
     status: data.status || 'submitted',
     stage1Approvals: data.stage1Approvals || {},
     stage2Approvals: data.stage2Approvals || {},
+    stage3Approvals: data.stage3Approvals || {},
     reviewHistory: data.reviewHistory || [],
     createdAt: serverTimestamp()
   };
@@ -335,6 +336,7 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
   const currentHistory = Array.isArray(currentData.reviewHistory) ? currentData.reviewHistory : [];
   const currentStage1Approvals = currentData.stage1Approvals || {};
   const currentStage2Approvals = currentData.stage2Approvals || {};
+  const currentStage3Approvals = currentData.stage3Approvals || {};
 
   const newHistoryEntry = {
     adminRole: role,
@@ -398,21 +400,49 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       // Partial approval — status stays at 'permissions_submitted' so other admin can still review
       dualApprovalResult = 'partial';
     }
+  } else if (actionStatus === 'closed') {
+    // Stage 3 Approval (Report) — record individual approval
+    const updatedStage3 = {
+      ...currentStage3Approvals,
+      [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
+    };
+    if (role === 'super_admin') {
+      updatedStage3.dosw = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
+      updatedStage3.stuco = { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null, viaSuperAdmin: true };
+    }
+    updates.stage3Approvals = updatedStage3;
+
+    // Check if BOTH approvals are now present
+    const bothApproved = Boolean(updatedStage3.dosw?.approved && updatedStage3.stuco?.approved);
+    if (bothApproved) {
+      updates.status = 'report_approved';
+      dualApprovalResult = 'fully_approved';
+    } else {
+      // Partial approval — status stays at 'report_submitted'
+      dualApprovalResult = 'partial';
+    }
   } else if (actionStatus === 'revision_needed') {
     updates.status = 'revision_needed';
     updates.stage1Approvals = {};
   } else if (actionStatus === 'permissions_revision_needed') {
     updates.status = 'permissions_revision_needed';
     updates.stage2Approvals = {};
+  } else if (actionStatus === 'report_revision_needed') {
+    updates.status = 'report_revision_needed';
+    updates.stage3Approvals = {};
   } else if (actionStatus === 'rejected') {
     updates.status = 'rejected';
   } else if (actionStatus === 'submitted') {
     updates.status = 'submitted';
     updates.stage1Approvals = {};
     updates.stage2Approvals = {};
+    updates.stage3Approvals = {};
   } else if (actionStatus === 'permissions_submitted') {
     updates.status = 'permissions_submitted';
     updates.stage2Approvals = {};
+  } else if (actionStatus === 'report_submitted') {
+    updates.status = 'report_submitted';
+    updates.stage3Approvals = {};
   } else {
     updates.status = actionStatus;
   }
@@ -422,7 +452,7 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
 }
 
 /**
- * Submits the event report. Sets the status to 'closed'.
+ * Submits the event report. Sets the status to 'report_submitted'.
  */
 export async function submitReport(eventId, reportPdfUrl = null, reportImageUrls = []) {
   const eventRef = doc(db, 'events', eventId);
@@ -431,7 +461,8 @@ export async function submitReport(eventId, reportPdfUrl = null, reportImageUrls
     reportPdfUrl,
     reportImageUrls: reportImageUrls || [],
     reportSubmittedAt: Timestamp.fromDate(new Date()),
-    status: 'closed'
+    status: 'report_submitted',
+    stage3Approvals: {}
   });
 }
 

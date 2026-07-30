@@ -816,6 +816,8 @@ export default function CouncilPortal() {
       case 'permissions_revision_needed':
         return { num: 2, label: 'STAGE 2: DOCUMENTS & CLEARANCES', colorClass: 'bg-indigo-900 text-white' };
       case 'approved':
+      case 'report_submitted':
+      case 'report_revision_needed':
         return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING (PENDING)', colorClass: 'bg-emerald-950 text-white' };
       case 'closed':
         return { num: 3, label: 'STAGE 3: COMPLETED / ARCHIVED', colorClass: 'bg-[#b7c6c2] text-[#171e19]' };
@@ -827,15 +829,20 @@ export default function CouncilPortal() {
   const renderDualApprovalBadges = (event) => {
     const isStage1Pending = event.status === 'submitted' || event.status === 'proposal_approved';
     const isStage2Pending = event.status === 'permissions_submitted' || event.status === 'approved';
+    const isStage3Pending = event.status === 'report_submitted' || event.status === 'closed';
 
-    if (!isStage1Pending && !isStage2Pending) return null;
+    if (!isStage1Pending && !isStage2Pending && !isStage3Pending) return null;
 
-    const stageNum = isStage1Pending ? 1 : 2;
-    const approvals = stageNum === 1 ? (event.stage1Approvals || {}) : (event.stage2Approvals || {});
+    const stageNum = isStage1Pending ? 1 : isStage2Pending ? 2 : 3;
+    const approvals = 
+      stageNum === 1 ? (event.stage1Approvals || {}) : 
+      stageNum === 2 ? (event.stage2Approvals || {}) : 
+      (event.stage3Approvals || {});
     const isSuperAdminApproved = Boolean(
       approvals.super_admin?.approved || 
       (event.status === 'proposal_approved' && stageNum === 1) || 
-      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
+      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin)) ||
+      (event.status === 'closed' && stageNum === 3 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
     );
     const doswApproved = Boolean(approvals.dosw?.approved || isSuperAdminApproved);
     const stucoApproved = Boolean(approvals.stuco?.approved || isSuperAdminApproved);
@@ -932,7 +939,7 @@ export default function CouncilPortal() {
     let currentStage = 1;
     if (['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status)) {
       currentStage = 2;
-    } else if (['approved', 'closed', 'report_pending'].includes(status)) {
+    } else if (['approved', 'closed', 'report_pending', 'report_submitted', 'report_revision_needed', 'report_approved'].includes(status)) {
       currentStage = 3;
     }
 
@@ -947,8 +954,8 @@ export default function CouncilPortal() {
         <span className="font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] block">Event Progression Flow</span>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {stages.map((stg) => {
-            const isCompleted = currentStage > stg.num || (stg.num === 3 && status === 'closed');
-            const isActive = currentStage === stg.num && status !== 'closed';
+            const isCompleted = currentStage > stg.num || (stg.num === 3 && (status === 'closed' || status === 'report_approved'));
+            const isActive = currentStage === stg.num && status !== 'closed' && status !== 'report_approved';
 
             let bgColor = 'bg-white border-[#171e19]/15 text-[#171e19]/40';
             if (isActive) {
@@ -1045,6 +1052,23 @@ export default function CouncilPortal() {
         return {
           label: 'Post-Event Report Pending',
           colorClass: 'bg-[#171e19] text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold',
+          isReportPending: true
+        };
+      case 'report_submitted': {
+        const stage3 = event.stage3Approvals || {};
+        const count3 = (stage3.dosw?.approved ? 1 : 0) + (stage3.stuco?.approved ? 1 : 0);
+        if (count3 > 0) {
+          return {
+            label: `Stage 3 — Partial Approval (${count3}/2)`,
+            colorClass: 'bg-amber-500 text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/20'
+          };
+        }
+        return { label: 'Report Submitted', colorClass: 'bg-blue-900 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
+      }
+      case 'report_revision_needed':
+        return {
+          label: 'Report Revision Needed',
+          colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]',
           isReportPending: true
         };
       case 'closed':
@@ -1293,7 +1317,7 @@ export default function CouncilPortal() {
       // Fire-and-forget email notification
       notifyReportSubmitted(reportingEvent, council.name).catch(console.error);
 
-      showNotification('Event report submitted successfully and status closed!');
+      showNotification('Event report submitted successfully! Awaiting administrator approval.');
       setReportingEvent(null);
       setReportPdf(null);
       setReportImages([]);
@@ -2323,6 +2347,28 @@ export default function CouncilPortal() {
                             </button>
                           )}
 
+                          {/* Close Event Button — only shown when report is fully approved by both admins */}
+                          {event.status === 'report_approved' && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (window.confirm("Are you sure you want to close this event? This action will archive all event records.")) {
+                                  try {
+                                    await updateEventDetails(event.id, { status: 'closed' });
+                                    showNotification('Event closed successfully!', 'success');
+                                  } catch (err) {
+                                    console.error(err);
+                                    showNotification('Failed to close event.', 'error');
+                                  }
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-brutal rounded-none"
+                              title="Close and archive the event"
+                            >
+                              Close Event
+                            </button>
+                          )}
+
                           {/* Delete Proposal Button - Only allowed before Stage 1 approval */}
                           {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
                             <button
@@ -2496,10 +2542,12 @@ export default function CouncilPortal() {
                             </div>
                           )}
 
-                          {/* Closed details */}
-                          {event.status === 'closed' && event.reportPdfUrl && (
+                          {/* Closed/Report details */}
+                          {['closed', 'report_submitted', 'report_revision_needed', 'report_approved'].includes(event.status) && event.reportPdfUrl && (
                             <div className="space-y-2 border-t border-[#171e19]/10 pt-3 bg-[#ffe17c]/5 p-3">
-                              <span className="font-bold text-[#171e19] uppercase text-[9px] tracking-wide block">Archived Event Wrap-up Summary</span>
+                              <span className="font-bold text-[#171e19] uppercase text-[9px] tracking-wide block">
+                                {event.status === 'closed' ? 'Archived Event Wrap-up Summary' : 'Submitted Event Wrap-up Summary'}
+                              </span>
                               <div className="flex flex-wrap gap-4 items-center uppercase font-bold text-xs">
                                 <a href={event.reportPdfUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-[#171e19] hover:underline">
                                   <IconDownload className="w-3.5 h-3.5" /> Download final PDF Report
@@ -2554,6 +2602,27 @@ export default function CouncilPortal() {
                                 className="px-4 py-2 bg-emerald-800 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-900 transition-all rounded-none"
                               >
                                 Submit Report (Stage 3)
+                              </button>
+                            )}
+
+                            {/* Close Event — only shown when report is fully approved by both admins */}
+                            {event.status === 'report_approved' && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (window.confirm("Are you sure you want to close this event? This action will archive all event records.")) {
+                                    try {
+                                      await updateEventDetails(event.id, { status: 'closed' });
+                                      showNotification('Event closed successfully!', 'success');
+                                    } catch (err) {
+                                      console.error(err);
+                                      showNotification('Failed to close event.', 'error');
+                                    }
+                                  }
+                                }}
+                                className="px-4 py-2 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-all rounded-none"
+                              >
+                                Close Event
                               </button>
                             )}
                           </div>
@@ -2917,7 +2986,7 @@ export default function CouncilPortal() {
                   disabled={submitting}
                   className="px-6 py-2.5 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] rounded-none font-anton text-lg uppercase tracking-wider transition-brutal border-2 border-[#171e19]"
                 >
-                  Submit Report & Close Event
+                  Submit Report
                 </button>
               </div>
             </form>
