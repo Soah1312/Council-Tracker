@@ -434,15 +434,34 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     updates.status = 'rejected';
   } else if (actionStatus === 'submitted') {
     updates.status = 'submitted';
-    updates.stage1Approvals = {};
-    updates.stage2Approvals = {};
-    updates.stage3Approvals = {};
+    const updatedStage1 = { ...currentStage1Approvals };
+    delete updatedStage1[role];
+    delete updatedStage1.super_admin;
+    if (role === 'super_admin') {
+      delete updatedStage1.dosw;
+      delete updatedStage1.stuco;
+    }
+    updates.stage1Approvals = updatedStage1;
   } else if (actionStatus === 'permissions_submitted') {
     updates.status = 'permissions_submitted';
-    updates.stage2Approvals = {};
+    const updatedStage2 = { ...currentStage2Approvals };
+    delete updatedStage2[role];
+    delete updatedStage2.super_admin;
+    if (role === 'super_admin') {
+      delete updatedStage2.dosw;
+      delete updatedStage2.stuco;
+    }
+    updates.stage2Approvals = updatedStage2;
   } else if (actionStatus === 'report_submitted') {
     updates.status = 'report_submitted';
-    updates.stage3Approvals = {};
+    const updatedStage3 = { ...currentStage3Approvals };
+    delete updatedStage3[role];
+    delete updatedStage3.super_admin;
+    if (role === 'super_admin') {
+      delete updatedStage3.dosw;
+      delete updatedStage3.stuco;
+    }
+    updates.stage3Approvals = updatedStage3;
   } else {
     updates.status = actionStatus;
   }

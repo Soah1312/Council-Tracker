@@ -858,11 +858,17 @@ export default function AdminPanel() {
       stageNum === 1 ? (event.stage1Approvals || {}) : 
       stageNum === 2 ? (event.stage2Approvals || {}) : 
       (event.stage3Approvals || {});
+    const isFullyApprovedState = 
+      (stageNum === 1 && event.status === 'proposal_approved') ||
+      (stageNum === 2 && event.status === 'approved') ||
+      (stageNum === 3 && (event.status === 'report_approved' || event.status === 'closed'));
+
     const isSuperAdminApproved = Boolean(
-      approvals.super_admin?.approved || 
-      (event.status === 'proposal_approved' && stageNum === 1) || 
-      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin)) ||
-      (event.status === 'closed' && stageNum === 3 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
+      isFullyApprovedState && (
+        approvals.super_admin?.approved || 
+        approvals.dosw?.viaSuperAdmin ||
+        approvals.stuco?.viaSuperAdmin
+      )
     );
     const dosw = Boolean(approvals.dosw?.approved || isSuperAdminApproved);
     const stuco = Boolean(approvals.stuco?.approved || isSuperAdminApproved);
@@ -1182,6 +1188,12 @@ export default function AdminPanel() {
                 }
                 value={reviewNotes}
                 onChange={e => setReviewNotes(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitReview();
+                  }
+                }}
                 className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-4 py-3 text-sm text-[#171e19] placeholder-[#b7c6c2] outline-none resize-none font-satoshi"
               />
             </div>
@@ -1486,11 +1498,11 @@ export default function AdminPanel() {
                   const myApproval = role === 'dosw' ? selectedEventDetail.stage1Approvals?.dosw?.approved : role === 'stuco' ? selectedEventDetail.stage1Approvals?.stuco?.approved : false;
                   const otherApproval = role === 'dosw' ? selectedEventDetail.stage1Approvals?.stuco?.approved : role === 'stuco' ? selectedEventDetail.stage1Approvals?.dosw?.approved : false;
 
-                  let label = 'Accept Proposal (Stage 1)';
+                  let label = 'Approve Proposal (Stage 1)';
                   if (myApproval) {
                     label = 'Re-confirm Stage 1 Approval';
                   } else if (otherApproval) {
-                    label = 'Approve Proposal (Final Sign-off)';
+                    label = 'Approve Proposal (Stage 1)';
                   }
 
                   return (<>
@@ -1600,6 +1612,16 @@ export default function AdminPanel() {
                       Mark Stage 3 (Report Pending)
                     </button>
                   )}
+                </>)}
+
+                {/* STAGE 3: Report Approved (before closing) */}
+                {selectedEventDetail.status === 'report_approved' && (<>
+                  <button
+                    onClick={() => openReviewDialog(selectedEventDetail, 'report_submitted')}
+                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                  >
+                    Revert Stage 3 Approval
+                  </button>
                 </>)}
 
                 {/* STAGE 3: Report Submitted & Pending Review / Revision Needed */}

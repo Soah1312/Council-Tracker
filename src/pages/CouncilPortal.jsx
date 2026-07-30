@@ -838,11 +838,17 @@ export default function CouncilPortal() {
       stageNum === 1 ? (event.stage1Approvals || {}) : 
       stageNum === 2 ? (event.stage2Approvals || {}) : 
       (event.stage3Approvals || {});
+    const isFullyApprovedState = 
+      (stageNum === 1 && event.status === 'proposal_approved') ||
+      (stageNum === 2 && event.status === 'approved') ||
+      (stageNum === 3 && (event.status === 'report_approved' || event.status === 'closed'));
+
     const isSuperAdminApproved = Boolean(
-      approvals.super_admin?.approved || 
-      (event.status === 'proposal_approved' && stageNum === 1) || 
-      (event.status === 'approved' && stageNum === 2 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin)) ||
-      (event.status === 'closed' && stageNum === 3 && (approvals.super_admin?.approved || approvals.dosw?.viaSuperAdmin))
+      isFullyApprovedState && (
+        approvals.super_admin?.approved || 
+        approvals.dosw?.viaSuperAdmin ||
+        approvals.stuco?.viaSuperAdmin
+      )
     );
     const doswApproved = Boolean(approvals.dosw?.approved || isSuperAdminApproved);
     const stucoApproved = Boolean(approvals.stuco?.approved || isSuperAdminApproved);
