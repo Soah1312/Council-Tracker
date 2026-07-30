@@ -3054,7 +3054,7 @@ export default function AdminPanel() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-[#171e19]/10 font-satoshi text-[10px] uppercase tracking-wider text-[#171e19]/60 font-bold">
-                          <th className="p-4 pl-6">Event ID</th>
+                          <th className="p-4 pl-6 min-w-[140px] whitespace-nowrap">Event ID</th>
                           <th className="p-4">Council</th>
                           <th className="p-4">Event Name</th>
                           <th className="p-4">Category</th>
@@ -3073,9 +3073,9 @@ export default function AdminPanel() {
                               onClick={() => setSelectedEventDetail(event)}
                               className="hover:bg-[#ffe17c]/5 cursor-pointer transition-brutal"
                             >
-                              <td className="p-4 pl-6 font-mono font-bold text-[#171e19]">
+                              <td className="p-4 pl-6 min-w-[140px] whitespace-nowrap">
                                 {/* Signature ID Tag */}
-                                <span className="border border-[#171e19] px-2 py-0.5 bg-white">
+                                <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-[#171e19] rounded-md font-mono text-xs font-bold tracking-wider">
                                   {event.eventId}
                                 </span>
                               </td>
