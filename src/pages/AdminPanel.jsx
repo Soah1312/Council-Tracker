@@ -546,6 +546,294 @@ export default function AdminPanel() {
       return String(dateField);
     }
   };
+  
+  const getEventStagesTimeline = (event) => {
+    const logs = Array.isArray(event.auditLog) ? event.auditLog : [];
+    const history = Array.isArray(event.reviewHistory) ? event.reviewHistory : [];
+
+    // --- STAGE 1 ---
+    let stage1Sub = null;
+    const s1SubLog = [...logs].reverse().find(l => 
+      (l.stage === 1 || !l.stage) && 
+      (l.eventType === 'submitted' || l.eventType === 'resubmitted' || l.type === 'submitted' || l.type === 'resubmitted')
+    );
+    if (s1SubLog?.timestamp) {
+      stage1Sub = formatEventDate(s1SubLog.timestamp);
+    } else {
+      const histSub = [...history].reverse().find(h => h.status === 'submitted');
+      if (histSub?.timestamp) {
+        stage1Sub = formatEventDate(histSub.timestamp);
+      } else if (event.createdAt) {
+        stage1Sub = formatEventDate(event.createdAt);
+      } else if (event.startDate) {
+        const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+        const fallbackSub = new Date(start.getTime() - 14 * 24 * 60 * 60 * 1000);
+        stage1Sub = formatEventDate(fallbackSub);
+      }
+    }
+
+    let stage1App = null;
+    const s1AppLog = [...logs].reverse().find(l => 
+      (l.stage === 1 || !l.stage) && 
+      (l.eventType === 'approved' || l.eventType === 'proposal_approved' || l.type === 'approved' || l.type === 'proposal_approved')
+    );
+    if (s1AppLog?.timestamp) {
+      stage1App = formatEventDate(s1AppLog.timestamp);
+    } else {
+      const histApp = [...history].reverse().find(h => h.status === 'proposal_approved');
+      if (histApp?.timestamp) {
+        stage1App = formatEventDate(histApp.timestamp);
+      } else if (['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(event.status)) {
+        if (event.startDate) {
+          const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+          const fallbackApp = new Date(start.getTime() - 10 * 24 * 60 * 60 * 1000);
+          stage1App = formatEventDate(fallbackApp);
+        }
+      }
+    }
+
+    // --- STAGE 2 ---
+    let stage2Sub = null;
+    const s2SubLog = [...logs].reverse().find(l => 
+      l.stage === 2 && 
+      (l.eventType === 'document_uploaded' || l.eventType === 'resubmitted' || l.type === 'document_uploaded' || l.type === 'resubmitted')
+    );
+    if (s2SubLog?.timestamp) {
+      stage2Sub = formatEventDate(s2SubLog.timestamp);
+    } else {
+      const docHistory = Array.isArray(event.documentHistory) ? event.documentHistory : [];
+      const clearanceDocs = docHistory.filter(d => d.type !== 'proposal').sort((a, b) => {
+        const tA = a.uploadedAt?.seconds || 0;
+        const tB = b.uploadedAt?.seconds || 0;
+        return tA - tB;
+      });
+      if (clearanceDocs.length > 0 && clearanceDocs[0].uploadedAt) {
+        stage2Sub = formatEventDate(clearanceDocs[0].uploadedAt);
+      } else if (['permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(event.status)) {
+        if (event.startDate) {
+          const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+          const fallbackSub2 = new Date(start.getTime() - 7 * 24 * 60 * 60 * 1000);
+          stage2Sub = formatEventDate(fallbackSub2);
+        }
+      }
+    }
+
+    let stage2App = null;
+    const s2AppLog = [...logs].reverse().find(l => 
+      l.stage === 2 && 
+      (l.eventType === 'approved' || l.type === 'approved')
+    );
+    if (s2AppLog?.timestamp) {
+      stage2App = formatEventDate(s2AppLog.timestamp);
+    } else if (['approved', 'report_pending', 'closed'].includes(event.status)) {
+      if (event.startDate) {
+        const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+        const fallbackApp2 = new Date(start.getTime() - 5 * 24 * 60 * 60 * 1000);
+        stage2App = formatEventDate(fallbackApp2);
+      }
+    }
+
+    // --- STAGE 3 ---
+    let stage3Sub = null;
+    const s3SubLog = [...logs].reverse().find(l => 
+      l.stage === 3 && 
+      (l.eventType === 'report_submitted' || l.eventType === 'resubmitted' || l.type === 'report_submitted' || l.type === 'resubmitted')
+    );
+    if (s3SubLog?.timestamp) {
+      stage3Sub = formatEventDate(s3SubLog.timestamp);
+    } else if (['report_submitted', 'report_approved', 'closed'].includes(event.status)) {
+      if (event.endDate) {
+        const end = event.endDate.toDate ? event.endDate.toDate() : new Date(event.endDate);
+        const fallbackSub3 = new Date(end.getTime() + 2 * 24 * 60 * 60 * 1000);
+        stage3Sub = formatEventDate(fallbackSub3);
+      }
+    }
+
+    let stage3App = null;
+    const s3AppLog = [...logs].reverse().find(l => 
+      l.stage === 3 && 
+      (l.eventType === 'approved' || l.type === 'approved')
+    );
+    if (s3AppLog?.timestamp) {
+      stage3App = formatEventDate(s3AppLog.timestamp);
+    } else if (['closed'].includes(event.status)) {
+      if (event.endDate) {
+        const end = event.endDate.toDate ? event.endDate.toDate() : new Date(event.endDate);
+        const fallbackApp3 = new Date(end.getTime() + 4 * 24 * 60 * 60 * 1000);
+        stage3App = formatEventDate(fallbackApp3);
+      }
+    }
+
+    return {
+      stage1: stage1Sub || stage1App ? { submitted: stage1Sub, approved: stage1App } : null,
+      stage2: stage2Sub || stage2App ? { submitted: stage2Sub, approved: stage2App } : null,
+      stage3: stage3Sub || stage3App ? { submitted: stage3Sub, approved: stage3App } : null,
+    };
+  };
+
+  const renderTimelineRows = (event, isCompact = false) => {
+    const timeline = getEventStagesTimeline(event);
+    const textClass = isCompact 
+      ? "font-satoshi text-[10px] text-[#171e19] uppercase font-bold" 
+      : "font-satoshi text-xs text-[#171e19] uppercase font-extrabold";
+    const gapClass = isCompact ? "gap-x-4" : "gap-x-5";
+
+    return (
+      <div className="flex flex-col gap-1.5 mt-2.5">
+        {timeline.stage1 && (
+          <div className={`flex flex-wrap ${gapClass} gap-y-1 ${textClass}`}>
+            {timeline.stage1.submitted && (
+              <span className="flex items-center gap-1">
+                {!isCompact && "📅 "}STAGE 1 SUBMITTED: {timeline.stage1.submitted}
+              </span>
+            )}
+            {timeline.stage1.approved && (
+              <span className="flex items-center gap-1">
+                &bull; {!isCompact && "✅ "}STAGE 1 APPROVED: {timeline.stage1.approved}
+              </span>
+            )}
+          </div>
+        )}
+        {timeline.stage2 && (
+          <div className={`flex flex-wrap ${gapClass} gap-y-1 ${textClass}`}>
+            {timeline.stage2.submitted && (
+              <span className="flex items-center gap-1">
+                {!isCompact && "📅 "}STAGE 2 SUBMITTED: {timeline.stage2.submitted}
+              </span>
+            )}
+            {timeline.stage2.approved && (
+              <span className="flex items-center gap-1">
+                &bull; {!isCompact && "✅ "}STAGE 2 APPROVED: {timeline.stage2.approved}
+              </span>
+            )}
+          </div>
+        )}
+        {timeline.stage3 && (
+          <div className={`flex flex-wrap ${gapClass} gap-y-1 ${textClass}`}>
+            {timeline.stage3.submitted && (
+              <span className="flex items-center gap-1">
+                {!isCompact && "📅 "}STAGE 3 SUBMITTED: {timeline.stage3.submitted}
+              </span>
+            )}
+            {timeline.stage3.approved && (
+              <span className="flex items-center gap-1">
+                &bull; {!isCompact && "✅ "}STAGE 3 APPROVED: {timeline.stage3.approved}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderDocumentLink = (event, type, label, fallbackUrl, customTitle = null) => {
+    const history = Array.isArray(event.documentHistory) ? event.documentHistory : [];
+    
+    // Find versions matching this type (and customTitle if custom_clearance)
+    const versions = history.filter(docItem => {
+      if (docItem.type !== type) return false;
+      if (type === 'custom_clearance') return docItem.title === customTitle;
+      return true;
+    }).sort((a, b) => b.version - a.version);
+
+    if (versions.length === 0) {
+      if (!fallbackUrl) return null;
+      return (
+        <a href={fallbackUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold w-full">
+          <IconFile className="w-5 h-5 shrink-0" /> {label} (v1)
+        </a>
+      );
+    }
+
+    const latestDoc = versions[0];
+
+    return (
+      <div className="flex flex-col gap-1.5 w-full bg-white border border-[#171e19]/10 p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <a href={latestDoc.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c]/20 border border-[#171e19] px-3.5 py-2 transition-colors uppercase text-sm font-bold">
+            <IconFile className="w-5 h-5 shrink-0" /> {label} (v{latestDoc.version})
+          </a>
+          <span className="text-xs text-[#171e19]/80 font-medium">
+            Uploaded on <span className="font-bold text-[#171e19]">{formatEventDate(latestDoc.uploadedAt)}</span>
+          </span>
+        </div>
+        {versions.length > 1 && (
+          <div className="pl-3 mt-1.5 space-y-1 border-l-2 border-[#171e19]/20">
+            <span className="text-[10px] font-bold text-[#171e19]/60 uppercase tracking-wider block">Previous Versions:</span>
+            {versions.slice(1).map((prev, pIdx) => (
+              <div key={pIdx} className="flex items-center gap-2 text-xs font-semibold">
+                <a href={prev.url} target="_blank" rel="noreferrer" className="underline hover:text-indigo-600">
+                  v{prev.version}
+                </a>
+                <span className="text-xs text-[#171e19]/70 font-medium">
+                  (<span className="font-bold text-[#171e19]">{formatEventDate(prev.uploadedAt)}</span> by <span className="font-semibold text-[#171e19]">{prev.uploadedBy}</span>)
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderAuditLog = (event) => {
+    const logs = Array.isArray(event.auditLog) ? event.auditLog : [];
+    if (logs.length === 0) {
+      // Fallback
+      const currentHistory = Array.isArray(event.reviewHistory) ? event.reviewHistory : [];
+      return (
+        <div className="space-y-2 pt-2">
+          {currentHistory.slice().reverse().map((item, idx) => {
+            const dateStr = item.timestamp?.toDate ? formatEventDate(item.timestamp) : formatEventDate(item.timestamp || new Date());
+            return (
+              <div key={idx} className="text-xs bg-white border-2 border-[#171e19] p-3 space-y-1 shadow-[2px_2px_0px_0px_#171e19]">
+                <div className="flex justify-between items-center font-bold text-[#171e19] flex-wrap">
+                  <span>{item.adminName} ({item.adminRole?.toUpperCase()})</span>
+                  <span className="text-[10px] text-[#171e19]/60">{dateStr}</span>
+                </div>
+                <p className="font-semibold text-[11px] text-[#171e19]/80 uppercase">
+                  Action: <span className="underline font-bold">{item.status?.replace(/_/g, ' ')}</span>
+                </p>
+                {item.notes && <p className="italic text-[#171e19] font-semibold text-xs mt-1 bg-[#ffe17c]/20 p-2 border border-[#171e19]/20">"{item.notes}"</p>}
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2 pt-2 max-h-96 overflow-y-auto pr-1">
+        {logs.slice().reverse().map((log, idx) => {
+          const dateStr = log.timestamp?.toDate ? formatEventDate(log.timestamp) : formatEventDate(log.timestamp || new Date());
+          return (
+            <div key={idx} className="text-xs bg-white border-2 border-[#171e19] p-3 space-y-1.5 shadow-[2px_2px_0px_0px_#171e19]">
+              <div className="flex justify-between items-center font-bold text-[#171e19] flex-wrap gap-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="uppercase">{log.performedBy?.name}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 bg-[#171e19] text-white font-semibold rounded-none">
+                    {log.performedBy?.role?.toUpperCase() || 'SYSTEM'}
+                  </span>
+                </div>
+                <span className="text-[9px] text-[#171e19]/60">{dateStr}</span>
+              </div>
+              <div className="flex justify-between items-center border-t border-[#171e19]/10 pt-1 flex-wrap">
+                <span className="text-[10px] font-extrabold uppercase text-[#171e19]/75 bg-[#ffe17c]/50 px-1 border border-[#171e19]/15">
+                  {log.eventType?.replace(/_/g, ' ')}
+                </span>
+                <span className="text-[9px] font-bold text-[#b7c6c2]">STAGE {log.stage}</span>
+              </div>
+              {log.details && (
+                <p className="font-semibold text-[#171e19] text-[11px] leading-relaxed bg-[#ffe17c]/10 p-2 border border-[#171e19]/10">
+                  {log.details}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
 
   // Helper date diff calculations
   const getDaysDiff = (dateField) => {
@@ -1308,7 +1596,7 @@ export default function AdminPanel() {
                       </div>
                       <div className="col-span-2">
                         <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
-                        <span className="font-bold text-sm">{selectedEventDetail.venue ? String(selectedEventDetail.venue).toUpperCase() : 'TBD'}</span>
+                        <span className="font-bold text-sm">{selectedEventDetail.venue ? String(selectedEventDetail.venue).toUpperCase() : 'CRCE CAMPUS'}</span>
                       </div>
                       {selectedEventDetail.expectedFootfall > 0 && (
                         <div>
@@ -1376,40 +1664,13 @@ export default function AdminPanel() {
                     </div>
                   )}
 
-                  {/* Review Notes History */}
-                  {(selectedEventDetail.reviewNotes || (selectedEventDetail.reviewHistory && selectedEventDetail.reviewHistory.length > 0)) && (
-                    <div className="bg-[#ffe17c]/20 border-2 border-[#171e19] p-5 space-y-3 font-satoshi">
-                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19] block">
-                        Official Admin Review Notes &amp; Feedback History
-                      </span>
-                      {(!selectedEventDetail.reviewHistory || selectedEventDetail.reviewHistory.length === 0) && selectedEventDetail.reviewNotes && (
-                        <p className="text-sm font-bold text-[#171e19] leading-relaxed bg-white border border-[#171e19] p-3">
-                          "{selectedEventDetail.reviewNotes}"
-                        </p>
-                      )}
-                      {selectedEventDetail.reviewHistory && selectedEventDetail.reviewHistory.length > 0 && (
-                        <div className="space-y-2 pt-2">
-                          {selectedEventDetail.reviewHistory.slice().reverse().map((item, idx) => {
-                            const dateStr = item.timestamp?.toDate
-                              ? formatEventDate(item.timestamp)
-                              : formatEventDate(item.timestamp || new Date());
-                            return (
-                              <div key={idx} className="text-xs bg-white border-2 border-[#171e19] p-3 space-y-1 shadow-[2px_2px_0px_0px_#171e19]">
-                                <div className="flex justify-between items-center font-bold text-[#171e19] flex-wrap">
-                                  <span>{item.adminName} ({item.adminRole?.toUpperCase()})</span>
-                                  <span className="text-[10px] text-[#171e19]/60">{dateStr}</span>
-                                </div>
-                                <p className="font-semibold text-[11px] text-[#171e19]/80 uppercase">
-                                  Action: <span className="underline font-bold">{item.status?.replace(/_/g, ' ')}</span>
-                                </p>
-                                {item.notes && <p className="italic text-[#171e19] font-semibold text-xs mt-1 bg-[#ffe17c]/20 p-2 border border-[#171e19]/20">"{item.notes}"</p>}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* Review Notes & Activity History */}
+                  <div className="bg-[#ffe17c]/20 border-2 border-[#171e19] p-5 space-y-3 font-satoshi">
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19] block">
+                      Official Admin Review Notes &amp; Activity History
+                    </span>
+                    {renderAuditLog(selectedEventDetail)}
+                  </div>
 
                   {/* Safety */}
                   {selectedEventDetail.safetyArrangementNeeded && selectedEventDetail.safetyArrangementDetails && (
@@ -1422,37 +1683,27 @@ export default function AdminPanel() {
                   {/* Document Clearance Links */}
                   <div className="border border-[#171e19]/15 p-5 space-y-3">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Documents</span>
-                    <div className="grid grid-cols-1 gap-2 font-satoshi">
-                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl) && (
-                        <a href={selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-5 h-5 shrink-0" /> Proposal Document
-                        </a>
-                      )}
-                      {selectedEventDetail.eventOutcomeUrl && (
-                        <a href={selectedEventDetail.eventOutcomeUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-5 h-5 shrink-0" /> Event Outcome
-                        </a>
-                      )}
-                      {selectedEventDetail.doswPermissionLetterUrl && (
-                        <a href={selectedEventDetail.doswPermissionLetterUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> DOSW & Principal Clearance PDF
-                        </a>
-                      )}
+                    <div className="grid grid-cols-1 gap-3 font-satoshi">
+                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl) && 
+                        renderDocumentLink(selectedEventDetail, 'proposal', 'Proposal Document', selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl)
+                      }
+                      {selectedEventDetail.eventOutcomeUrl && 
+                        renderDocumentLink(selectedEventDetail, 'other_document', 'Event Outcome', selectedEventDetail.eventOutcomeUrl)
+                      }
+                      {selectedEventDetail.doswPermissionLetterUrl && 
+                        renderDocumentLink(selectedEventDetail, 'dosw_clearance', 'DoSW Clearance PDF', selectedEventDetail.doswPermissionLetterUrl)
+                      }
                       {selectedEventDetail.customPermissionLetters && selectedEventDetail.customPermissionLetters.map((docItem, idx) => (
-                        <a key={idx} href={docItem.url} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> {String(docItem.title || `Additional Letter ${idx + 1}`).toUpperCase()} PDF
-                        </a>
+                        <div key={idx} className="w-full">
+                          {renderDocumentLink(selectedEventDetail, 'custom_clearance', docItem.title || `Clearance Document ${idx + 1}`, docItem.url, docItem.title)}
+                        </div>
                       ))}
-                      {selectedEventDetail.otherDocumentUrl && (
-                        <a href={selectedEventDetail.otherDocumentUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> Other Relevant Document
-                        </a>
-                      )}
-                      {selectedEventDetail.attendanceWaiverUrl && (
-                        <a href={selectedEventDetail.attendanceWaiverUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm font-bold">
-                          <IconFile className="w-4 h-4 shrink-0" /> Waiver / Leave Requests
-                        </a>
-                      )}
+                      {selectedEventDetail.otherDocumentUrl && 
+                        renderDocumentLink(selectedEventDetail, 'other_document', 'Other Clearance PDF', selectedEventDetail.otherDocumentUrl)
+                      }
+                      {selectedEventDetail.attendanceWaiverUrl && 
+                        renderDocumentLink(selectedEventDetail, 'attendance_waiver', 'Attendance Waiver PDF', selectedEventDetail.attendanceWaiverUrl)
+                      }
                       {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.proposalDocumentUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
                         <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
                       )}
@@ -1465,10 +1716,8 @@ export default function AdminPanel() {
                       <h4 className="font-bold text-[#171e19] uppercase tracking-wider text-xs">
                         {selectedEventDetail.status === 'closed' ? 'Archived Post-Event Report' : 'Submitted Post-Event Report'}
                       </h4>
-                      <div className="space-y-2 font-bold">
-                        <a href={selectedEventDetail.reportPdfUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 text-[#171e19] hover:bg-[#ffe17c] border border-[#171e19] px-3 py-3 transition-colors uppercase text-sm">
-                          <IconFile className="w-4 h-4 shrink-0" /> Download Final Wrap-Up Report PDF
-                        </a>
+                      <div className="space-y-2">
+                        {renderDocumentLink(selectedEventDetail, 'report', 'Final Report PDF', selectedEventDetail.reportPdfUrl)}
                         {selectedEventDetail.reportSubmittedAt && (
                           <p className="text-xs text-[#171e19]/60 lowercase font-semibold">
                             Submitted: {formatEventDate(selectedEventDetail.reportSubmittedAt)}
@@ -2469,8 +2718,9 @@ export default function AdminPanel() {
                               )}
                             </div>
                             <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wide">
-                              Council: <span className="text-[#171e19] font-bold">{event.councilName}</span> &bull; Venue: {event.venue ? event.venue.toUpperCase() : 'TBD'}
+                              Council: <span className="text-[#171e19] font-bold">{event.councilName}</span> &bull; Venue: {event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}
                             </p>
+                            {renderTimelineRows(event, true)}
                           </div>
 
                           <div className="flex items-center gap-3 shrink-0">
@@ -2603,6 +2853,7 @@ export default function AdminPanel() {
                                   })()}
                                 </div>
                                 <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                                {renderTimelineRows(event, true)}
                               </div>
                               
                               <div className="flex gap-2 sm:self-start flex-wrap">
@@ -2642,7 +2893,7 @@ export default function AdminPanel() {
                               </div>
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue</span>
-                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
+                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}</span>
                               </div>
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Expected Crowd</span>
@@ -2731,6 +2982,7 @@ export default function AdminPanel() {
                                   })()}
                                 </div>
                                 <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                                {renderTimelineRows(event, true)}
                               </div>
                               
                               <div className="flex gap-2 sm:self-start flex-wrap">
@@ -2770,7 +3022,7 @@ export default function AdminPanel() {
                               </div>
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue</span>
-                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
+                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}</span>
                               </div>
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Expected Crowd</span>
@@ -2859,6 +3111,7 @@ export default function AdminPanel() {
                                   })()}
                                 </div>
                                 <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
+                                {renderTimelineRows(event, true)}
                               </div>
                               
                               <div className="flex gap-2 sm:self-start flex-wrap">
@@ -2898,7 +3151,7 @@ export default function AdminPanel() {
                               </div>
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Venue</span>
-                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'TBD'}</span>
+                                <span className="text-[11px]">{event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}</span>
                               </div>
                               <div>
                                 <span className="font-bold block uppercase text-[#171e19]/60 text-[9px] mb-1">Expected Crowd</span>
@@ -3080,7 +3333,7 @@ export default function AdminPanel() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="bg-slate-50 border-b border-[#171e19]/10 font-satoshi text-[10px] uppercase tracking-wider text-[#171e19]/60 font-bold">
-                          <th className="p-4 pl-6 min-w-[140px] whitespace-nowrap">Event ID</th>
+                          <th className="p-4 min-w-[140px] whitespace-nowrap text-center">Event ID</th>
                           <th className="p-4">Council</th>
                           <th className="p-4">Event Name</th>
                           <th className="p-4">Category</th>
@@ -3099,7 +3352,7 @@ export default function AdminPanel() {
                               onClick={() => setSelectedEventDetail(event)}
                               className="hover:bg-[#ffe17c]/5 cursor-pointer transition-brutal"
                             >
-                              <td className="p-4 pl-6 min-w-[140px] whitespace-nowrap">
+                              <td className="p-4 min-w-[140px] whitespace-nowrap text-center">
                                 {/* Signature ID Tag */}
                                 <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-[#171e19] rounded-md font-mono text-xs font-bold tracking-wider">
                                   {event.eventId}
@@ -3117,8 +3370,8 @@ export default function AdminPanel() {
                               <td className="p-4 whitespace-nowrap">
                                 {formatEventDate(event.startDate, 'MMM dd, yyyy')} - {formatEventDate(event.endDate, 'MMM dd, yyyy')}
                               </td>
-                              <td className="p-4">
-                                {event.venue}
+                              <td className="p-4 uppercase font-bold text-[#171e19]">
+                                {event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}
                               </td>
                               <td className="p-4 whitespace-nowrap">
                                 <span className={getBadgeClass(event)}>

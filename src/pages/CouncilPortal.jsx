@@ -1026,6 +1026,282 @@ export default function CouncilPortal() {
       return String(dateField);
     }
   };
+  
+  const getEventStagesTimeline = (event) => {
+    const logs = Array.isArray(event.auditLog) ? event.auditLog : [];
+    const history = Array.isArray(event.reviewHistory) ? event.reviewHistory : [];
+
+    // --- STAGE 1 ---
+    let stage1Sub = null;
+    const s1SubLog = [...logs].reverse().find(l => 
+      (l.stage === 1 || !l.stage) && 
+      (l.eventType === 'submitted' || l.eventType === 'resubmitted' || l.type === 'submitted' || l.type === 'resubmitted')
+    );
+    if (s1SubLog?.timestamp) {
+      stage1Sub = formatEventDate(s1SubLog.timestamp);
+    } else {
+      const histSub = [...history].reverse().find(h => h.status === 'submitted');
+      if (histSub?.timestamp) {
+        stage1Sub = formatEventDate(histSub.timestamp);
+      } else if (event.createdAt) {
+        stage1Sub = formatEventDate(event.createdAt);
+      } else if (event.startDate) {
+        const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+        const fallbackSub = new Date(start.getTime() - 14 * 24 * 60 * 60 * 1000);
+        stage1Sub = formatEventDate(fallbackSub);
+      }
+    }
+
+    let stage1App = null;
+    const s1AppLog = [...logs].reverse().find(l => 
+      (l.stage === 1 || !l.stage) && 
+      (l.eventType === 'approved' || l.eventType === 'proposal_approved' || l.type === 'approved' || l.type === 'proposal_approved')
+    );
+    if (s1AppLog?.timestamp) {
+      stage1App = formatEventDate(s1AppLog.timestamp);
+    } else {
+      const histApp = [...history].reverse().find(h => h.status === 'proposal_approved');
+      if (histApp?.timestamp) {
+        stage1App = formatEventDate(histApp.timestamp);
+      } else if (['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(event.status)) {
+        if (event.startDate) {
+          const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+          const fallbackApp = new Date(start.getTime() - 10 * 24 * 60 * 60 * 1000);
+          stage1App = formatEventDate(fallbackApp);
+        }
+      }
+    }
+
+    // --- STAGE 2 ---
+    let stage2Sub = null;
+    const s2SubLog = [...logs].reverse().find(l => 
+      l.stage === 2 && 
+      (l.eventType === 'document_uploaded' || l.eventType === 'resubmitted' || l.type === 'document_uploaded' || l.type === 'resubmitted')
+    );
+    if (s2SubLog?.timestamp) {
+      stage2Sub = formatEventDate(s2SubLog.timestamp);
+    } else {
+      const docHistory = Array.isArray(event.documentHistory) ? event.documentHistory : [];
+      const clearanceDocs = docHistory.filter(d => d.type !== 'proposal').sort((a, b) => {
+        const tA = a.uploadedAt?.seconds || 0;
+        const tB = b.uploadedAt?.seconds || 0;
+        return tA - tB;
+      });
+      if (clearanceDocs.length > 0 && clearanceDocs[0].uploadedAt) {
+        stage2Sub = formatEventDate(clearanceDocs[0].uploadedAt);
+      } else if (['permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(event.status)) {
+        if (event.startDate) {
+          const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+          const fallbackSub2 = new Date(start.getTime() - 7 * 24 * 60 * 60 * 1000);
+          stage2Sub = formatEventDate(fallbackSub2);
+        }
+      }
+    }
+
+    let stage2App = null;
+    const s2AppLog = [...logs].reverse().find(l => 
+      l.stage === 2 && 
+      (l.eventType === 'approved' || l.type === 'approved')
+    );
+    if (s2AppLog?.timestamp) {
+      stage2App = formatEventDate(s2AppLog.timestamp);
+    } else if (['approved', 'report_pending', 'closed'].includes(event.status)) {
+      if (event.startDate) {
+        const start = event.startDate.toDate ? event.startDate.toDate() : new Date(event.startDate);
+        const fallbackApp2 = new Date(start.getTime() - 5 * 24 * 60 * 60 * 1000);
+        stage2App = formatEventDate(fallbackApp2);
+      }
+    }
+
+    // --- STAGE 3 ---
+    let stage3Sub = null;
+    const s3SubLog = [...logs].reverse().find(l => 
+      l.stage === 3 && 
+      (l.eventType === 'report_submitted' || l.eventType === 'resubmitted' || l.type === 'report_submitted' || l.type === 'resubmitted')
+    );
+    if (s3SubLog?.timestamp) {
+      stage3Sub = formatEventDate(s3SubLog.timestamp);
+    } else if (['report_submitted', 'report_approved', 'closed'].includes(event.status)) {
+      if (event.endDate) {
+        const end = event.endDate.toDate ? event.endDate.toDate() : new Date(event.endDate);
+        const fallbackSub3 = new Date(end.getTime() + 2 * 24 * 60 * 60 * 1000);
+        stage3Sub = formatEventDate(fallbackSub3);
+      }
+    }
+
+    let stage3App = null;
+    const s3AppLog = [...logs].reverse().find(l => 
+      l.stage === 3 && 
+      (l.eventType === 'approved' || l.type === 'approved')
+    );
+    if (s3AppLog?.timestamp) {
+      stage3App = formatEventDate(s3AppLog.timestamp);
+    } else if (['closed'].includes(event.status)) {
+      if (event.endDate) {
+        const end = event.endDate.toDate ? event.endDate.toDate() : new Date(event.endDate);
+        const fallbackApp3 = new Date(end.getTime() + 4 * 24 * 60 * 60 * 1000);
+        stage3App = formatEventDate(fallbackApp3);
+      }
+    }
+
+    return {
+      stage1: stage1Sub || stage1App ? { submitted: stage1Sub, approved: stage1App } : null,
+      stage2: stage2Sub || stage2App ? { submitted: stage2Sub, approved: stage2App } : null,
+      stage3: stage3Sub || stage3App ? { submitted: stage3Sub, approved: stage3App } : null,
+    };
+  };
+
+  const renderTimelineRows = (event, isCompact = false) => {
+    const timeline = getEventStagesTimeline(event);
+    const textClass = isCompact 
+      ? "font-satoshi text-[10px] text-[#171e19] uppercase font-bold" 
+      : "font-satoshi text-xs text-[#171e19] uppercase font-extrabold";
+    const gapClass = isCompact ? "gap-x-4" : "gap-x-5";
+
+    return (
+      <div className="flex flex-col gap-1.5 mt-2.5">
+        {timeline.stage1 && (
+          <div className={`flex flex-wrap ${gapClass} gap-y-1 ${textClass}`}>
+            {timeline.stage1.submitted && (
+              <span className="flex items-center gap-1">
+                {!isCompact && "📅 "}STAGE 1 SUBMITTED: {timeline.stage1.submitted}
+              </span>
+            )}
+            {timeline.stage1.approved && (
+              <span className="flex items-center gap-1">
+                &bull; {!isCompact && "✅ "}STAGE 1 APPROVED: {timeline.stage1.approved}
+              </span>
+            )}
+          </div>
+        )}
+        {timeline.stage2 && (
+          <div className={`flex flex-wrap ${gapClass} gap-y-1 ${textClass}`}>
+            {timeline.stage2.submitted && (
+              <span className="flex items-center gap-1">
+                {!isCompact && "📅 "}STAGE 2 SUBMITTED: {timeline.stage2.submitted}
+              </span>
+            )}
+            {timeline.stage2.approved && (
+              <span className="flex items-center gap-1">
+                &bull; {!isCompact && "✅ "}STAGE 2 APPROVED: {timeline.stage2.approved}
+              </span>
+            )}
+          </div>
+        )}
+        {timeline.stage3 && (
+          <div className={`flex flex-wrap ${gapClass} gap-y-1 ${textClass}`}>
+            {timeline.stage3.submitted && (
+              <span className="flex items-center gap-1">
+                {!isCompact && "📅 "}STAGE 3 SUBMITTED: {timeline.stage3.submitted}
+              </span>
+            )}
+            {timeline.stage3.approved && (
+              <span className="flex items-center gap-1">
+                &bull; {!isCompact && "✅ "}STAGE 3 APPROVED: {timeline.stage3.approved}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderDocumentLink = (event, type, label, fallbackUrl, customTitle = null) => {
+    const history = Array.isArray(event.documentHistory) ? event.documentHistory : [];
+    
+    // Find versions matching this type (and customTitle if custom_clearance)
+    const versions = history.filter(docItem => {
+      if (docItem.type !== type) return false;
+      if (type === 'custom_clearance') return docItem.title === customTitle;
+      return true;
+    }).sort((a, b) => b.version - a.version);
+
+    if (versions.length === 0) {
+      if (!fallbackUrl) return null;
+      return (
+        <a href={fallbackUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal text-sm font-bold">
+          <IconFile className="w-4 h-4 shrink-0" /> {label} (v1)
+        </a>
+      );
+    }
+
+    const latestDoc = versions[0];
+
+    return (
+      <div className="flex flex-col gap-1.5 w-full bg-white border border-[#171e19]/10 p-2.5" onClick={e => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <a href={latestDoc.url} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[#171e19] hover:bg-[#ffe17c]/20 border border-[#171e19] px-3 py-1.5 transition-colors text-xs font-bold">
+            <IconFile className="w-4 h-4 shrink-0" /> {label} (v{latestDoc.version})
+          </a>
+          <span className="text-xs text-[#171e19]/80 font-medium">
+            Uploaded on <span className="font-bold text-[#171e19]">{formatEventDate(latestDoc.uploadedAt)}</span>
+          </span>
+        </div>
+        {versions.length > 1 && (
+          <div className="pl-3 mt-1.5 space-y-1 border-l-2 border-[#171e19]/20">
+            <span className="text-[10px] font-bold text-[#171e19]/60 uppercase tracking-wider block">Previous Versions:</span>
+            {versions.slice(1).map((prev, pIdx) => (
+              <div key={pIdx} className="flex items-center gap-2 text-xs font-semibold">
+                <a href={prev.url} target="_blank" rel="noreferrer" className="underline hover:text-indigo-600">
+                  v{prev.version}
+                </a>
+                <span className="text-xs text-[#171e19]/70 font-medium">
+                  (<span className="font-bold text-[#171e19]">{formatEventDate(prev.uploadedAt)}</span> by <span className="font-semibold text-[#171e19]">{prev.uploadedBy}</span>)
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderAuditLog = (event) => {
+    const logs = Array.isArray(event.auditLog) ? event.auditLog : [];
+    if (logs.length === 0) {
+      return renderReviewHistory(event);
+    }
+
+    return (
+      <div className="space-y-2 border-t-2 border-dashed border-[#171e19] pt-3 mt-3">
+        <span className="font-satoshi text-[10px] font-bold uppercase tracking-widest text-[#171e19]/70 block">
+          Event Activity & Audit History ({logs.length}):
+        </span>
+        <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+          {logs.slice().reverse().map((log, idx) => {
+            const dateStr = log.timestamp?.toDate
+              ? formatEventDate(log.timestamp)
+              : formatEventDate(log.timestamp || new Date());
+            return (
+              <div key={idx} className="p-3 bg-white border-2 border-[#171e19] text-xs font-satoshi space-y-1 shadow-[2px_2px_0px_0px_#171e19]">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <span className="font-anton text-sm text-[#171e19] tracking-tight uppercase">
+                      {log.performedBy?.name}
+                    </span>
+                    <span className="font-satoshi text-[8px] font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5">
+                      {log.performedBy?.role || 'SYSTEM'}
+                    </span>
+                  </div>
+                  <span className="text-[8px] font-bold uppercase px-2 py-0.5 bg-[#ffe17c] text-[#171e19] border border-[#171e19]">
+                    {log.eventType?.replace(/_/g, ' ')}
+                  </span>
+                </div>
+                {log.details && (
+                  <p className="text-[#171e19]/80 font-medium text-[11px] leading-relaxed">
+                    {log.details}
+                  </p>
+                )}
+                <p className="text-[9px] text-[#171e19]/50 font-bold uppercase tracking-wide pt-0.5">
+                  {dateStr}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   // Dynamic report pending and color calculations
   const getStatusDetails = (event) => {
@@ -2190,7 +2466,7 @@ export default function CouncilPortal() {
                         }`}
                     >
                       {/* ===== REVISION / REJECTION ALERT BANNER ===== */}
-                      {(event.status === 'revision_needed' || event.status === 'permissions_revision_needed' || event.status === 'rejected') && (
+                      {(event.status === 'revision_needed' || event.status === 'permissions_revision_needed' || event.status === 'report_revision_needed' || event.status === 'rejected') && (
                         <div className={`flex flex-col gap-3 px-5 py-3 border-b-2 ${event.status === 'rejected'
                             ? 'bg-red-800 border-red-900'
                             : 'bg-red-500 border-red-600'
@@ -2202,7 +2478,9 @@ export default function CouncilPortal() {
                                   ? 'PROPOSAL REJECTED'
                                   : event.status === 'permissions_revision_needed'
                                     ? 'ACTION REQUIRED — PERMISSION DOCUMENTS NEED CHANGES'
-                                    : 'ACTION REQUIRED — PROPOSAL REVISION REQUESTED'}
+                                    : event.status === 'report_revision_needed'
+                                      ? 'ACTION REQUIRED — REPORT REVISION REQUESTED'
+                                      : 'ACTION REQUIRED — PROPOSAL REVISION REQUESTED'}
                               </span>
                               {event.reviewNotes && (
                                 <p className="font-satoshi text-white/90 text-xs font-semibold mt-1 leading-relaxed">
@@ -2218,8 +2496,36 @@ export default function CouncilPortal() {
                                 Edit &amp; Resubmit
                               </button>
                             )}
+                            {(event.status === 'permissions_revision_needed') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPermissionsUploadEvent(event);
+                                  setPermissionsFiles({ doswLetter: null });
+                                  setCustomPermissionDocs([]);
+                                  setPermissionsErrors({});
+                                }}
+                                className="shrink-0 px-3 py-1.5 bg-white text-red-600 border-2 border-white hover:bg-red-50 font-anton text-[10px] uppercase tracking-wider transition-brutal rounded-none"
+                              >
+                                Resubmit Documents
+                              </button>
+                            )}
+                            {(event.status === 'report_revision_needed') && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setReportingEvent(event);
+                                  setReportPdf(null);
+                                  setReportImages([]);
+                                  setActiveTab('report');
+                                }}
+                                className="shrink-0 px-3 py-1.5 bg-white text-red-600 border-2 border-white hover:bg-red-50 font-anton text-[10px] uppercase tracking-wider transition-brutal rounded-none"
+                              >
+                                Resubmit Report
+                              </button>
+                            )}
                           </div>
-                          {renderReviewHistory(event)}
+                          {renderAuditLog(event)}
                         </div>
                       )}
                       {/* Stage 3 — Report Due Banner (always visible when approved) */}
@@ -2288,10 +2594,11 @@ export default function CouncilPortal() {
                             </span>
                           </div>
 
-                          <div className="flex flex-wrap gap-x-5 gap-y-1 font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider">
+                           <div className="flex flex-wrap gap-x-5 gap-y-1 font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider">
                             <span className="flex items-center gap-1.5"><IconCalendar className="w-3 h-3" /> START: {formatEventDate(event.startDate)}</span>
-                            {event.venue && <span className="flex items-center gap-1.5"><IconMapPin className="w-3 h-3" /> VENUE: {String(event.venue).toUpperCase()}</span>}
+                            <span className="flex items-center gap-1.5"><IconMapPin className="w-3 h-3" /> VENUE: {event.venue ? String(event.venue).toUpperCase() : 'CRCE CAMPUS'}</span>
                           </div>
+                          {renderTimelineRows(event)}
                         </div>
 
                         <div className="flex items-center gap-3 shrink-0">
@@ -2464,37 +2771,27 @@ export default function CouncilPortal() {
                           {/* Documents grid */}
                           <div className="space-y-3">
                             <span className="font-bold text-[#b7c6c2] uppercase tracking-wider block text-xs">Uploaded Documents</span>
-                            <div className="flex flex-wrap gap-3 font-bold text-sm uppercase">
-                              {(event.eventDescriptionUrl || event.proposalDocumentUrl) && (
-                                <a href={event.eventDescriptionUrl || event.proposalDocumentUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4 shrink-0" /> PROPOSAL DOCUMENT
-                                </a>
-                              )}
-                              {event.eventOutcomeUrl && (
-                                <a href={event.eventOutcomeUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4 shrink-0" /> EVENT OUTCOME
-                                </a>
-                              )}
-                              {event.doswPermissionLetterUrl && (
-                                <a href={event.doswPermissionLetterUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> DOSW & PRINCIPAL CLEARANCE PDF
-                                </a>
-                              )}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {(event.eventDescriptionUrl || event.proposalDocumentUrl) && 
+                                renderDocumentLink(event, 'proposal', 'Proposal Document', event.eventDescriptionUrl || event.proposalDocumentUrl)
+                              }
+                              {event.eventOutcomeUrl && 
+                                renderDocumentLink(event, 'other_document', 'Event Outcome', event.eventOutcomeUrl)
+                              }
+                              {event.doswPermissionLetterUrl && 
+                                renderDocumentLink(event, 'dosw_clearance', 'DoSW Clearance PDF', event.doswPermissionLetterUrl)
+                              }
                               {event.customPermissionLetters && event.customPermissionLetters.map((docItem, idx) => (
-                                <a key={idx} href={docItem.url} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> {String(docItem.title || `ADDITIONAL LETTER ${idx + 1}`).toUpperCase()} PDF
-                                </a>
+                                <div key={idx} className="w-full">
+                                  {renderDocumentLink(event, 'custom_clearance', docItem.title || `Clearance Document ${idx + 1}`, docItem.url, docItem.title)}
+                                </div>
                               ))}
-                              {event.otherDocumentUrl && (
-                                <a href={event.otherDocumentUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> OTHER RELEVANT DOCUMENT PDF
-                                </a>
-                              )}
-                              {event.attendanceWaiverUrl && (
-                                <a href={event.attendanceWaiverUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-2 text-[#171e19] hover:text-[#ffe17c] hover:bg-[#171e19] border border-[#171e19] px-3 py-2 transition-brutal">
-                                  <IconFile className="w-4 h-4" /> WAIVER ATTENDANCE PDF
-                                </a>
-                              )}
+                              {event.otherDocumentUrl && 
+                                renderDocumentLink(event, 'other_document', 'Other Clearance PDF', event.otherDocumentUrl)
+                              }
+                              {event.attendanceWaiverUrl && 
+                                renderDocumentLink(event, 'attendance_waiver', 'Attendance Waiver PDF', event.attendanceWaiverUrl)
+                              }
                             </div>
                           </div>
 
@@ -2556,12 +2853,10 @@ export default function CouncilPortal() {
                               <span className="font-bold text-[#171e19] uppercase text-[9px] tracking-wide block">
                                 {event.status === 'closed' ? 'Archived Event Wrap-up Summary' : 'Submitted Event Wrap-up Summary'}
                               </span>
-                              <div className="flex flex-wrap gap-4 items-center uppercase font-bold text-xs">
-                                <a href={event.reportPdfUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="flex items-center gap-1.5 text-[#171e19] hover:underline">
-                                  <IconDownload className="w-3.5 h-3.5" /> Download final PDF Report
-                                </a>
+                              <div className="space-y-2">
+                                {renderDocumentLink(event, 'report', 'Final Report PDF', event.reportPdfUrl)}
                                 {event.reportImageUrls && event.reportImageUrls.length > 0 && (
-                                  <span className="flex items-center gap-1 text-[10px] text-[#b7c6c2]"><IconPhoto className="w-3 h-3" /> Images Uploaded: {event.reportImageUrls.length}</span>
+                                  <span className="flex items-center gap-1 text-[10px] text-[#b7c6c2] font-bold"><IconPhoto className="w-3 h-3" /> Images Uploaded: {event.reportImageUrls.length}</span>
                                 )}
                               </div>
                             </div>
@@ -2994,7 +3289,7 @@ export default function CouncilPortal() {
                   disabled={submitting}
                   className="px-6 py-2.5 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] rounded-none font-anton text-lg uppercase tracking-wider transition-brutal border-2 border-[#171e19]"
                 >
-                  Submit Report
+                  {reportingEvent?.status === 'report_revision_needed' ? 'RESUBMIT REPORT' : 'Submit Report'}
                 </button>
               </div>
             </form>
@@ -3110,7 +3405,7 @@ export default function CouncilPortal() {
                     disabled={permissionsSubmitting}
                     className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal"
                   >
-                    Submit Letters
+                    {permissionsUploadEvent?.status === 'permissions_revision_needed' ? 'RESUBMIT CLEARANCE DOCUMENTS' : 'Submit Letters'}
                   </button>
                 </div>
               </form>
@@ -3153,7 +3448,7 @@ export default function CouncilPortal() {
                   <div className="grid grid-cols-2 gap-4 border-t border-[#171e19]/10 pt-3">
                     <div>
                       <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Venue</span>
-                      <span className="font-bold">{selectedCalEvent.venue || 'TBD'}</span>
+                       <span className="font-bold">{selectedCalEvent.venue || 'CRCE CAMPUS'}</span>
                     </div>
                     <div>
                       <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Status</span>

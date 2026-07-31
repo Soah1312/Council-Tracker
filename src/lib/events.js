@@ -119,12 +119,103 @@ export function isEventActiveOnDate(event, targetDate) {
 }
 
 /**
- * Creates a new event proposal request in Firestore.
- * Sets status to 'submitted' and creates the document.
+ * Appends an entry to the event's audit log.
+ */
+export async function addAuditLogEntry(eventId, eventType, performedBy, details = '', stage = 1) {
+  if (!eventId) return;
+  const eventRef = doc(db, 'events', eventId);
+  const snap = await getDoc(eventRef);
+  if (!snap.exists()) return;
+  const currentData = snap.data();
+  const currentLog = Array.isArray(currentData.auditLog) ? currentData.auditLog : [];
+
+  const entry = {
+    eventType, // 'submitted', 'resubmitted', 'document_uploaded', 'approved', 'revision_requested', 'rejected', 'reverted', 'closed'
+    stage,
+    performedBy: performedBy || { name: 'System', role: 'system' },
+    timestamp: Timestamp.fromDate(new Date()),
+    details: details || null
+  };
+
+  await updateDoc(eventRef, {
+    auditLog: [...currentLog, entry]
+  });
+}
+
+/**
+ * Versioning helper. Appends an uploaded document entry to history.
+ * Automatically computes version number and updates main URL field to maintain backwards compatibility.
+ */
+export async function addDocumentToHistory(eventId, url, type, uploadedBy, title = null) {
+  if (!eventId || !url) return;
+  const eventRef = doc(db, 'events', eventId);
+  const snap = await getDoc(eventRef);
+  if (!snap.exists()) return;
+  const currentData = snap.data();
+  const currentHistory = Array.isArray(currentData.documentHistory) ? currentData.documentHistory : [];
+
+  // Filter history to find items of same type and title (if custom)
+  const existingDocs = currentHistory.filter(docItem => {
+    if (docItem.type !== type) return false;
+    if (type === 'custom_clearance') {
+      return docItem.title === title;
+    }
+    return true;
+  });
+
+  const nextVersion = existingDocs.length + 1;
+
+  const newDocEntry = {
+    url,
+    type,
+    version: nextVersion,
+    uploadedAt: Timestamp.fromDate(new Date()),
+    uploadedBy: uploadedBy || 'Council',
+    title: title || null
+  };
+
+  const updatedHistory = [...currentHistory, newDocEntry];
+  const updates = {
+    documentHistory: updatedHistory
+  };
+
+  // Update corresponding legacy field for backwards compatibility
+  if (type === 'proposal') {
+    updates.eventDescriptionUrl = url;
+  } else if (type === 'dosw_clearance') {
+    updates.doswPermissionLetterUrl = url;
+  } else if (type === 'report') {
+    updates.reportPdfUrl = url;
+  } else if (type === 'attendance_waiver') {
+    updates.attendanceWaiverUrl = url;
+  } else if (type === 'other_document') {
+    updates.otherDocumentUrl = url;
+  } else if (type === 'custom_clearance') {
+    const customList = Array.isArray(currentData.customPermissionLetters) ? [...currentData.customPermissionLetters] : [];
+    const existingIndex = customList.findIndex(item => item.title === title);
+    if (existingIndex > -1) {
+      customList[existingIndex] = { title, url };
+    } else {
+      customList.push({ title, url });
+    }
+    updates.customPermissionLetters = customList;
+  }
+
+  await updateDoc(eventRef, updates);
+  return nextVersion;
+}
+
+/**
+ * Creates or modifies an event proposal request in Firestore.
+ * Sets status to 'submitted' / 'resubmitted' and creates/updates the document.
  */
 export async function createEventRequest(data) {
   const eventId = data.eventId || await generateEventId();
-  
+  const eventRef = doc(db, 'events', eventId);
+  const snap = await getDoc(eventRef);
+  const isExisting = snap.exists();
+  const existingData = isExisting ? snap.data() : {};
+
   let processedSessions = null;
   if (data.isMultiSession && Array.isArray(data.eventSessions) && data.eventSessions.length > 0) {
     processedSessions = data.eventSessions.map((s, idx) => ({
@@ -155,6 +246,10 @@ export async function createEventRequest(data) {
     (data.councilEmail || '').toLowerCase().includes('test')
   );
 
+  // If status is revision_needed, we are resubmitting
+  const wasRevisionRequested = existingData.status === 'revision_needed';
+  const newStatus = wasRevisionRequested ? 'submitted' : (existingData.status || 'submitted');
+
   const finalData = {
     ...data,
     eventId,
@@ -174,16 +269,35 @@ export async function createEventRequest(data) {
     externalParticipantsExpected: data.externalParticipantsExpected ? Number(data.externalParticipantsExpected) : null,
     venuePermissionApplicable: Boolean(data.venuePermissionApplicable),
     safetyArrangementNeeded: Boolean(data.safetyArrangementNeeded),
-    status: data.status || 'submitted',
-    stage1Approvals: data.stage1Approvals || {},
-    stage2Approvals: data.stage2Approvals || {},
-    stage3Approvals: data.stage3Approvals || {},
-    reviewHistory: data.reviewHistory || [],
-    createdAt: serverTimestamp()
+    status: newStatus,
+    stage1Approvals: wasRevisionRequested ? {} : (existingData.stage1Approvals || {}), // Reset approvals on revision resubmission
+    stage2Approvals: existingData.stage2Approvals || {},
+    stage3Approvals: existingData.stage3Approvals || {},
+    reviewHistory: existingData.reviewHistory || [],
+    documentHistory: existingData.documentHistory || [],
+    auditLog: existingData.auditLog || [],
+    createdAt: existingData.createdAt || serverTimestamp()
   };
 
-  // Use eventId as the document ID for clean URL structures and simple retrievals
-  await setDoc(doc(db, 'events', eventId), finalData);
+  await setDoc(eventRef, finalData);
+
+  // Document versioning and audit log tracking
+  const performer = { name: data.councilName, role: 'council' };
+  const detailsStr = wasRevisionRequested ? 'Stage 1 Proposal resubmitted after revision request.' : 'Initial Stage 1 Proposal submitted.';
+  const eventType = wasRevisionRequested ? 'resubmitted' : 'submitted';
+
+  // Log the action
+  await addAuditLogEntry(eventId, eventType, performer, detailsStr, 1);
+
+  // If new proposal document URL is uploaded
+  if (data.eventDescriptionUrl && data.eventDescriptionUrl !== existingData.eventDescriptionUrl) {
+    await addDocumentToHistory(eventId, data.eventDescriptionUrl, 'proposal', `${data.councilName} (Council)`);
+  }
+  // If attendance waiver URL is uploaded
+  if (data.attendanceWaiverUrl && data.attendanceWaiverUrl !== existingData.attendanceWaiverUrl) {
+    await addDocumentToHistory(eventId, data.attendanceWaiverUrl, 'attendance_waiver', `${data.councilName} (Council)`);
+  }
+
   return { id: eventId, ...finalData };
 }
 
@@ -355,9 +469,9 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
   };
 
   let dualApprovalResult = null;
+  const performer = { name: adminName, role };
 
   if (actionStatus === 'proposal_approved') {
-    // Stage 1 Approval — record individual approval
     const updatedStage1 = {
       ...currentStage1Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
@@ -368,17 +482,16 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     }
     updates.stage1Approvals = updatedStage1;
 
-    // Check if BOTH approvals are now present
     const bothApproved = Boolean(updatedStage1.dosw?.approved && updatedStage1.stuco?.approved);
     if (bothApproved) {
       updates.status = 'proposal_approved';
       dualApprovalResult = 'fully_approved';
+      await addAuditLogEntry(eventId, 'approved', performer, 'Stage 1 Proposal fully approved.', 1);
     } else {
-      // Partial approval — status stays at 'submitted' so it remains visible to the other admin
       dualApprovalResult = 'partial';
+      await addAuditLogEntry(eventId, 'approved', performer, `Stage 1 Proposal partially approved by ${role.toUpperCase()}.`, 1);
     }
   } else if (actionStatus === 'approved') {
-    // Stage 2 Approval (Clearances) — record individual approval
     const updatedStage2 = {
       ...currentStage2Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
@@ -389,19 +502,18 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     }
     updates.stage2Approvals = updatedStage2;
 
-    // Check if BOTH approvals are now present
     const bothApproved = Boolean(updatedStage2.dosw?.approved && updatedStage2.stuco?.approved);
     if (bothApproved) {
       updates.status = 'approved';
       const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
       updates.reportDueDate = Timestamp.fromDate(dueDateJS);
       dualApprovalResult = 'fully_approved';
+      await addAuditLogEntry(eventId, 'approved', performer, 'Stage 2 Clearance Documents fully approved.', 2);
     } else {
-      // Partial approval — status stays at 'permissions_submitted' so other admin can still review
       dualApprovalResult = 'partial';
+      await addAuditLogEntry(eventId, 'approved', performer, `Stage 2 Clearance Documents partially approved by ${role.toUpperCase()}.`, 2);
     }
   } else if (actionStatus === 'closed') {
-    // Stage 3 Approval (Report) — record individual approval
     const updatedStage3 = {
       ...currentStage3Approvals,
       [role]: { approved: true, timestamp: nowTs, adminName, notes: reviewNotes || null }
@@ -412,26 +524,30 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     }
     updates.stage3Approvals = updatedStage3;
 
-    // Check if BOTH approvals are now present
     const bothApproved = Boolean(updatedStage3.dosw?.approved && updatedStage3.stuco?.approved);
     if (bothApproved) {
       updates.status = 'report_approved';
       dualApprovalResult = 'fully_approved';
+      await addAuditLogEntry(eventId, 'approved', performer, 'Stage 3 Wrap-up Report approved.', 3);
     } else {
-      // Partial approval — status stays at 'report_submitted'
       dualApprovalResult = 'partial';
+      await addAuditLogEntry(eventId, 'approved', performer, `Stage 3 Wrap-up Report partially approved by ${role.toUpperCase()}.`, 3);
     }
   } else if (actionStatus === 'revision_needed') {
     updates.status = 'revision_needed';
     updates.stage1Approvals = {};
+    await addAuditLogEntry(eventId, 'revision_requested', performer, `Stage 1 Proposal revision requested: ${reviewNotes}`, 1);
   } else if (actionStatus === 'permissions_revision_needed') {
     updates.status = 'permissions_revision_needed';
     updates.stage2Approvals = {};
+    await addAuditLogEntry(eventId, 'revision_requested', performer, `Stage 2 Clearance Documents revision requested: ${reviewNotes}`, 2);
   } else if (actionStatus === 'report_revision_needed') {
     updates.status = 'report_revision_needed';
     updates.stage3Approvals = {};
+    await addAuditLogEntry(eventId, 'revision_requested', performer, `Stage 3 Report revision requested: ${reviewNotes}`, 3);
   } else if (actionStatus === 'rejected') {
     updates.status = 'rejected';
+    await addAuditLogEntry(eventId, 'rejected', performer, `Proposal rejected: ${reviewNotes}`, getEventStageNum(currentData.status));
   } else if (actionStatus === 'submitted') {
     updates.status = 'submitted';
     const updatedStage1 = { ...currentStage1Approvals };
@@ -442,6 +558,7 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       delete updatedStage1.stuco;
     }
     updates.stage1Approvals = updatedStage1;
+    await addAuditLogEntry(eventId, 'reverted', performer, `Stage 1 Approval reverted by ${role.toUpperCase()}.`, 1);
   } else if (actionStatus === 'permissions_submitted') {
     updates.status = 'permissions_submitted';
     const updatedStage2 = { ...currentStage2Approvals };
@@ -452,6 +569,7 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       delete updatedStage2.stuco;
     }
     updates.stage2Approvals = updatedStage2;
+    await addAuditLogEntry(eventId, 'reverted', performer, `Stage 2 Approval reverted by ${role.toUpperCase()}.`, 2);
   } else if (actionStatus === 'report_submitted') {
     updates.status = 'report_submitted';
     const updatedStage3 = { ...currentStage3Approvals };
@@ -462,6 +580,7 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
       delete updatedStage3.stuco;
     }
     updates.stage3Approvals = updatedStage3;
+    await addAuditLogEntry(eventId, 'reverted', performer, `Stage 3 Approval reverted by ${role.toUpperCase()}.`, 3);
   } else {
     updates.status = actionStatus;
   }
@@ -470,12 +589,28 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
   return { ...currentData, ...updates, _dualApprovalResult: dualApprovalResult };
 }
 
+// Helper to determine stage number based on status
+function getEventStageNum(status) {
+  if (['permissions_submitted', 'permissions_revision_needed', 'approved'].includes(status)) return 2;
+  if (['report_pending', 'report_submitted', 'report_revision_needed', 'report_approved', 'closed'].includes(status)) return 3;
+  return 1;
+}
+
 /**
  * Submits the event report. Sets the status to 'report_submitted'.
  */
 export async function submitReport(eventId, reportPdfUrl = null, reportImageUrls = []) {
   const eventRef = doc(db, 'events', eventId);
-  
+  const snap = await getDoc(eventRef);
+  if (!snap.exists()) throw new Error('Event not found.');
+  const eventData = snap.data();
+
+  const wasRevisionRequested = eventData.status === 'report_revision_needed';
+  const performer = { name: eventData.councilName, role: 'council' };
+  const detailsStr = wasRevisionRequested 
+    ? 'Stage 3 Report resubmitted after revision request.' 
+    : 'Stage 3 Report submitted.';
+
   await updateDoc(eventRef, {
     reportPdfUrl,
     reportImageUrls: reportImageUrls || [],
@@ -483,6 +618,11 @@ export async function submitReport(eventId, reportPdfUrl = null, reportImageUrls
     status: 'report_submitted',
     stage3Approvals: {}
   });
+
+  await addAuditLogEntry(eventId, wasRevisionRequested ? 'resubmitted' : 'report_submitted', performer, detailsStr, 3);
+  if (reportPdfUrl) {
+    await addDocumentToHistory(eventId, reportPdfUrl, 'report', `${eventData.councilName} (Council)`);
+  }
 }
 
 /**
@@ -490,14 +630,41 @@ export async function submitReport(eventId, reportPdfUrl = null, reportImageUrls
  */
 export async function submitPermissionLetters(eventId, urls) {
   const eventRef = doc(db, 'events', eventId);
-  
+  const snap = await getDoc(eventRef);
+  if (!snap.exists()) throw new Error('Event not found.');
+  const eventData = snap.data();
+
+  const wasRevisionRequested = eventData.status === 'permissions_revision_needed';
+  const performer = { name: eventData.councilName, role: 'council' };
+  const detailsStr = wasRevisionRequested 
+    ? 'Stage 2 clearance documents resubmitted after revision request.' 
+    : 'Stage 2 clearance documents uploaded.';
+
   await updateDoc(eventRef, {
     doswPermissionLetterUrl: urls.doswPermissionLetterUrl || null,
     otherDocumentUrl: urls.otherDocumentUrl || null,
     customPermissionLetters: urls.customPermissionLetters || [],
     permissionsSubmittedAt: Timestamp.fromDate(new Date()),
-    status: 'permissions_submitted'
+    status: 'permissions_submitted',
+    stage2Approvals: {}
   });
+
+  await addAuditLogEntry(eventId, wasRevisionRequested ? 'resubmitted' : 'document_uploaded', performer, detailsStr, 2);
+
+  const councilLabel = `${eventData.councilName} (Council)`;
+  if (urls.doswPermissionLetterUrl) {
+    await addDocumentToHistory(eventId, urls.doswPermissionLetterUrl, 'dosw_clearance', councilLabel);
+  }
+  if (urls.otherDocumentUrl) {
+    await addDocumentToHistory(eventId, urls.otherDocumentUrl, 'other_document', councilLabel);
+  }
+  if (Array.isArray(urls.customPermissionLetters)) {
+    for (const docItem of urls.customPermissionLetters) {
+      if (docItem.url) {
+        await addDocumentToHistory(eventId, docItem.url, 'custom_clearance', councilLabel, docItem.title);
+      }
+    }
+  }
 }
 
 /**
@@ -595,7 +762,21 @@ export async function deleteBlockedDate(id) {
  */
 export async function updateEventDetails(eventId, details) {
   const eventRef = doc(db, 'events', eventId);
+  const snap = await getDoc(eventRef);
+  let oldStatus = '';
+  let councilName = 'Council';
+  if (snap.exists()) {
+    const data = snap.data();
+    oldStatus = data.status;
+    councilName = data.councilName || 'Council';
+  }
+
   await updateDoc(eventRef, details);
+
+  if (details.status === 'closed' && oldStatus !== 'closed') {
+    const performer = { name: councilName, role: 'council' };
+    await addAuditLogEntry(eventId, 'closed', performer, 'Event closed and archived.', 3);
+  }
 }
 
 /**
