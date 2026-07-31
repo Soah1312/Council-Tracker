@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { notifyProposalSubmitted, notifyProposalResubmitted, notifyPermissionsSubmitted, notifyReportSubmitted } from '../lib/emailService';
 import {
   IconFile, IconCalendar, IconMapPin, IconWarning,
-  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan, IconEye, IconEyeOff, IconKey, IconUsers
+  IconPhoto, IconMoney, IconTicket, IconUser, IconGlobe, IconTool, IconDownload, IconBan, IconEye, IconEyeOff, IconKey, IconUsers, IconPhone
 } from '../lib/icons';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
@@ -175,7 +175,7 @@ function SortableMemberCard({ member, openEditMemberModal, handleDeleteMember, I
             {member.designation}
           </span>
           <div className="flex items-center gap-1.5 font-satoshi text-xs font-semibold text-[#171e19]/80 pt-1">
-            <IconUser className="w-3.5 h-3.5 text-[#171e19]/60" />
+            <IconPhone className="w-3.5 h-3.5 text-[#171e19]/60 shrink-0" />
             <span>{member.contactNumber}</span>
           </div>
         </div>
@@ -3466,14 +3466,20 @@ export default function CouncilPortal() {
                       <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Student Coordinator</span>
                       <span className="font-bold block">{selectedCalEvent.studentContactName || 'N/A'}</span>
                       {selectedCalEvent.studentContactPhone && (
-                        <span className="text-[10px] block mt-0.5">📞 {selectedCalEvent.studentContactPhone}</span>
+                        <span className="text-[10px] flex items-center gap-1 mt-0.5">
+                          <IconPhone className="w-3 h-3 text-[#171e19] shrink-0" />
+                          <span>{selectedCalEvent.studentContactPhone}</span>
+                        </span>
                       )}
                     </div>
                     <div className="col-span-2">
                       <span className="font-bold text-[#171e19]/60 uppercase block text-[9px] mb-0.5">Faculty Coordinator</span>
                       <span className="font-bold block">{selectedCalEvent.facultyCoordinatorName || 'N/A'}</span>
                       {selectedCalEvent.facultyCoordinatorPhone && (
-                        <span className="text-[10px] block mt-0.5">📞 {selectedCalEvent.facultyCoordinatorPhone}</span>
+                        <span className="text-[10px] flex items-center gap-1 mt-0.5">
+                          <IconPhone className="w-3 h-3 text-[#171e19] shrink-0" />
+                          <span>{selectedCalEvent.facultyCoordinatorPhone}</span>
+                        </span>
                       )}
                     </div>
                   </div>

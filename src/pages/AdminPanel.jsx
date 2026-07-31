@@ -5,7 +5,7 @@ import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
 import { subscribeToAllCouncilMembers } from '../lib/members';
-import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers } from '../lib/icons';
+import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers, IconPhone } from '../lib/icons';
 import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 
 export default function AdminPanel() {
@@ -3782,8 +3782,9 @@ export default function AdminPanel() {
 
                                           <div className="pt-2.5 border-t border-[#171e19]/10 flex items-center justify-between font-satoshi text-xs font-semibold">
                                             <span className="text-[#171e19]/60 text-[10px] uppercase font-bold">Contact:</span>
-                                            <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline">
-                                              📞 {member.contactNumber}
+                                            <a href={`tel:${member.contactNumber}`} className="text-[#171e19] font-bold hover:underline flex items-center gap-1.5">
+                                              <IconPhone className="w-3.5 h-3.5 shrink-0" />
+                                              <span>{member.contactNumber}</span>
                                             </a>
                                           </div>
                                         </div>

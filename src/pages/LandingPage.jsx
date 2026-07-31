@@ -5,7 +5,7 @@ import {
   CalendarIcon, MapPin, Users, Trophy, Ticket, X,
   Activity, CheckCircle, Clock, AlertCircle, Sparkles,
   CalendarDays, CircleCheckBig, ChevronLeft, ChevronRight,
-  ArrowRight, Zap, Shield, Globe, Star
+  ArrowRight, Zap, Shield, Globe, Star, Phone
 } from 'lucide-react';
 import { getAllEvents } from '../lib/events';
 import { subscribeToAllCouncilMembers } from '../lib/members';
@@ -741,7 +741,12 @@ export default function LandingPage() {
                           <div>
                             <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
                             <p className="text-sm text-white/80">{studentContactName}</p>
-                            {studentContactPhone && <p className="text-xs text-white/35 mt-0.5">{studentContactPhone}</p>}
+                            {studentContactPhone && (
+                              <p className="text-xs text-white/35 mt-0.5 flex items-center gap-1">
+                                <Phone className="w-3 h-3 text-white/40 shrink-0" />
+                                <span>{studentContactPhone}</span>
+                              </p>
+                            )}
                           </div>
                           <div>
                             <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
