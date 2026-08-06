@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile, deleteArchivedEvent } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
 import { subscribeToAllCouncilMembers } from '../lib/members';
-import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers, IconPhone } from '../lib/icons';
+import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers, IconPhone, IconTrash } from '../lib/icons';
 import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 
 export default function AdminPanel() {
@@ -979,6 +979,24 @@ export default function AdminPanel() {
     }
   };
 
+  const handleDeleteArchivedEvent = async (event, e) => {
+    if (e) e.stopPropagation();
+    if (!event || !['closed', 'rejected'].includes(event.status)) return;
+    const statusLabel = event.status === 'closed' ? 'closed' : 'rejected';
+    if (!window.confirm(`Are you sure you want to permanently delete ${statusLabel} event "${event.eventName}" (${event.eventId})? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await deleteArchivedEvent(event.eventId);
+      showNotification(`Event "${event.eventName}" deleted successfully.`);
+      if (selectedEventDetail?.eventId === event.eventId) {
+        setSelectedEventDetail(null);
+      }
+    } catch (err) {
+      showNotification(`Failed to delete event: ${err.message}`, 'error');
+    }
+  };
+
   const getEventStageChipClass = (status) => {
     const isApproved = ['approved', 'report_pending', 'report_submitted', 'report_revision_needed', 'report_approved', 'closed'].includes(status);
     const isStage2 = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status);
@@ -1865,6 +1883,15 @@ export default function AdminPanel() {
                       Mark Stage 3 (Report Pending)
                     </button>
                   )}
+                  {selectedEventDetail.status === 'closed' && (
+                    <button
+                      onClick={(e) => handleDeleteArchivedEvent(selectedEventDetail, e)}
+                      className="flex-1 py-3 bg-red-600 border-2 border-[#171e19] text-white font-anton text-xs uppercase tracking-widest hover:bg-red-700 hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[160px] inline-flex items-center justify-center gap-1.5"
+                    >
+                      <IconTrash className="w-4 h-4 text-white" />
+                      <span>Delete Closed Event</span>
+                    </button>
+                  )}
                 </>)}
 
                 {/* STAGE 3: Report Approved (before closing) */}
@@ -1913,14 +1940,21 @@ export default function AdminPanel() {
                 })()}
 
                 {/* REJECTED PROPOSAL ACTION */}
-                {selectedEventDetail.status === 'rejected' && (
+                {selectedEventDetail.status === 'rejected' && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
                     className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
                   >
                     Re-Open Proposal for Evaluation
                   </button>
-                )}
+                  <button
+                    onClick={(e) => handleDeleteArchivedEvent(selectedEventDetail, e)}
+                    className="flex-1 py-3 bg-red-600 border-2 border-[#171e19] text-white font-anton text-xs uppercase tracking-widest hover:bg-red-700 hover:shadow-[3px_3px_0px_0px_#171e19] transition-all inline-flex items-center justify-center gap-1.5"
+                  >
+                    <IconTrash className="w-4 h-4 text-white" />
+                    <span>Delete Rejected Event</span>
+                  </button>
+                </>)}
               </div>
             )}
           </div>
@@ -3340,7 +3374,8 @@ export default function AdminPanel() {
                           <th className="p-4">Dates</th>
                           <th className="p-4">Venue</th>
                           <th className="p-4">Status</th>
-                          <th className="p-4 pr-6">Submitted On</th>
+                          <th className="p-4">Submitted On</th>
+                          <th className="p-4 pr-6 text-center">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-[#171e19]/10 font-satoshi text-xs font-medium text-[#171e19]">
@@ -3378,8 +3413,22 @@ export default function AdminPanel() {
                                   {getStatusDetails(event).label}
                                 </span>
                               </td>
-                              <td className="p-4 pr-6 whitespace-nowrap">
+                              <td className="p-4 whitespace-nowrap">
                                 {formatEventDate(event.createdAt, 'MMM dd, yyyy')}
+                              </td>
+                              <td className="p-4 pr-6 text-center whitespace-nowrap">
+                                {!adminUser?.readOnly && ['closed', 'rejected'].includes(event.status) ? (
+                                  <button
+                                    onClick={(e) => handleDeleteArchivedEvent(event, e)}
+                                    title={`Delete ${event.status === 'closed' ? 'Closed' : 'Rejected'} Event`}
+                                    className="p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded transition-all inline-flex items-center gap-1 font-satoshi text-[11px] font-bold uppercase"
+                                  >
+                                    <IconTrash className="w-3.5 h-3.5" />
+                                    <span>Delete</span>
+                                  </button>
+                                ) : (
+                                  <span className="text-[#171e19]/30 text-xs">—</span>
+                                )}
                               </td>
                             </tr>
                           );

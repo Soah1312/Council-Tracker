@@ -320,6 +320,25 @@ export async function deleteEventRequest(eventId) {
 }
 
 /**
+ * Deletes a closed or rejected event from Firestore (Admin feature).
+ */
+export async function deleteArchivedEvent(eventId) {
+  if (!eventId) return;
+  const eventRef = doc(db, 'events', eventId);
+  const snap = await getDoc(eventRef);
+  
+  if (snap.exists()) {
+    const data = snap.data();
+    if (!['closed', 'rejected'].includes(data.status)) {
+      throw new Error('Deletion restricted: Only closed or rejected events can be deleted with this feature.');
+    }
+    await deleteDoc(eventRef);
+  }
+}
+
+
+
+/**
  * Retrieves all events for a specific council.
  * Uses client-side sorting to bypass composite index constraints.
  */
