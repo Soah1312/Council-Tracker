@@ -73,7 +73,7 @@ export default function AdminPanel() {
     category: 'technical',
     isMultiSession: false,
     eventSessions: [
-      { sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '' }
+      { sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '', venue: '' }
     ],
     startDate: '',
     endDate: '',
@@ -112,7 +112,7 @@ export default function AdminPanel() {
       ...prev,
       eventSessions: [
         ...prev.eventSessions,
-        { sessionName: `Session ${prev.eventSessions.length + 1}`, startDate: '', endDate: '' }
+        { sessionName: `Session ${prev.eventSessions.length + 1}`, startDate: '', endDate: '', venue: '' }
       ]
     }));
   };
@@ -149,10 +149,18 @@ export default function AdminPanel() {
           showNotification('All sessions must have valid start and end dates.', 'error');
           return;
         }
+        if (!s.venue || !s.venue.trim()) {
+          showNotification('All sessions must have a specified venue / room.', 'error');
+          return;
+        }
       }
     } else {
       if (!pastEventForm.startDate || !pastEventForm.endDate) {
         showNotification('Please select start and end dates.', 'error');
+        return;
+      }
+      if (!pastEventForm.venue || !pastEventForm.venue.trim()) {
+        showNotification('Please enter a venue location.', 'error');
         return;
       }
     }
@@ -254,7 +262,7 @@ export default function AdminPanel() {
         eventName: '',
         category: 'technical',
         isMultiSession: false,
-        eventSessions: [{ sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '' }],
+        eventSessions: [{ sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '', venue: '' }],
         startDate: '',
         endDate: '',
         venue: '',
@@ -1616,6 +1624,22 @@ export default function AdminPanel() {
                         <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
                         <span className="font-bold text-sm">{selectedEventDetail.venue ? String(selectedEventDetail.venue).toUpperCase() : 'CRCE CAMPUS'}</span>
                       </div>
+                      {selectedEventDetail.isMultiSession && Array.isArray(selectedEventDetail.eventSessions) && selectedEventDetail.eventSessions.length > 0 && (
+                        <div className="col-span-2 border-t border-[#171e19]/10 pt-3 space-y-2">
+                          <span className="font-bold text-[#171e19]/60 uppercase block text-[11px]">Sessions Breakdown ({selectedEventDetail.eventSessions.length})</span>
+                          <div className="space-y-1.5">
+                            {selectedEventDetail.eventSessions.map((s, idx) => (
+                              <div key={idx} className="bg-white/80 border border-[#171e19]/15 p-2 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                <span className="font-bold text-[#171e19]">{s.sessionName}</span>
+                                <div className="text-[11px] text-[#171e19]/70 flex flex-wrap gap-2">
+                                  <span>{formatEventDate(s.startDate)} - {formatEventDate(s.endDate)}</span>
+                                  {s.venue && <span className="font-semibold text-[#171e19] bg-[#ffe17c]/30 px-1.5 py-0.5 border border-[#171e19]/20 uppercase">📍 {s.venue}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {selectedEventDetail.expectedFootfall > 0 && (
                         <div>
                           <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Expected Footfall</span>
@@ -2110,6 +2134,20 @@ export default function AdminPanel() {
                           onChange={(newVal) => handlePastSessionChange(sIdx, 'endDate', newVal)}
                         />
                       </div>
+
+                      <div className="flex flex-col gap-1 text-xs font-satoshi">
+                        <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/80 font-bold">
+                          Session Venue / Location *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={sess.venue || ''}
+                          onChange={e => handlePastSessionChange(sIdx, 'venue', e.target.value)}
+                          placeholder="e.g. Samarth Hall, Room 302, Main Lawn"
+                          className="bg-white border border-[#171e19] focus:border-[#ffe17c] px-3 py-1.5 text-xs text-[#171e19] placeholder-[#b7c6c2] outline-none w-full"
+                        />
+                      </div>
                     </div>
                   ))}
 
@@ -2140,10 +2178,11 @@ export default function AdminPanel() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-2">
                   <label className="text-xs font-bold uppercase tracking-wider text-[#171e19]/80">
-                    Venue Location
+                    Venue Location *
                   </label>
                   <input
                     type="text"
+                    required
                     placeholder="e.g. Samartha Hall / Main Auditorium"
                     value={pastEventForm.venue}
                     onChange={(e) => setPastEventForm(prev => ({ ...prev, venue: e.target.value }))}

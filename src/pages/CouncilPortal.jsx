@@ -232,7 +232,7 @@ export default function CouncilPortal() {
     // Schedule type
     isMultiSession: false,
     eventSessions: [
-      { sessionName: 'Session 1 / Day 1', startDate: '', endDate: '' }
+      { sessionName: 'Session 1 / Day 1', startDate: '', endDate: '', venue: '' }
     ],
 
     // Toggles
@@ -1368,18 +1368,33 @@ export default function CouncilPortal() {
     if (!formData.expectedFootfall || isNaN(formData.expectedFootfall) || Number(formData.expectedFootfall) <= 0) {
       newErrors.expectedFootfall = 'Approximate footfall is required and must be greater than 0.';
     }
-    if (!formData.startDate) newErrors.startDate = 'Start date and time is required.';
-    if (!formData.endDate) newErrors.endDate = 'End date and time is required.';
-    if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
-      newErrors.endDate = 'End date must be after the start date.';
+    if (formData.isMultiSession) {
+      if (!formData.eventSessions || formData.eventSessions.length === 0) {
+        newErrors.eventSessions = 'At least one session is required for multi-session events.';
+      } else {
+        formData.eventSessions.forEach((sess, idx) => {
+          if (!sess.startDate) newErrors[`session_${idx}_start`] = `Session ${idx + 1} start date & time is required.`;
+          if (!sess.endDate) newErrors[`session_${idx}_end`] = `Session ${idx + 1} end date & time is required.`;
+          if (!sess.venue || !sess.venue.trim()) newErrors[`session_${idx}_venue`] = `Session ${idx + 1} venue / room is required.`;
+        });
+      }
+    } else {
+      if (!formData.startDate) newErrors.startDate = 'Start date and time is required.';
+      if (!formData.endDate) newErrors.endDate = 'End date and time is required.';
+      if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
+        newErrors.endDate = 'End date must be after the start date.';
+      }
+      if (!formData.venue || !formData.venue.trim()) newErrors.venue = 'Venue / Room is required.';
     }
 
     // Admin-blocked date range validation
-    const blockedConflict = getBlockedOverlap(formData.startDate, formData.endDate);
-    if (blockedConflict) {
-      const msg = `Selected date(s) fall within an Admin-Blocked period (${blockedConflict.reason}). Proposing events on blocked dates is restricted.`;
-      newErrors.startDate = msg;
-      newErrors.endDate = msg;
+    if (!formData.isMultiSession) {
+      const blockedConflict = getBlockedOverlap(formData.startDate, formData.endDate);
+      if (blockedConflict) {
+        const msg = `Selected date(s) fall within an Admin-Blocked period (${blockedConflict.reason}). Proposing events on blocked dates is restricted.`;
+        newErrors.startDate = msg;
+        newErrors.endDate = msg;
+      }
     }
     // File description validation - Single required PDF
     if (!files.eventDescription && !existingUrls.eventDescriptionUrl) {
@@ -1494,7 +1509,16 @@ export default function CouncilPortal() {
       registrationFeeApplicable: Boolean(event.registrationFeeApplicable),
       registrationFeeAmount: event.registrationFeeAmount ? String(event.registrationFeeAmount) : '',
       attendanceWaiverApplicable: Boolean(event.attendanceWaiverApplicable),
-      collaborators: event.collaborators || ''
+      collaborators: event.collaborators || '',
+      isMultiSession: Boolean(event.isMultiSession),
+      eventSessions: (event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0)
+        ? event.eventSessions.map(s => ({
+            sessionName: s.sessionName || '',
+            startDate: toDatetimeLocalString(s.startDate),
+            endDate: toDatetimeLocalString(s.endDate),
+            venue: s.venue || ''
+          }))
+        : [{ sessionName: 'Session 1 / Day 1', startDate: '', endDate: '', venue: '' }]
     });
 
     const startJS = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
@@ -1559,7 +1583,11 @@ export default function CouncilPortal() {
       registrationFeeApplicable: false,
       registrationFeeAmount: '',
       attendanceWaiverApplicable: false,
-      collaborators: ''
+      collaborators: '',
+      isMultiSession: false,
+      eventSessions: [
+        { sessionName: 'Session 1 / Day 1', startDate: '', endDate: '', venue: '' }
+      ]
     });
     setFiles({
       eventDescription: null,
@@ -2305,6 +2333,29 @@ export default function CouncilPortal() {
                               timeOptions={timeOptions}
                             />
                           </div>
+
+                          <div className="flex flex-col gap-1.5 font-satoshi">
+                            <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/80">
+                              Session Venue / Room *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={sess.venue || ''}
+                              onChange={e => {
+                                const updated = [...(formData.eventSessions || [])];
+                                updated[sIdx] = { ...updated[sIdx], venue: e.target.value };
+                                setFormData(p => ({ ...p, eventSessions: updated }));
+                              }}
+                              placeholder="e.g. Samarth Hall, Computer Lab 3, Auditorium"
+                              className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] placeholder-[#b7c6c2] outline-none w-full"
+                            />
+                            {errors[`session_${sIdx}_venue`] && (
+                              <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">
+                                {errors[`session_${sIdx}_venue`]}
+                              </p>
+                            )}
+                          </div>
                         </div>
                       ))}
 
@@ -2315,7 +2366,7 @@ export default function CouncilPortal() {
                             ...p,
                             eventSessions: [
                               ...(p.eventSessions || []),
-                              { sessionName: `Session ${(p.eventSessions?.length || 0) + 1}`, startDate: '', endDate: '' }
+                              { sessionName: `Session ${(p.eventSessions?.length || 0) + 1}`, startDate: '', endDate: '', venue: '' }
                             ]
                           }));
                         }}
@@ -2733,34 +2784,52 @@ export default function CouncilPortal() {
                           )}
 
                           {/* Logistical Grid — only rendered when legacy metadata exists */}
-                          {(event.facultyCoordinatorName || event.venue || event.expectedFootfall) && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 bg-white border border-[#171e19]/10 p-4 rounded-none">
-                              {event.venue && (
-                                <div>
-                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Venue</span>
-                                  <span className="font-bold text-sm">{String(event.venue).toUpperCase()}</span>
-                                </div>
-                              )}
-                              {event.facultyCoordinatorName && (
-                                <div>
-                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Faculty Coordinator</span>
-                                  <span className="font-bold text-sm">{String(event.facultyCoordinatorName).toUpperCase()}</span>
-                                </div>
-                              )}
-                              {event.studentContactName && (
-                                <div>
-                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Student Lead</span>
-                                  <span className="font-bold text-sm">{String(event.studentContactName).toUpperCase()}</span>
-                                </div>
-                              )}
-                              {event.studentContactPhone && (
-                                <div>
-                                  <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Student Contact</span>
-                                  <span className="font-semibold">{event.studentContactPhone}</span>
+                          {(event.facultyCoordinatorName || event.venue || event.expectedFootfall || (event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0)) && (
+                            <div className="space-y-3 bg-white border border-[#171e19]/10 p-4 rounded-none">
+                              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                {event.venue && (
+                                  <div>
+                                    <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Venue</span>
+                                    <span className="font-bold text-sm">{String(event.venue).toUpperCase()}</span>
+                                  </div>
+                                )}
+                                {event.facultyCoordinatorName && (
+                                  <div>
+                                    <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Faculty Coordinator</span>
+                                    <span className="font-bold text-sm">{String(event.facultyCoordinatorName).toUpperCase()}</span>
+                                  </div>
+                                )}
+                                {event.studentContactName && (
+                                  <div>
+                                    <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide mb-1">Student Lead</span>
+                                    <span className="font-bold text-sm">{String(event.studentContactName).toUpperCase()}</span>
+                                  </div>
+                                )}
+                                {event.studentContactPhone && (
+                                  <div>
+                                    <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Student Contact</span>
+                                    <span className="font-semibold">{event.studentContactPhone}</span>
+                                  </div>
+                                )}
+                              </div>
+                              {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 && (
+                                <div className="border-t border-[#171e19]/10 pt-3 space-y-2">
+                                  <span className="font-bold text-[#b7c6c2] uppercase block text-xs tracking-wide">Sessions Breakdown ({event.eventSessions.length})</span>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {event.eventSessions.map((s, idx) => (
+                                      <div key={idx} className="bg-slate-50 border border-[#171e19]/10 p-2 text-xs flex flex-col justify-between gap-1">
+                                        <span className="font-bold text-[#171e19]">{s.sessionName}</span>
+                                        <div className="text-[11px] text-[#171e19]/70 flex flex-wrap items-center gap-1.5">
+                                          <span>{formatEventDate(s.startDate)} - {formatEventDate(s.endDate)}</span>
+                                          {s.venue && <span className="font-semibold text-[#171e19] bg-[#ffe17c] px-1 py-0.5 uppercase">📍 {s.venue}</span>}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
                                 </div>
                               )}
                               {event.expectedFootfall && (
-                                <div>
+                                <div className="border-t border-[#171e19]/10 pt-3">
                                   <span className="font-bold text-[#b7c6c2] uppercase block text-[9px] tracking-wide mb-1">Expected Footfall</span>
                                   <span className="font-bold">{event.expectedFootfall} ATTENDEES</span>
                                 </div>

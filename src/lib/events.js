@@ -221,7 +221,8 @@ export async function createEventRequest(data) {
     processedSessions = data.eventSessions.map((s, idx) => ({
       sessionName: s.sessionName ? s.sessionName.trim() : `Session ${idx + 1}`,
       startDate: toTimestamp(s.startDate),
-      endDate: toTimestamp(s.endDate)
+      endDate: toTimestamp(s.endDate),
+      venue: s.venue ? s.venue.trim() : ''
     }));
   }
 
