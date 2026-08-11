@@ -3,8 +3,10 @@
  */
 
 import { 
-  db 
+  db,
+  storage
 } from './firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { 
   collection, 
   doc, 
@@ -688,9 +690,16 @@ export async function submitPermissionLetters(eventId, urls) {
 }
 
 /**
- * Uploads a file to Cloudinary and returns its secure URL.
- * Automatically selects between auto (for images/etc.) and raw (for PDFs) resource types.
+ * Uploads a file to Cloudinary with fallback to Firebase Storage.
  */
+export async function uploadToFirebaseStorage(file, folder) {
+  const fileExt = file.name ? file.name.split('.').pop() : 'pdf';
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
+  const storageRef = ref(storage, `${folder}/${fileName}`);
+  const snapshot = await uploadBytes(storageRef, file);
+  return await getDownloadURL(snapshot.ref);
+}
+
 export async function uploadFile(file, folder) {
   if (!file) throw new Error('No file provided for upload.');
 
@@ -698,13 +707,12 @@ export async function uploadFile(file, folder) {
   const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
   if (!cloudName || !uploadPreset) {
-    throw new Error('Cloudinary environment variables VITE_CLOUDINARY_CLOUD_NAME or VITE_CLOUDINARY_UPLOAD_PRESET are missing.');
+    console.warn('Cloudinary environment variables missing. Falling back to Firebase Storage.');
+    return await uploadToFirebaseStorage(file, folder);
   }
 
-  // Determine resource type: PDFs need raw to prevent image conversion
-  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-  const resourceType = isPdf ? 'raw' : 'auto';
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+  // Use 'auto' endpoint to support images and raw files (PDFs) without raw unsigned preset restriction errors
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
 
   const formData = new FormData();
   formData.append('file', file);
@@ -719,17 +727,24 @@ export async function uploadFile(file, folder) {
 
     const data = await response.json();
     if (!response.ok) {
-      throw new Error(data.error?.message || `Cloudinary returned status ${response.status}`);
+      console.warn('Cloudinary upload error:', data.error?.message, 'Falling back to Firebase Storage.');
+      return await uploadToFirebaseStorage(file, folder);
     }
 
     if (!data.secure_url) {
-      throw new Error('Cloudinary response did not return a secure_url.');
+      console.warn('Cloudinary response missing secure_url. Falling back to Firebase Storage.');
+      return await uploadToFirebaseStorage(file, folder);
     }
 
     return data.secure_url;
   } catch (err) {
-    console.error('Cloudinary upload failure:', err);
-    throw new Error(`File upload failed: ${err.message}`);
+    console.error('Cloudinary upload exception:', err, 'Falling back to Firebase Storage.');
+    try {
+      return await uploadToFirebaseStorage(file, folder);
+    } catch (fbErr) {
+      console.error('Firebase Storage fallback failed:', fbErr);
+      throw new Error(`File upload failed: ${err.message || fbErr.message}`);
+    }
   }
 }
 

@@ -91,11 +91,13 @@ function DragDropUpload({ id, label, accept, file, filesList, multiple, onChange
         onDragOver={handleDrag}
         onDragLeave={handleDrag}
         onDrop={handleDrop}
-        className={`border-2 border-dashed p-4 flex flex-col items-center justify-center transition-all cursor-pointer rounded-none relative ${dragActive
-            ? 'border-[#ffe17c] bg-[#ffe17c]/5'
-            : (file || (filesList && filesList.length > 0))
-              ? 'border-emerald-600 bg-emerald-50/5'
-              : 'border-[#171e19]/30 hover:border-[#171e19] bg-white'
+        className={`border-2 border-dashed p-4 flex flex-col items-center justify-center transition-all cursor-pointer rounded-none relative ${error
+            ? 'border-red-500 bg-red-50/20'
+            : dragActive
+              ? 'border-[#ffe17c] bg-[#ffe17c]/5'
+              : (file || (filesList && filesList.length > 0))
+                ? 'border-emerald-600 bg-emerald-50/5'
+                : 'border-[#171e19]/30 hover:border-[#171e19] bg-white'
           }`}
       >
         <input
@@ -1364,7 +1366,7 @@ export default function CouncilPortal() {
 
   const validateForm = () => {
     const newErrors = {};
-    if (!formData.eventName.trim()) newErrors.eventName = 'Event Name is required.';
+    if (!formData.eventName || !formData.eventName.trim()) newErrors.eventName = 'Event Name is required.';
     if (!formData.expectedFootfall || isNaN(formData.expectedFootfall) || Number(formData.expectedFootfall) <= 0) {
       newErrors.expectedFootfall = 'Approximate footfall is required and must be greater than 0.';
     }
@@ -1375,20 +1377,25 @@ export default function CouncilPortal() {
         formData.eventSessions.forEach((sess, idx) => {
           if (!sess.startDate) newErrors[`session_${idx}_start`] = `Session ${idx + 1} start date & time is required.`;
           if (!sess.endDate) newErrors[`session_${idx}_end`] = `Session ${idx + 1} end date & time is required.`;
+          if (sess.startDate && sess.endDate && new Date(sess.startDate) >= new Date(sess.endDate)) {
+            newErrors[`session_${idx}_end`] = `Session ${idx + 1} end date must be after start date.`;
+          }
           if (!sess.venue || !sess.venue.trim()) newErrors[`session_${idx}_venue`] = `Session ${idx + 1} venue / room is required.`;
+          const blocked = getBlockedOverlap(sess.startDate, sess.endDate);
+          if (blocked) {
+            const msg = `Session ${idx + 1} date(s) fall within an Admin-Blocked period (${blocked.reason}).`;
+            newErrors[`session_${idx}_start`] = msg;
+            newErrors[`session_${idx}_end`] = msg;
+          }
         });
       }
     } else {
       if (!formData.startDate) newErrors.startDate = 'Start date and time is required.';
       if (!formData.endDate) newErrors.endDate = 'End date and time is required.';
       if (formData.startDate && formData.endDate && new Date(formData.startDate) >= new Date(formData.endDate)) {
-        newErrors.endDate = 'End date must be after the start date.';
+        newErrors.endDate = 'End date must be after start date.';
       }
       if (!formData.venue || !formData.venue.trim()) newErrors.venue = 'Venue / Room is required.';
-    }
-
-    // Admin-blocked date range validation
-    if (!formData.isMultiSession) {
       const blockedConflict = getBlockedOverlap(formData.startDate, formData.endDate);
       if (blockedConflict) {
         const msg = `Selected date(s) fall within an Admin-Blocked period (${blockedConflict.reason}). Proposing events on blocked dates is restricted.`;
@@ -1396,6 +1403,7 @@ export default function CouncilPortal() {
         newErrors.endDate = msg;
       }
     }
+
     // File description validation - Single required PDF
     if (!files.eventDescription && !existingUrls.eventDescriptionUrl) {
       newErrors.eventDescription = 'Proposal description PDF is required.';
@@ -1409,6 +1417,12 @@ export default function CouncilPortal() {
     e.preventDefault();
     if (!validateForm()) {
       showNotification('Please correct validation errors in the form.', 'error');
+      setTimeout(() => {
+        const firstErrorEl = document.querySelector('.text-red-500, .border-red-500');
+        if (firstErrorEl) {
+          firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
       return;
     }
 
@@ -2118,7 +2132,7 @@ export default function CouncilPortal() {
                         placeholder="e.g. INNOVATEX HACKATHON"
                         value={formData.eventName}
                         onChange={e => setFormData(p => ({ ...p, eventName: e.target.value }))}
-                        className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
+                        className={`w-full bg-white border-2 ${errors.eventName ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:outline-none rounded-none transition-brutal`}
                       />
                       {errors.eventName && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.eventName}</p>}
                     </div>
@@ -2131,7 +2145,7 @@ export default function CouncilPortal() {
                         placeholder="e.g. Main Auditorium"
                         value={formData.venue}
                         onChange={e => setFormData(p => ({ ...p, venue: e.target.value }))}
-                        className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
+                        className={`w-full bg-white border-2 ${errors.venue ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:outline-none rounded-none transition-brutal`}
                       />
                       {errors.venue && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.venue}</p>}
                     </div>
@@ -2145,7 +2159,7 @@ export default function CouncilPortal() {
                         placeholder="e.g. 250"
                         value={formData.expectedFootfall}
                         onChange={e => setFormData(p => ({ ...p, expectedFootfall: e.target.value }))}
-                        className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal"
+                        className={`w-full bg-white border-2 ${errors.expectedFootfall ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-4 py-2.5 text-sm text-[#171e19] placeholder-[#b7c6c2] focus:outline-none rounded-none transition-brutal`}
                       />
                       {errors.expectedFootfall && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{errors.expectedFootfall}</p>}
                     </div>
@@ -2320,6 +2334,7 @@ export default function CouncilPortal() {
                               }}
                               isDateBlocked={isDateBlocked}
                               timeOptions={timeOptions}
+                              error={errors[`session_${sIdx}_start`]}
                             />
                             <BrutalistDateTimePicker
                               label="Session End Date & Time *"
@@ -2331,6 +2346,7 @@ export default function CouncilPortal() {
                               }}
                               isDateBlocked={isDateBlocked}
                               timeOptions={timeOptions}
+                              error={errors[`session_${sIdx}_end`]}
                             />
                           </div>
 
@@ -2348,7 +2364,7 @@ export default function CouncilPortal() {
                                 setFormData(p => ({ ...p, eventSessions: updated }));
                               }}
                               placeholder="e.g. Samarth Hall, Computer Lab 3, Auditorium"
-                              className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] placeholder-[#b7c6c2] outline-none w-full"
+                              className={`bg-white border-2 ${errors[`session_${sIdx}_venue`] ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} rounded-none px-3 py-2 text-xs text-[#171e19] placeholder-[#b7c6c2] outline-none w-full`}
                             />
                             {errors[`session_${sIdx}_venue`] && (
                               <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">
@@ -2358,6 +2374,12 @@ export default function CouncilPortal() {
                           </div>
                         </div>
                       ))}
+
+                      {errors.eventSessions && (
+                        <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">
+                          {errors.eventSessions}
+                        </p>
+                      )}
 
                       <button
                         type="button"
@@ -2385,6 +2407,7 @@ export default function CouncilPortal() {
                           onChange={(newVal) => handleStartDateChange(newVal)}
                           isDateBlocked={isDateBlocked}
                           timeOptions={timeOptions}
+                          error={errors.startDate}
                         />
                         <BrutalistDateTimePicker
                           label="End Date & Time *"
@@ -2392,6 +2415,7 @@ export default function CouncilPortal() {
                           onChange={(newVal) => setFormData(p => ({ ...p, endDate: newVal }))}
                           isDateBlocked={isDateBlocked}
                           timeOptions={timeOptions}
+                          error={errors.endDate}
                         />
                       </div>
 

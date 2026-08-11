@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { format } from 'date-fns';
 import { IconCalendar } from '../lib/icons';
 
-export default function BrutalistDateTimePicker({ label, value, onChange, isDateBlocked, timeOptions: customTimeOptions }) {
+export default function BrutalistDateTimePicker({ label, value, onChange, isDateBlocked, timeOptions: customTimeOptions, error }) {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef(null);
 
@@ -97,7 +97,7 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
             }
             setIsOpen(prev => !prev);
           }}
-          className="w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-bold text-[#171e19] focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase shrink-0 cursor-pointer"
+          className={`w-full bg-white border-2 ${error ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-3 py-2 text-xs font-bold text-[#171e19] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase shrink-0 cursor-pointer`}
         >
           <span className="truncate">
             {dateStr ? format(new Date(dateStr), 'MMM dd, yyyy') : 'SELECT DATE'}
@@ -109,7 +109,7 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
         <select
           value={isFullDay ? (isEndPicker ? '23:59' : '00:00') : (timeStr || '09:00')}
           onChange={(e) => handleTimeSelect(e.target.value)}
-          className={`w-full bg-white border-2 border-[#171e19] px-3 py-2 text-xs font-bold focus:border-[#ffe17c] focus:outline-none rounded-none transition-brutal font-satoshi uppercase cursor-pointer ${
+          className={`w-full bg-white border-2 ${error ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-3 py-2 text-xs font-bold focus:outline-none rounded-none transition-brutal font-satoshi uppercase cursor-pointer ${
             isFullDay ? 'bg-[#ffe17c]/30 text-[#171e19]' : 'text-[#171e19]'
           }`}
         >
@@ -203,6 +203,11 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
             })()}
           </div>
         </div>
+      )}
+      {error && (
+        <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide mt-1">
+          {error}
+        </p>
       )}
     </div>
   );
