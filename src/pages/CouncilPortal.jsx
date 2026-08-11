@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails } from '../lib/events';
+import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails, formatSessionName, formatSessionDateRange } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
 import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, COUNCILS } from '../lib/auth';
 import { Link } from 'react-router-dom';
@@ -234,7 +234,7 @@ export default function CouncilPortal() {
     // Schedule type
     isMultiSession: false,
     eventSessions: [
-      { sessionName: 'Session 1 / Day 1', startDate: '', endDate: '', venue: '' }
+      { sessionName: 'Day 1', startDate: '', endDate: '', venue: '' }
     ],
 
     // Toggles
@@ -2388,7 +2388,7 @@ export default function CouncilPortal() {
                             ...p,
                             eventSessions: [
                               ...(p.eventSessions || []),
-                              { sessionName: `Session ${(p.eventSessions?.length || 0) + 1}`, startDate: '', endDate: '', venue: '' }
+                              { sessionName: `Day ${(p.eventSessions?.length || 0) + 1}`, startDate: '', endDate: '', venue: '' }
                             ]
                           }));
                         }}
@@ -2670,7 +2670,7 @@ export default function CouncilPortal() {
                           </div>
 
                            <div className="flex flex-wrap gap-x-5 gap-y-1 font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider">
-                            <span className="flex items-center gap-1.5"><IconCalendar className="w-3 h-3" /> START: {formatEventDate(event.startDate)}</span>
+                            <span className="flex items-center gap-1.5"><IconCalendar className="w-3 h-3" /> {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 ? `DATES: Multi-Day (${event.eventSessions.length} Days)` : `START: ${formatEventDate(event.startDate)}`}</span>
                             <span className="flex items-center gap-1.5"><IconMapPin className="w-3 h-3" /> VENUE: {event.venue ? String(event.venue).toUpperCase() : 'CRCE CAMPUS'}</span>
                           </div>
                           {renderTimelineRows(event)}
@@ -2842,10 +2842,10 @@ export default function CouncilPortal() {
                                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {event.eventSessions.map((s, idx) => (
                                       <div key={idx} className="bg-slate-50 border border-[#171e19]/10 p-2 text-xs flex flex-col justify-between gap-1">
-                                        <span className="font-bold text-[#171e19]">{s.sessionName}</span>
+                                        <span className="font-bold text-[#171e19]">{formatSessionName(s, idx)}</span>
                                         <div className="text-[11px] text-[#171e19]/70 flex flex-wrap items-center gap-1.5">
-                                          <span>{formatEventDate(s.startDate)} - {formatEventDate(s.endDate)}</span>
-                                          {s.venue && <span className="font-semibold text-[#171e19] bg-[#ffe17c] px-1 py-0.5 uppercase">📍 {s.venue}</span>}
+                                          <span>{formatSessionDateRange(s.startDate, s.endDate, formatEventDate)}</span>
+                                          {s.venue && <span className="font-semibold text-[#171e19] bg-[#ffe17c] px-1 py-0.5 uppercase inline-flex items-center gap-1"><IconMapPin className="w-3 h-3 text-[#171e19] shrink-0" /> {s.venue}</span>}
                                         </div>
                                       </div>
                                     ))}

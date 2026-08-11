@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile, deleteArchivedEvent } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile, deleteArchivedEvent, formatSessionName, formatSessionDateRange } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
 import { subscribeToAllCouncilMembers } from '../lib/members';
-import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers, IconPhone, IconTrash } from '../lib/icons';
+import { IconFile, IconCheck, IconX, IconWarning, IconBan, IconEye, IconEyeOff, IconUsers, IconPhone, IconTrash, IconMapPin } from '../lib/icons';
 import BrutalistDateTimePicker from '../components/BrutalistDateTimePicker';
 
 export default function AdminPanel() {
@@ -73,7 +73,7 @@ export default function AdminPanel() {
     category: 'technical',
     isMultiSession: false,
     eventSessions: [
-      { sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '', venue: '' }
+      { sessionName: 'Day 1', startDate: '', endDate: '', venue: '' }
     ],
     startDate: '',
     endDate: '',
@@ -112,7 +112,7 @@ export default function AdminPanel() {
       ...prev,
       eventSessions: [
         ...prev.eventSessions,
-        { sessionName: `Session ${prev.eventSessions.length + 1}`, startDate: '', endDate: '', venue: '' }
+        { sessionName: `Day ${prev.eventSessions.length + 1}`, startDate: '', endDate: '', venue: '' }
       ]
     }));
   };
@@ -262,7 +262,7 @@ export default function AdminPanel() {
         eventName: '',
         category: 'technical',
         isMultiSession: false,
-        eventSessions: [{ sessionName: 'Session 1 / Phase 1', startDate: '', endDate: '', venue: '' }],
+        eventSessions: [{ sessionName: 'Day 1', startDate: '', endDate: '', venue: '' }],
         startDate: '',
         endDate: '',
         venue: '',
@@ -1612,14 +1612,18 @@ export default function AdminPanel() {
                   <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Event Logistics</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[#171e19] font-satoshi">
-                      <div>
-                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Start Date</span>
-                        <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.startDate)}</span>
-                      </div>
-                      <div>
-                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">End Date</span>
-                        <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.endDate)}</span>
-                      </div>
+                      {(!selectedEventDetail.isMultiSession || !Array.isArray(selectedEventDetail.eventSessions) || selectedEventDetail.eventSessions.length === 0) && (
+                        <>
+                          <div>
+                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Start Date</span>
+                            <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.startDate)}</span>
+                          </div>
+                          <div>
+                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">End Date</span>
+                            <span className="font-bold text-sm">{formatEventDate(selectedEventDetail.endDate)}</span>
+                          </div>
+                        </>
+                      )}
                       <div className="col-span-2">
                         <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
                         <span className="font-bold text-sm">{selectedEventDetail.venue ? String(selectedEventDetail.venue).toUpperCase() : 'CRCE CAMPUS'}</span>
@@ -1630,10 +1634,10 @@ export default function AdminPanel() {
                           <div className="space-y-1.5">
                             {selectedEventDetail.eventSessions.map((s, idx) => (
                               <div key={idx} className="bg-white/80 border border-[#171e19]/15 p-2 text-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                                <span className="font-bold text-[#171e19]">{s.sessionName}</span>
-                                <div className="text-[11px] text-[#171e19]/70 flex flex-wrap gap-2">
-                                  <span>{formatEventDate(s.startDate)} - {formatEventDate(s.endDate)}</span>
-                                  {s.venue && <span className="font-semibold text-[#171e19] bg-[#ffe17c]/30 px-1.5 py-0.5 border border-[#171e19]/20 uppercase">📍 {s.venue}</span>}
+                                <span className="font-bold text-[#171e19]">{formatSessionName(s, idx)}</span>
+                                <div className="text-[11px] text-[#171e19]/70 flex flex-wrap items-center gap-2">
+                                  <span>{formatSessionDateRange(s.startDate, s.endDate, formatEventDate)}</span>
+                                  {s.venue && <span className="font-semibold text-[#171e19] bg-[#ffe17c]/30 px-1.5 py-0.5 border border-[#171e19]/20 uppercase inline-flex items-center gap-1"><IconMapPin className="w-3 h-3 text-[#171e19] shrink-0" /> {s.venue}</span>}
                                 </div>
                               </div>
                             ))}

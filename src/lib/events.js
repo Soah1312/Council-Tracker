@@ -815,6 +815,67 @@ export async function updateEventDetails(eventId, details) {
 }
 
 /**
+ * Formats a session name consistently (e.g. "Day 1", "Day 2: Workshop", etc.)
+ */
+export function formatSessionName(session, idx) {
+  if (!session) return `Day ${idx + 1}`;
+  const raw = (session.sessionName || '').trim();
+  if (!raw) return `Day ${idx + 1}`;
+
+  const lower = raw.toLowerCase();
+  
+  if (lower.includes('session') && lower.includes('day')) {
+    const dayMatch = raw.match(/day\s*(\d+)/i);
+    return dayMatch ? `Day ${dayMatch[1]}` : `Day ${idx + 1}`;
+  }
+  
+  if (/^session\s*\d+$/i.test(raw)) {
+    return `Day ${idx + 1}`;
+  }
+
+  if (/^day\s*\d+$/i.test(raw)) {
+    return `Day ${idx + 1}`;
+  }
+
+  if (/^day\s*\d+/i.test(raw)) {
+    return raw;
+  }
+
+  return `Day ${idx + 1}: ${raw}`;
+}
+
+/**
+ * Formats a session date range intelligently (e.g. "Aug 13, 2026, 12:00 PM – 5:00 PM" if same day)
+ */
+export function formatSessionDateRange(startField, endField, formatEventDateFn) {
+  if (!startField) return '';
+  const startDate = startField.toDate ? startField.toDate() : new Date(startField);
+  const endDate = endField ? (endField.toDate ? endField.toDate() : new Date(endField)) : null;
+
+  if (isNaN(startDate.getTime())) return '';
+
+  if (!endDate || isNaN(endDate.getTime())) {
+    return formatEventDateFn ? formatEventDateFn(startField) : startDate.toLocaleString();
+  }
+
+  const isSameDay = startDate.getFullYear() === endDate.getFullYear() &&
+                    startDate.getMonth() === endDate.getMonth() &&
+                    startDate.getDate() === endDate.getDate();
+
+  if (isSameDay && formatEventDateFn) {
+    const formattedStart = formatEventDateFn(startDate);
+    const formattedEndTime = formatEventDateFn(endDate, 'h:mm a');
+    return `${formattedStart} – ${formattedEndTime}`;
+  }
+
+  if (formatEventDateFn) {
+    return `${formatEventDateFn(startDate)} – ${formatEventDateFn(endDate)}`;
+  }
+
+  return `${startDate.toLocaleString()} – ${endDate.toLocaleString()}`;
+}
+
+/**
  * Resets an event status to target stage and clears all review history / feedback notes.
  */
 export async function resetEventStageAndClearHistory(eventId, targetStatus = 'proposal_approved') {
