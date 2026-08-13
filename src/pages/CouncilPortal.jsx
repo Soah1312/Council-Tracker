@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails, formatSessionName, formatSessionDateRange } from '../lib/events';
+import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails, formatSessionName, formatSessionDateRange, isEventActiveOnDate } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
 import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, COUNCILS } from '../lib/auth';
 import { Link } from 'react-router-dom';
@@ -3172,11 +3172,7 @@ export default function CouncilPortal() {
                     const dayEvents = day ? allCalEvents.filter(event => {
                       const relevantStatuses = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'];
                       if (!relevantStatuses.includes(event.status)) return false;
-                      const eStart = event.startDate?.toDate ? event.startDate.toDate() : new Date(event.startDate);
-                      const eEnd = event.endDate?.toDate ? event.endDate.toDate() : new Date(event.endDate);
-                      const dStart = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 0, 0, 0);
-                      const dEnd = new Date(day.getFullYear(), day.getMonth(), day.getDate(), 23, 59, 59);
-                      return eStart <= dEnd && eEnd >= dStart;
+                      return isEventActiveOnDate(event, day);
                     }) : [];
 
                     return (
