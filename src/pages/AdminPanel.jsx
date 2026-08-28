@@ -3445,9 +3445,25 @@ export default function AdminPanel() {
                               <td className="p-4 capitalize">
                                 {event.category?.replace('_', ' ')}
                               </td>
-                              <td className="p-4 whitespace-nowrap">
-                                {formatEventDate(event.startDate, 'MMM dd, yyyy')} - {formatEventDate(event.endDate, 'MMM dd, yyyy')}
-                              </td>
+                              <td className="p-4">
+                                 {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 ? (
+                                   <div className="flex flex-col gap-1 text-xs">
+                                     {event.eventSessions.map((s, sIdx) => (
+                                       <span key={sIdx} className="bg-slate-100 px-2 py-0.5 border border-slate-200 rounded text-[#171e19] whitespace-nowrap font-medium">
+                                         {formatEventDate(s.startDate, 'MMM dd, yyyy') === formatEventDate(s.endDate, 'MMM dd, yyyy')
+                                           ? formatEventDate(s.startDate, 'MMM dd, yyyy')
+                                           : `${formatEventDate(s.startDate, 'MMM dd, yyyy')} - ${formatEventDate(s.endDate, 'MMM dd, yyyy')}`}
+                                       </span>
+                                     ))}
+                                   </div>
+                                 ) : (
+                                   <span className="whitespace-nowrap">
+                                     {formatEventDate(event.startDate, 'MMM dd, yyyy') === formatEventDate(event.endDate, 'MMM dd, yyyy')
+                                       ? formatEventDate(event.startDate, 'MMM dd, yyyy')
+                                       : `${formatEventDate(event.startDate, 'MMM dd, yyyy')} - ${formatEventDate(event.endDate, 'MMM dd, yyyy')}`}
+                                   </span>
+                                 )}
+                               </td>
                               <td className="p-4 uppercase font-bold text-[#171e19]">
                                 {event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}
                               </td>
