@@ -1265,14 +1265,29 @@ export default function AdminPanel() {
       return dueA - dueB;
     });
 
-    return [
+    // Exclude overdue events from general reportPending list to avoid duplicate rendering
+    const nonOverdueReportPendingEvents = reportPendingEvents.filter(e => !isReportOverdue(e));
+
+    const rawList = [
       ...sortedOverdue.map(e => ({ ...e, attentionReason: 'overdue' })),
       ...sortedPendingReports.map(e => ({ ...e, attentionReason: 'pending_report' })),
       ...sortedPendingPermissions.map(e => ({ ...e, attentionReason: 'pending_permissions' })),
       ...sortedPendingProposals.map(e => ({ ...e, attentionReason: 'pending_proposal' })),
       ...sortedAwaitingDocs.map(e => ({ ...e, attentionReason: 'awaiting_docs' })),
-      ...sortedReportPending.map(e => ({ ...e, attentionReason: 'report_pending' }))
+      ...nonOverdueReportPendingEvents.map(e => ({ ...e, attentionReason: 'report_pending' }))
     ];
+
+    // Deduplicate by eventId (keeping highest priority status reason)
+    const seenIds = new Set();
+    const result = [];
+    for (const ev of rawList) {
+      const id = ev.eventId || ev.id;
+      if (!seenIds.has(id)) {
+        seenIds.add(id);
+        result.push(ev);
+      }
+    }
+    return result;
   };
 
   const needsAttentionList = getNeedsAttentionList();
