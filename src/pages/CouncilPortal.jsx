@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails, formatSessionName, formatSessionDateRange, isEventActiveOnDate } from '../lib/events';
+import { generateEventId, createEventRequest, uploadFile, subscribeToEventsByCouncil, subscribeToAllEvents, subscribeToBlockedDates, submitReport, submitPermissionLetters, deleteEventRequest, updateEventDetails, formatSessionName, formatSessionDateRange, isEventActiveOnDate, getEventReportDueDate } from '../lib/events';
 import { addCouncilMember, updateCouncilMember, deleteCouncilMember, subscribeToCouncilMembers, updateCouncilMembersOrder } from '../lib/members';
 import { loginWithEmail, logoutUser, sendPasswordReset, onAuthChange, getCouncilByEmail, COUNCILS } from '../lib/auth';
 import { Link } from 'react-router-dom';
@@ -2604,8 +2604,9 @@ export default function CouncilPortal() {
                         </div>
                       )}
                       {/* Stage 3 — Report Due Banner (always visible when approved) */}
-                      {(event.status === 'approved' || event.status === 'report_pending') && event.reportDueDate && (() => {
-                        const due = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
+                      {(event.status === 'approved' || event.status === 'report_pending') && (() => {
+                        const due = getEventReportDueDate(event);
+                        if (!due) return null;
                         const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
                         const isOverdue = diffDays < 0;
                         const isUrgent = !isOverdue && diffDays <= 3;
@@ -2789,23 +2790,22 @@ export default function CouncilPortal() {
                           {renderReviewHistory(event)}
 
                           {/* Report due date banner in expanded drawer — still shown for context */}
-                          {(event.status === 'approved' || event.status === 'report_pending') && event.reportDueDate && (
-                            <div className="bg-amber-50 border border-amber-300 p-4 text-amber-800 flex items-center justify-between gap-3 flex-wrap font-medium">
-                              <div>
-                                <span className="font-bold text-xs uppercase tracking-wider text-amber-600 block mb-1">Report Submission Deadline</span>
-                                <span className="text-sm uppercase">Submit your post-event report by {formatEventDate(event.reportDueDate)}.</span>
+                          {(event.status === 'approved' || event.status === 'report_pending') && (() => {
+                            const due = getEventReportDueDate(event);
+                            if (!due) return null;
+                            const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+                            return (
+                              <div className="bg-amber-50 border border-amber-300 p-4 text-amber-800 flex items-center justify-between gap-3 flex-wrap font-medium">
+                                <div>
+                                  <span className="font-bold text-xs uppercase tracking-wider text-amber-600 block mb-1">Report Submission Deadline</span>
+                                  <span className="text-sm uppercase">Submit your post-event report by {formatEventDate(due)}.</span>
+                                </div>
+                                <span className="font-mono text-sm font-bold bg-amber-200 border border-amber-400 px-3 py-1 uppercase shrink-0">
+                                  {diffDays < 0 ? `Overdue by ${Math.abs(diffDays)} days` : diffDays === 0 ? 'Due Today!' : `${diffDays} days remaining`}
+                                </span>
                               </div>
-                              <span className="font-mono text-sm font-bold bg-amber-200 border border-amber-400 px-3 py-1 uppercase shrink-0">
-                                {(() => {
-                                  const due = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
-                                  const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
-                                  if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
-                                  if (diffDays === 0) return 'Due Today!';
-                                  return `${diffDays} days remaining`;
-                                })()}
-                              </span>
-                            </div>
-                          )}
+                            );
+                          })()}
 
                           {/* Logistical Grid — only rendered when legacy metadata exists */}
                           {(event.facultyCoordinatorName || event.venue || event.expectedFootfall || (event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0)) && (

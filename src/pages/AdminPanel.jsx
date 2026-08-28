@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile, deleteArchivedEvent, formatSessionName, formatSessionDateRange } from '../lib/events';
+import { updateEventStatus, subscribeToAllEvents, subscribeToBlockedDates, addBlockedDate, deleteBlockedDate, createEventRequest, isEventActiveOnDate, resetEventStageAndClearHistory, generateEventId, uploadFile, deleteArchivedEvent, formatSessionName, formatSessionDateRange, getEventReportDueDate } from '../lib/events';
 import { COUNCILS, loginWithEmail, logoutUser, onAuthChange, getAdminRoleByEmail, sendPasswordReset } from '../lib/auth';
 import { format } from 'date-fns';
 import { notifyProposalReopened, notifyCouncilStatusUpdate } from '../lib/emailService';
@@ -218,7 +218,7 @@ export default function AdminPanel() {
         ? (pastEventForm.eventSessions?.[pastEventForm.eventSessions.length - 1]?.endDate ? new Date(pastEventForm.eventSessions[pastEventForm.eventSessions.length - 1].endDate) : new Date())
         : (pastEventForm.endDate ? new Date(pastEventForm.endDate) : new Date());
 
-      const reportDueDate = new Date(endDateVal.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const reportDueDate = new Date(endDateVal.getTime() + 10 * 24 * 60 * 60 * 1000);
 
       await createEventRequest({
         eventId,
@@ -2827,7 +2827,7 @@ export default function AdminPanel() {
                               </span>
                             )}
                             {event.attentionReason === 'report_pending' && (() => {
-                              const due = event.reportDueDate?.toDate ? event.reportDueDate.toDate() : (event.reportDueDate ? new Date(event.reportDueDate) : null);
+                              const due = getEventReportDueDate(event);
                               const diffDays = due ? Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24)) : null;
                               const isOverdue = diffDays !== null && diffDays < 0;
                               return (

@@ -121,6 +121,41 @@ export function isEventActiveOnDate(event, targetDate) {
 }
 
 /**
+ * Computes the report due date: 10 days after the last date of the event in the calendar.
+ * Falls back to event.reportDueDate if set, or current date if no date is found.
+ */
+export function getEventReportDueDate(event) {
+  if (!event) return null;
+  const parseDate = (f) => {
+    if (!f) return null;
+    if (f.toDate && typeof f.toDate === 'function') return f.toDate();
+    if (typeof f.seconds === 'number') return new Date(f.seconds * 1000);
+    const parsed = new Date(f);
+    return isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  let lastEventDate = null;
+  if (event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0) {
+    const sessionEndDates = event.eventSessions
+      .map(s => parseDate(s.endDate) || parseDate(s.startDate))
+      .filter(Boolean);
+    if (sessionEndDates.length > 0) {
+      lastEventDate = new Date(Math.max(...sessionEndDates.map(d => d.getTime())));
+    }
+  }
+
+  if (!lastEventDate) {
+    lastEventDate = parseDate(event.endDate) || parseDate(event.startDate);
+  }
+
+  if (lastEventDate) {
+    return new Date(lastEventDate.getTime() + 10 * 24 * 60 * 60 * 1000);
+  }
+
+  return parseDate(event.reportDueDate) || new Date();
+}
+
+/**
  * Appends an entry to the event's audit log.
  */
 export async function addAuditLogEntry(eventId, eventType, performedBy, details = '', stage = 1) {
@@ -527,7 +562,18 @@ export async function updateEventStatus(eventId, actionStatus, reviewNotes = '',
     const bothApproved = Boolean(updatedStage2.dosw?.approved && updatedStage2.stuco?.approved);
     if (bothApproved) {
       updates.status = 'approved';
-      const dueDateJS = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+      // Calculate report due date: 10 days after the last date of the event chosen in calendar
+      let lastEventDate = currentData.endDate?.toDate ? currentData.endDate.toDate() : (currentData.endDate ? new Date(currentData.endDate) : null);
+      if (currentData.isMultiSession && Array.isArray(currentData.eventSessions) && currentData.eventSessions.length > 0) {
+        const sessionEndDates = currentData.eventSessions
+          .map(s => s.endDate?.toDate ? s.endDate.toDate() : (s.endDate ? new Date(s.endDate) : null))
+          .filter(Boolean);
+        if (sessionEndDates.length > 0) {
+          lastEventDate = new Date(Math.max(...sessionEndDates.map(d => d.getTime())));
+        }
+      }
+      const baseDate = lastEventDate || new Date();
+      const dueDateJS = new Date(baseDate.getTime() + 10 * 24 * 60 * 60 * 1000);
       updates.reportDueDate = Timestamp.fromDate(dueDateJS);
       dualApprovalResult = 'fully_approved';
       await addAuditLogEntry(eventId, 'approved', performer, 'Stage 2 Clearance Documents fully approved.', 2);
