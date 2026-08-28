@@ -1563,8 +1563,9 @@ export default function CouncilPortal() {
     const eventId = typeof eventOrId === 'string' ? eventOrId : eventOrId?.eventId;
     const status = typeof eventOrId === 'object' ? eventOrId?.status : null;
 
-    if (status && !['submitted', 'revision_needed', 'rejected'].includes(status)) {
-      showNotification('Deletion prohibited once Stage 1 has been approved.', 'error');
+    const allowedStatuses = ['submitted', 'revision_needed', 'rejected', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed'];
+    if (status && !allowedStatuses.includes(status)) {
+      showNotification('Deletion prohibited once Stage 2 clearance has been fully approved.', 'error');
       return;
     }
 
@@ -2760,11 +2761,11 @@ export default function CouncilPortal() {
                             </button>
                           )}
 
-                          {/* Delete Proposal Button - Only allowed before Stage 1 approval */}
-                          {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
+                          {/* Delete Proposal Button - Allowed during Stage 1 and Stage 2 */}
+                          {['submitted', 'revision_needed', 'rejected', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(event.status) && (
                             <button
                               onClick={(e) => handleDeleteProposal(event, e)}
-                              title="Delete Proposal"
+                              title="Delete Proposal / Event"
                               className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 border border-transparent hover:border-red-200 transition-colors rounded-none shrink-0"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -3019,6 +3020,16 @@ export default function CouncilPortal() {
                                 className="px-4 py-2 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-all rounded-none"
                               >
                                 Close Event
+                              </button>
+                            )}
+
+                            {/* Delete Event Button - Allowed during Stage 1 and Stage 2 */}
+                            {['submitted', 'revision_needed', 'rejected', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(event.status) && (
+                              <button
+                                onClick={(e) => handleDeleteProposal(event, e)}
+                                className="px-4 py-2 bg-red-600 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-red-700 transition-all rounded-none"
+                              >
+                                Delete Event
                               </button>
                             )}
                           </div>
