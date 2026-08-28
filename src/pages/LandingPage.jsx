@@ -182,27 +182,35 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
   return (
     <div>
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6 sm:mb-8">
         <button onClick={() => setMonth(m => subMonths(m, 1))}
-          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
-          <ChevronLeft size={16} />
+          className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
+          aria-label="Previous month">
+          <ChevronLeft size={18} />
         </button>
-        <div className="text-center">
-          <h2 className="font-anton text-2xl md:text-3xl text-white tracking-wide">{format(month, 'MMMM').toUpperCase()}</h2>
-          <p className="text-white/25 text-sm font-medium">{format(month, 'yyyy')}</p>
+        <div className="text-center px-2">
+          <h2 className="font-anton text-2xl sm:text-3xl md:text-4xl text-white tracking-wide">{format(month, 'MMMM').toUpperCase()}</h2>
+          <p className="text-white/40 text-xs sm:text-sm font-semibold">{format(month, 'yyyy')}</p>
         </div>
         <button onClick={() => setMonth(m => addMonths(m, 1))}
-          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95">
-          <ChevronRight size={16} />
+          className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.07] flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.08] hover:border-white/[0.14] transition-all duration-200 active:scale-95 cursor-pointer shrink-0"
+          aria-label="Next month">
+          <ChevronRight size={18} />
         </button>
       </div>
 
+      {/* Mobile Swipe Indicator */}
+      <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#ffe17c] uppercase sm:hidden mb-3.5 bg-white/[0.03] border border-white/5 py-1.5 px-3 rounded-full mx-auto w-fit">
+        <span className="animate-pulse">👉</span>
+        <span>Swipe horizontally to explore full calendar</span>
+      </div>
+
       {/* DOW Headers */}
-      <div className="overflow-x-auto pb-6 -mx-6 px-6 sm:mx-0 sm:px-0">
-        <div className="min-w-[768px]">
+      <div className="overflow-x-auto pb-6 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="min-w-[700px] sm:min-w-[768px]">
           <div className="grid grid-cols-7 gap-2 mb-3">
             {DOW.map(d => (
-              <div key={d} className="text-center text-[10px] font-bold tracking-[0.18em] text-white/18 py-1 uppercase">{d}</div>
+              <div key={d} className="text-center text-[10px] font-bold tracking-[0.18em] text-white/25 py-1 uppercase">{d}</div>
             ))}
           </div>
           {loading ? (
@@ -224,7 +232,7 @@ function FloatingCalendar({ events, onSelectEvent, loading }) {
 
                     // Set styles dynamically if there is an event
                     const cellStyle = {};
-                    let cellClasses = 'relative rounded-xl p-2 sm:p-3 min-h-[90px] sm:min-h-[110px] flex flex-col justify-between transition-all duration-300';
+                    let cellClasses = 'relative rounded-xl p-2 sm:p-3 min-h-[85px] sm:min-h-[110px] flex flex-col justify-between transition-all duration-300';
                     
                     if (todayDay) {
                       cellClasses += ' bg-[#ffe17c]/10 border border-[#ffe17c]/35 shadow-[0_0_24px_rgba(255,225,124,0.08),inset_0_1px_0_rgba(255,225,124,0.15)]';
@@ -453,24 +461,24 @@ export default function LandingPage() {
 
 
       {/* ── HERO ────────────────────────────────────────────────────────── */}
-      <section className="relative min-h-screen flex flex-col justify-center pt-16 pb-16 px-6 z-10">
+      <section className="relative min-h-screen flex flex-col justify-center pt-14 pb-14 px-4 sm:px-6 z-10">
         <div className="max-w-7xl mx-auto w-full">
 
           {/* Main headline */}
-          <div className="overflow-hidden mb-4">
+          <div className="overflow-hidden mb-2 sm:mb-4">
             <motion.h1
               initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-              className="font-anton text-[clamp(3.5rem,12vw,11rem)] leading-[0.82] tracking-tight text-white"
+              className="font-anton text-[clamp(2.4rem,10.5vw,11rem)] leading-[0.88] sm:leading-[0.82] tracking-tight text-white"
             >
               FR.CRCE
             </motion.h1>
           </div>
-          <div className="overflow-hidden mb-4">
+          <div className="overflow-hidden mb-2 sm:mb-4">
             <motion.h1
               initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.9, delay: 0.08, ease: [0.16, 1, 0.3, 1] }}
-              className="font-anton text-[clamp(3rem,10vw,9rem)] leading-[0.82] tracking-tight"
+              className="font-anton text-[clamp(2.2rem,9.5vw,9rem)] leading-[0.88] sm:leading-[0.82] tracking-tight"
               style={{
                 background: 'linear-gradient(135deg, #ffe17c 0%, #f59e0b 50%, #ffe17c 100%)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
@@ -479,11 +487,11 @@ export default function LandingPage() {
               OFFICIAL
             </motion.h1>
           </div>
-          <div className="overflow-hidden mb-10">
+          <div className="overflow-hidden mb-6 sm:mb-10">
             <motion.h1
               initial={{ y: 120, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.9, delay: 0.16, ease: [0.16, 1, 0.3, 1] }}
-              className="font-anton text-[clamp(3rem,10vw,9rem)] leading-[0.82] tracking-tight text-white/[0.12]"
+              className="font-anton text-[clamp(2.2rem,9.5vw,9rem)] leading-[0.88] sm:leading-[0.82] tracking-tight text-white/[0.12]"
             >
               EVENTS PORTAL
             </motion.h1>
@@ -506,31 +514,31 @@ export default function LandingPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 0.7, delay: 0.6, ease: [0.23, 1, 0.32, 1] }}
               onClick={() => setDetail(next)}
-              className="relative group cursor-pointer mt-14 overflow-hidden"
+              className="relative group cursor-pointer mt-8 sm:mt-14 overflow-hidden"
             >
               {/* Animated gradient border */}
               <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-br from-[#ffe17c]/30 via-white/5 to-[#ffe17c]/10">
                 <div className="w-full h-full rounded-2xl bg-[#070707]" />
               </div>
-              <div className="relative rounded-2xl backdrop-blur-xl bg-white/[0.02] p-8 md:p-10 transition-colors duration-500 group-hover:bg-white/[0.04]">
+              <div className="relative rounded-2xl backdrop-blur-xl bg-white/[0.02] p-5 sm:p-8 md:p-10 transition-colors duration-500 group-hover:bg-white/[0.04]">
                 <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-[#ffe17c]/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 sm:gap-6 relative z-10">
                   <div>
-                    <p className="text-[#ffe17c]/60 text-[10px] font-bold uppercase tracking-[0.22em] mb-3 flex items-center gap-2.5">
+                    <p className="text-[#ffe17c]/80 text-[10px] font-bold uppercase tracking-[0.22em] mb-2 sm:mb-3 flex items-center gap-2.5">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#ffe17c] opacity-75" />
                         <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#ffe17c]" />
                       </span>
                       Next Approved Event
                     </p>
-                    <h2 className="text-2xl md:text-4xl font-bold text-white tracking-tight mb-1.5">{next.eventName}</h2>
-                    <p className="text-white/35 text-sm">{next.councilName}</p>
+                    <h2 className="text-xl sm:text-2xl md:text-4xl font-bold text-white tracking-tight mb-1">{next.eventName}</h2>
+                    <p className="text-white/45 text-xs sm:text-sm">{next.councilName}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right bg-white/[0.04] border border-white/[0.07] rounded-xl p-4">
-                      <p className="text-white/25 text-[10px] uppercase font-bold tracking-[0.15em] mb-1">Date</p>
-                      <p className="text-white font-semibold text-base">{format(next._startDate, 'EEE, MMM d')}</p>
-                      <p className="text-[#ffe17c]/70 text-sm font-bold">{format(next._startDate, 'h:mm a')}</p>
+                  <div className="flex items-center justify-between sm:justify-start gap-4">
+                    <div className="text-left sm:text-right bg-white/[0.04] border border-white/[0.07] rounded-xl p-3 sm:p-4 flex-1 sm:flex-initial">
+                      <p className="text-white/30 text-[9px] sm:text-[10px] uppercase font-bold tracking-[0.15em] mb-0.5">Date</p>
+                      <p className="text-white font-semibold text-sm sm:text-base">{format(next._startDate, 'EEE, MMM d')}</p>
+                      <p className="text-[#ffe17c] text-xs sm:text-sm font-bold">{format(next._startDate, 'h:mm a')}</p>
                     </div>
                     <div className="w-10 h-10 rounded-xl bg-[#ffe17c]/10 border border-[#ffe17c]/20 flex items-center justify-center text-[#ffe17c] group-hover:bg-[#ffe17c]/20 transition-colors duration-300 shrink-0">
                       <ArrowRight size={18} />
@@ -653,7 +661,7 @@ export default function LandingPage() {
       {/* ── EVENT DETAIL MODAL ──────────────────────────────────────────── */}
       <AnimatePresence>
         {detail && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-3 sm:p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setDetail(null)}
               className="absolute inset-0 bg-black/75 backdrop-blur-lg" />
@@ -662,46 +670,48 @@ export default function LandingPage() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.94, y: 24 }}
               transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
-              className="relative w-[95vw] max-w-2xl flex flex-col max-h-[85vh]"
+              className="relative w-[95vw] max-w-2xl flex flex-col max-h-[90vh]"
             >
               <div className="absolute inset-0 rounded-2xl p-[1px] bg-gradient-to-br from-white/15 via-white/5 to-transparent">
                 <div className="w-full h-full rounded-2xl bg-[#060606]" />
               </div>
-              <div className="relative rounded-2xl bg-[#060606] flex flex-col max-h-[85vh]">
+              <div className="relative rounded-2xl bg-[#060606] flex flex-col max-h-[90vh] overflow-hidden">
                 <button onClick={() => setDetail(null)}
-                  className="absolute top-5 right-5 z-10 w-8 h-8 bg-white/[0.06] border border-white/[0.08] rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/[0.12] transition-all">
-                  <X size={14} />
+                  className="absolute top-4 right-4 sm:top-5 sm:right-5 z-20 w-8 h-8 bg-white/[0.08] border border-white/[0.12] rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/[0.16] active:scale-95 transition-all cursor-pointer"
+                  aria-label="Close modal">
+                  <X size={15} />
                 </button>
-                <div className="p-5 sm:p-8 border-b border-white/[0.05] shrink-0 relative overflow-hidden">
+                <div className="p-4 sm:p-7 border-b border-white/[0.05] shrink-0 relative overflow-hidden pr-12">
                   <div className="absolute top-0 left-0 right-0 h-[1.5px]"
                     style={{ background: `linear-gradient(90deg, transparent 0%, ${COUNCIL_COLORS[detail.councilId] || '#ffe17c'} 50%, transparent 100%)` }} />
-                  <div className="flex items-center gap-2.5 mb-4 pr-8">
-                    <span className="px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-white/45 border border-white/[0.06]">{detail.councilName}</span>
+                  <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                    <span className="px-2.5 py-1 rounded-lg text-[9px] sm:text-[10px] font-bold uppercase tracking-wider bg-white/[0.05] text-white/60 border border-white/[0.06]">{detail.councilName}</span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-3 leading-tight">{detail.eventName}</h2>
-                  <div className="flex flex-wrap gap-4 text-xs sm:text-sm text-white/35">
-                    <span className="flex items-center gap-1.5"><CalendarIcon size={13} /> {format(detail._startDate, 'EEEE, MMM d · h:mm a')}</span>
-                    {detail.venue && <span className="flex items-center gap-1.5"><MapPin size={13} /> {detail.venue}</span>}
+                  <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-white mb-2 leading-tight">{detail.eventName}</h2>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-xs sm:text-sm text-white/40">
+                    <span className="flex items-center gap-1.5"><CalendarIcon size={13} className="text-[#ffe17c]" /> {format(detail._startDate, 'EEEE, MMM d · h:mm a')}</span>
+                    {detail.venue && <span className="flex items-center gap-1.5"><MapPin size={13} className="text-[#ffe17c]" /> {detail.venue}</span>}
                   </div>
                 </div>
-                <div className="p-5 sm:p-8 overflow-y-auto">
+                <div className="p-4 sm:p-7 overflow-y-auto space-y-4">
 
-                  <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     {[
                       { icon: Users, label: 'Expected Footfall', value: detail.expectedFootfall || 'N/A' },
                       { icon: Ticket, label: 'Registration', value: detail.registrationFeeApplicable ? `₹${detail.registrationFeeAmount}` : 'Free' },
                     ].map(({ icon: I, label, value }) => (
-                      <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-4">
-                        <p className="text-white/25 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex items-center gap-1.5"><I size={12} /> {label}</p>
-                        <p className="text-xl text-white font-semibold">{value}</p>
+                      <div key={label} className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3.5 sm:p-4">
+                        <p className="text-white/30 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] mb-1.5 flex items-center gap-1.5"><I size={12} className="text-[#ffe17c]" /> {label}</p>
+                        <p className="text-lg sm:text-xl text-white font-semibold">{value}</p>
                       </div>
                     ))}
                   </div>
-                  <div className="space-y-4">
+
+                  <div className="space-y-3 sm:space-y-4">
                     {detail.prizeMoneyApplicable && (
-                      <div className="bg-amber-500/[0.07] border border-amber-500/[0.15] rounded-xl p-4">
-                        <p className="text-amber-400/60 text-[10px] font-bold uppercase tracking-[0.15em] mb-1 flex items-center gap-1.5"><Trophy size={12} /> Prize Pool</p>
-                        <p className="text-white font-semibold">₹{detail.prizeMoneyAmount} <span className="text-white/30 font-normal text-sm">({detail.prizeMoneySource})</span></p>
+                      <div className="bg-amber-500/[0.07] border border-amber-500/[0.15] rounded-xl p-3.5 sm:p-4">
+                        <p className="text-amber-400/70 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.15em] mb-1 flex items-center gap-1.5"><Trophy size={12} /> Prize Pool</p>
+                        <p className="text-white font-semibold text-sm sm:text-base">₹{detail.prizeMoneyAmount} <span className="text-white/30 font-normal text-xs sm:text-sm">({detail.prizeMoneySource})</span></p>
                       </div>
                     )}
 
@@ -737,28 +747,28 @@ export default function LandingPage() {
                         : (councilObj?.coordinator || 'N/A');
 
                       return (
-                        <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-5">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-white/[0.02] border border-white/[0.05] rounded-xl p-4 sm:p-5">
                           <div>
-                            <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Student Contact</p>
-                            <p className="text-sm text-white/80">{studentContactName}</p>
+                            <p className="text-white/30 text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-bold mb-1">Student Contact</p>
+                            <p className="text-xs sm:text-sm text-white/90 font-medium">{studentContactName}</p>
                             {studentContactPhone && (
-                              <p className="text-xs text-white/35 mt-0.5 flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-white/40 shrink-0" />
+                              <p className="text-[11px] sm:text-xs text-white/45 mt-1 flex items-center gap-1.5">
+                                <Phone className="w-3 h-3 text-[#ffe17c] shrink-0" />
                                 <span>{studentContactPhone}</span>
                               </p>
                             )}
                           </div>
                           <div>
-                            <p className="text-white/25 text-[10px] uppercase tracking-[0.15em] font-bold mb-1.5">Faculty Coordinator</p>
-                            <p className="text-sm text-white/80">{facultyCoordName}</p>
+                            <p className="text-white/30 text-[9px] sm:text-[10px] uppercase tracking-[0.15em] font-bold mb-1">Faculty Coordinator</p>
+                            <p className="text-xs sm:text-sm text-white/90 font-medium">{facultyCoordName}</p>
                           </div>
                         </div>
                       );
                     })()}
                     {(detail.safetyArrangementNeeded || detail.venuePermissionApplicable) && (
-                      <div className="flex gap-2 flex-wrap">
-                        {detail.safetyArrangementNeeded && <span className="px-3 py-1.5 rounded-lg bg-orange-500/[0.07] text-orange-400 text-xs font-bold border border-orange-500/[0.14]">Safety Required</span>}
-                        {detail.venuePermissionApplicable && <span className="px-3 py-1.5 rounded-lg bg-teal-500/[0.07] text-teal-400 text-xs font-bold border border-teal-500/[0.14]">Venue Permit</span>}
+                      <div className="flex gap-2 flex-wrap pt-1">
+                        {detail.safetyArrangementNeeded && <span className="px-3 py-1 rounded-lg bg-orange-500/[0.07] text-orange-400 text-[11px] font-bold border border-orange-500/[0.14]">Safety Required</span>}
+                        {detail.venuePermissionApplicable && <span className="px-3 py-1 rounded-lg bg-teal-500/[0.07] text-teal-400 text-[11px] font-bold border border-teal-500/[0.14]">Venue Permit</span>}
                       </div>
                     )}
                   </div>

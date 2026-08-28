@@ -111,13 +111,13 @@ function DragDropUpload({ id, label, accept, file, filesList, multiple, onChange
         <div className="text-center space-y-1.5 pointer-events-none select-none">
           <p className="font-anton text-xs text-[#171e19] uppercase tracking-wider">
             {multiple
-              ? (filesList && filesList.length > 0 ? `✓ ${filesList.length} Files Selected` : "Drag & Drop Files Here")
-              : (file ? "✓ File Ready" : "Drag & Drop File Here")}
+              ? (filesList && filesList.length > 0 ? `✓ ${filesList.length} Files Selected` : "Tap or Drop Files Here")
+              : (file ? "✓ File Ready" : "Tap or Drop File Here")}
           </p>
           <p className="font-satoshi text-[10px] text-[#b7c6c2] uppercase font-bold">
             {multiple
-              ? (filesList && filesList.length > 0 ? filesList.map(f => f.name).join(', ') : "or click to browse")
-              : (file ? file.name : "or click to browse")}
+              ? (filesList && filesList.length > 0 ? filesList.map(f => f.name).join(', ') : "click or tap to browse files")
+              : (file ? file.name : "click or tap to browse files")}
           </p>
         </div>
       </div>
@@ -156,13 +156,14 @@ function SortableMemberCard({ member, openEditMemberModal, handleDeleteMember, I
     <div
       ref={setNodeRef}
       style={style}
-      className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between space-y-4 hover:border-[#ffe17c] transition-colors relative ${isDragging ? 'border-[#ffe17c] scale-105 shadow-[8px_8px_0px_0px_#171e19]' : ''}`}
+      className={`bg-white border-2 border-[#171e19] p-4 sm:p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between space-y-4 hover:border-[#ffe17c] transition-colors relative ${isDragging ? 'border-[#ffe17c] scale-105 shadow-[8px_8px_0px_0px_#171e19]' : ''}`}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <div
           {...attributes}
           {...listeners}
-          className="absolute -left-3 top-1/2 -translate-y-1/2 p-1 bg-white border-2 border-[#171e19] cursor-grab active:cursor-grabbing hover:bg-[#ffe17c] transition-colors z-20"
+          className="absolute -left-2.5 top-1/2 -translate-y-1/2 p-1.5 bg-white border-2 border-[#171e19] cursor-grab active:cursor-grabbing hover:bg-[#ffe17c] transition-colors z-20 touch-none"
+          title="Drag to reorder member"
         >
           <GripVertical className="w-4 h-4 text-[#171e19]" />
         </div>
@@ -408,7 +409,11 @@ export default function CouncilPortal() {
   }, []);
 
   const sensors = useSensors(
-    useSensor(PointerSensor),
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
@@ -1714,13 +1719,13 @@ export default function CouncilPortal() {
   // 1. LANDING / LOGIN SCREEN (Email & Password Auth Gate)
   if (!council) {
     return (
-      <div className="min-h-screen grid-pattern-charcoal flex items-center justify-center px-4 py-12">
-        <div className="bg-white border-4 border-[#171e19] p-8 md:p-10 max-w-md w-full space-y-6 shadow-[8px_8px_0px_0px_#ffe17c] rounded-none">
-          <div className="text-center space-y-2">
-            <h1 className="font-anton text-5xl md:text-6xl text-[#171e19] tracking-tight">
+      <div className="min-h-screen grid-pattern-charcoal flex items-center justify-center px-3 sm:px-4 py-8 sm:py-12">
+        <div className="bg-white border-4 border-[#171e19] p-5 sm:p-8 md:p-10 max-w-md w-full space-y-6 shadow-[6px_6px_0px_0px_#ffe17c] sm:shadow-[8px_8px_0px_0px_#ffe17c] rounded-none">
+          <div className="text-center space-y-1.5 sm:space-y-2">
+            <h1 className="font-anton text-3xl sm:text-5xl md:text-6xl text-[#171e19] tracking-tight">
               CRCE COUNCILS<span className="text-[#ffe17c]">.</span>
             </h1>
-            <p className="font-satoshi text-xs uppercase tracking-widest text-[#b7c6c2] font-bold">
+            <p className="font-satoshi text-[11px] sm:text-xs uppercase tracking-widest text-[#b7c6c2] font-bold">
               Council Authentication Portal
             </p>
           </div>
@@ -1746,11 +1751,9 @@ export default function CouncilPortal() {
                   setAuthEmail(e.target.value);
                   setAuthError('');
                 }}
-                className="w-full bg-white border-2 border-[#171e19] px-4 py-3 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
+                className="w-full bg-white border-2 border-[#171e19] px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
               />
             </div>
-
-
 
             <div className="space-y-1.5">
               <div className="flex justify-between items-center">
@@ -1779,12 +1782,12 @@ export default function CouncilPortal() {
                     setAuthPassword(e.target.value);
                     setAuthError('');
                   }}
-                  className="w-full bg-white border-2 border-[#171e19] px-4 py-3 pr-10 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
+                  className="w-full bg-white border-2 border-[#171e19] px-3.5 sm:px-4 py-2.5 sm:py-3 pr-10 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171e19]/60 hover:text-[#171e19] transition-colors p-1 cursor-pointer"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#171e19]/60 hover:text-[#171e19] transition-colors p-1.5 cursor-pointer"
                   title={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? <IconEyeOff className="w-4 h-4" /> : <IconEye className="w-4 h-4" />}
@@ -1795,7 +1798,7 @@ export default function CouncilPortal() {
             <button
               type="submit"
               disabled={authSubmitting}
-              className="w-full bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-lg py-3.5 uppercase tracking-wider transition-brutal border-2 border-[#171e19] rounded-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_#171e19] active:translate-x-0 active:translate-y-0 disabled:bg-[#ffe17c]/50"
+              className="w-full bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-base sm:text-lg py-3 sm:py-3.5 uppercase tracking-wider transition-brutal border-2 border-[#171e19] rounded-none hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_0px_#171e19] active:translate-x-0 active:translate-y-0 disabled:bg-[#ffe17c]/50 cursor-pointer"
             >
               {authSubmitting ? 'AUTHENTICATING...' : 'LOGIN TO PORTAL'}
             </button>
@@ -1806,10 +1809,10 @@ export default function CouncilPortal() {
         {/* FORGOT PASSWORD MODAL OVERLAY */}
         {showResetModal && (
           <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19]">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-5 sm:p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19] max-h-[90vh] overflow-y-auto">
               <div>
                 <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Password Recovery</p>
-                <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                <h3 className="font-anton text-xl sm:text-2xl text-[#171e19] mt-1 tracking-tight">
                   RESET ACCOUNT PASSWORD
                 </h3>
                 <p className="font-satoshi text-xs text-[#6b7280] mt-1 font-medium leading-relaxed">
@@ -1835,25 +1838,25 @@ export default function CouncilPortal() {
                     placeholder="Enter your official email address"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
+                    className="w-full bg-white border-2 border-[#171e19] px-3.5 sm:px-4 py-2.5 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2 border-t border-[#171e19]/10">
+                <div className="flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 pt-2 border-t border-[#171e19]/10">
                   <button
                     type="button"
                     onClick={() => {
                       setShowResetModal(false);
                       setResetMessage(null);
                     }}
-                    className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                    className="w-full sm:w-auto px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal cursor-pointer text-center"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={resetSubmitting}
-                    className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:bg-slate-400"
+                    className="w-full sm:w-auto px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:bg-slate-400 cursor-pointer"
                   >
                     {resetSubmitting ? 'SENDING...' : 'SEND RESET LINK'}
                   </button>
@@ -1870,17 +1873,17 @@ export default function CouncilPortal() {
 
   // 2. MAIN LOGGED IN SCREEN
   return (
-    <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
+    <div className="max-w-[1550px] mx-auto px-3 sm:px-4 md:px-8 py-5 sm:py-8 space-y-6">
       {/* Superadmin Universal Council Override Switcher */}
       {isSuperAdmin && (
-        <div className="bg-[#171e19] text-[#ffe17c] p-4 border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#ffe17c] flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-satoshi text-xs mb-4">
-          <div className="flex items-center gap-2">
-            <span className="font-anton text-sm uppercase tracking-wider text-[#171e19] bg-[#ffe17c] px-2.5 py-1 border border-[#171e19]">
+        <div className="bg-[#171e19] text-[#ffe17c] p-3 sm:p-4 border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#ffe17c] flex flex-col sm:flex-row sm:items-center justify-between gap-3 font-satoshi text-xs mb-4">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-anton text-xs sm:text-sm uppercase tracking-wider text-[#171e19] bg-[#ffe17c] px-2.5 py-1 border border-[#171e19]">
               ⚡ SUPERADMIN OVERRIDE ACTIVE
             </span>
             <span className="font-bold text-white text-xs">Switch Council Portal Context:</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <select
               value={council?.id || ''}
               onChange={(e) => {
@@ -1891,7 +1894,7 @@ export default function CouncilPortal() {
                   showNotification(`Switched active portal context to: ${selected.name}`, 'warning');
                 }
               }}
-              className="bg-[#ffe17c] text-[#171e19] font-anton text-xs uppercase px-3 py-2 border-2 border-[#171e19] focus:outline-none cursor-pointer"
+              className="bg-[#ffe17c] text-[#171e19] font-anton text-xs uppercase px-3 py-2 border-2 border-[#171e19] focus:outline-none cursor-pointer flex-1 sm:flex-initial"
             >
               {COUNCILS.map(c => (
                 <option key={c.id} value={c.id}>
@@ -1901,7 +1904,7 @@ export default function CouncilPortal() {
             </select>
             <Link
               to="/admin"
-              className="px-3 py-1.5 bg-white border border-[#171e19] text-[#171e19] font-anton text-xs uppercase hover:bg-slate-100 transition-colors"
+              className="px-3 py-1.5 bg-white border border-[#171e19] text-[#171e19] font-anton text-xs uppercase hover:bg-slate-100 transition-colors shrink-0"
             >
               Admin Console &rarr;
             </Link>
@@ -1911,7 +1914,7 @@ export default function CouncilPortal() {
 
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center gap-3 p-4 border shadow-xl transition-all duration-300 transform translate-y-0 rounded-none ${
+        <div className={`fixed bottom-4 right-4 left-4 sm:left-auto sm:right-5 z-50 flex items-center justify-between gap-3 p-3.5 sm:p-4 border shadow-xl transition-all duration-300 transform translate-y-0 rounded-none ${
           notification.type === 'error'
             ? 'bg-red-50 border-red-500 text-red-800'
             : notification.type === 'warning'
@@ -1932,7 +1935,7 @@ export default function CouncilPortal() {
           )}
           <button
             onClick={() => setNotification(null)}
-            className="text-[#171e19] hover:opacity-75 font-bold ml-1 text-sm cursor-pointer"
+            className="text-[#171e19] hover:opacity-75 font-bold ml-1 text-sm cursor-pointer p-1"
           >
             ✕
           </button>
@@ -1940,32 +1943,32 @@ export default function CouncilPortal() {
       )}
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-[#171e19] pb-6 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-[#171e19] pb-5 sm:pb-6 gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 bg-[#ffe17c] border border-[#171e19]" />
             <p className="font-satoshi text-[10px] uppercase tracking-widest text-[#171e19] font-bold">Active Session ({council?.category ? council.category.toUpperCase() : 'COUNCIL'})</p>
           </div>
-          <h1 className="font-anton text-4xl text-[#171e19] mt-2 tracking-tight">
+          <h1 className="font-anton text-2xl sm:text-3xl md:text-4xl text-[#171e19] mt-1.5 tracking-tight">
             {council?.name ? council.name.toUpperCase() : 'COUNCIL PORTAL'}
           </h1>
           <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold mt-1">Faculty Coordinator: {council?.coordinator ? council.coordinator.toUpperCase() : 'N/A'}</p>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <button
             onClick={() => {
               setResetEmail(auth?.currentUser?.email || council?.email || '');
               setResetMessage(null);
               setShowResetModal(true);
             }}
-            className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer flex items-center gap-1.5"
+            className="flex-1 sm:flex-initial px-3.5 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer flex items-center justify-center gap-1.5"
           >
             <IconKey className="w-4 h-4 text-[#171e19]" /> Change Password
           </button>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer"
+            className="flex-1 sm:flex-initial px-3.5 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal cursor-pointer text-center"
           >
             Logout / Switch
           </button>
@@ -1973,14 +1976,14 @@ export default function CouncilPortal() {
       </div>
 
       {/* Tabs folderSwitcher */}
-      <div className="flex overflow-x-auto border-b-2 border-[#171e19] no-scrollbar scroll-smooth">
+      <div className="flex overflow-x-auto border-b-2 border-[#171e19] no-scrollbar scroll-smooth gap-1 sm:gap-0">
         <button
           onClick={() => {
             setActiveTab('new-request');
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] tracking-wider transition-brutal shrink-0 whitespace-nowrap ${activeTab === 'new-request'
+          className={`font-anton text-xs sm:text-sm md:text-base px-3.5 sm:px-5 md:px-7 py-2.5 sm:py-3 md:py-3.5 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] tracking-wider transition-brutal shrink-0 whitespace-nowrap cursor-pointer ${activeTab === 'new-request'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
@@ -1994,7 +1997,7 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap ${activeTab === 'my-events'
+          className={`font-anton text-xs sm:text-sm md:text-base px-3.5 sm:px-5 md:px-7 py-2.5 sm:py-3 md:py-3.5 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] sm:ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap cursor-pointer ${activeTab === 'my-events'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
@@ -2008,7 +2011,7 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap ${activeTab === 'members'
+          className={`font-anton text-xs sm:text-sm md:text-base px-3.5 sm:px-5 md:px-7 py-2.5 sm:py-3 md:py-3.5 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] sm:ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap cursor-pointer ${activeTab === 'members'
               ? 'bg-[#171e19] text-white border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
@@ -2022,18 +2025,18 @@ export default function CouncilPortal() {
             setSubmittedEventId(null);
             setReportingEvent(null);
           }}
-          className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap flex items-center gap-1.5 sm:gap-2 ${activeTab === 'calendar'
+          className={`font-anton text-xs sm:text-sm md:text-base px-3.5 sm:px-5 md:px-7 py-2.5 sm:py-3 md:py-3.5 uppercase border-t-2 border-r-2 border-l-2 border-[#171e19] sm:ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap flex items-center gap-1.5 cursor-pointer ${activeTab === 'calendar'
               ? 'bg-[#171e19] text-[#ffe17c] border-b-transparent'
               : 'bg-white text-[#171e19] hover:bg-[#ffe17c]/20'
             }`}
         >
-          <IconCalendar className="w-4 h-4 sm:w-5 sm:h-5" /> Calendar
+          <IconCalendar className="w-4 h-4" /> Calendar
         </button>
 
         {reportingEvent && (
           <button
             onClick={() => setActiveTab('report')}
-            className={`font-anton text-xs sm:text-sm md:text-xl px-3 sm:px-4 md:px-8 py-2.5 sm:py-3 md:py-4 uppercase border-t-2 border-r-2 border-l-2 border-dashed border-[#ffe17c] bg-[#171e19] text-[#ffe17c] ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap`}
+            className={`font-anton text-xs sm:text-sm md:text-base px-3.5 sm:px-5 md:px-7 py-2.5 sm:py-3 md:py-3.5 uppercase border-t-2 border-r-2 border-l-2 border-dashed border-[#ffe17c] bg-[#171e19] text-[#ffe17c] sm:ml-[-2px] tracking-wider transition-brutal shrink-0 whitespace-nowrap cursor-pointer`}
           >
             Submit Report ({reportingEvent.eventId})
           </button>
@@ -2193,7 +2196,7 @@ export default function CouncilPortal() {
 
                       {/* Autocomplete Dropdown */}
                       {showContactDropdown && filteredContactMembers.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 z-30 mt-1 bg-white border-2 border-[#171e19] shadow-[6px_6px_0px_0px_#ffe17c] max-h-56 overflow-y-auto divide-y divide-[#171e19]/10">
+                        <div className="absolute top-full left-0 right-0 z-40 mt-1 bg-white border-2 border-[#171e19] shadow-[6px_6px_0px_0px_#ffe17c] max-h-56 overflow-y-auto divide-y divide-[#171e19]/10">
                           {filteredContactMembers.map(m => (
                             <button
                               type="button"
@@ -2207,14 +2210,14 @@ export default function CouncilPortal() {
                                 }));
                                 setShowContactDropdown(false);
                               }}
-                              className="w-full text-left p-3 hover:bg-[#ffe17c]/20 transition-colors flex items-center justify-between cursor-pointer group"
+                              className="w-full text-left p-3 sm:p-3.5 hover:bg-[#ffe17c]/20 transition-colors flex items-center justify-between cursor-pointer group"
                             >
-                              <div>
-                                <p className="font-anton text-sm text-[#171e19] uppercase tracking-wide group-hover:text-[#000]">{m.name}</p>
-                                <p className="font-satoshi text-[10px] font-bold uppercase text-[#171e19]/60">{m.designation}</p>
+                              <div className="pr-2 truncate">
+                                <p className="font-anton text-sm text-[#171e19] uppercase tracking-wide group-hover:text-[#000] truncate">{m.name}</p>
+                                <p className="font-satoshi text-[10px] font-bold uppercase text-[#171e19]/60 truncate">{m.designation}</p>
                               </div>
-                              <div className="text-right">
-                                <span className="font-satoshi text-xs font-bold text-[#171e19] bg-[#ffe17c] px-2 py-0.5 border border-[#171e19] shrink-0">
+                              <div className="text-right shrink-0">
+                                <span className="font-satoshi text-[11px] sm:text-xs font-bold text-[#171e19] bg-[#ffe17c] px-2 py-0.5 border border-[#171e19] shrink-0">
                                   {m.contactNumber}
                                 </span>
                               </div>
@@ -2465,18 +2468,18 @@ export default function CouncilPortal() {
                 </div>
 
                 {/* Form Buttons */}
-                <div className="flex justify-end gap-3 pt-6 border-t-2 border-[#171e19]">
+                <div className="flex flex-col sm:flex-row justify-end gap-3 pt-6 border-t-2 border-[#171e19]">
                   <button
                     type="button"
                     onClick={handleResetForm}
-                    className="px-6 py-3 bg-white border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-[#171e19] font-satoshi font-bold text-xs uppercase tracking-wider transition-brutal rounded-none"
+                    className="w-full sm:w-auto px-6 py-3 bg-white border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-[#171e19] font-satoshi font-bold text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                   >
                     Clear Form
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-6 py-3 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-lg uppercase tracking-widest transition-brutal border-2 border-[#171e19] rounded-none disabled:bg-[#171e19]/60 disabled:text-slate-400"
+                    className="w-full sm:w-auto px-6 py-3 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-base sm:text-lg uppercase tracking-widest transition-brutal border-2 border-[#171e19] rounded-none disabled:bg-[#171e19]/60 disabled:text-slate-400 text-center cursor-pointer"
                   >
                     {submitting ? 'UPLOADING...' : (editingEventId ? 'RESUBMIT PROPOSAL' : 'SUBMIT PROPOSAL')}
                   </button>
@@ -2678,7 +2681,7 @@ export default function CouncilPortal() {
                           {renderTimelineRows(event)}
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full sm:w-auto mt-2 sm:mt-0">
                           {/* Stage Indicator Badge */}
                           {(() => {
                             const stage = getEventStage(event.status);
@@ -2696,7 +2699,7 @@ export default function CouncilPortal() {
                           {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
                             <button
                               onClick={(e) => handleEditClick(event, e)}
-                              className="px-3 py-1.5 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-brutal rounded-none"
+                              className="px-3 py-1.5 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-brutal rounded-none cursor-pointer"
                               title="Edit Stage 1 Proposal details & PDF"
                             >
                               Edit Proposal (Stage 1)
@@ -2714,7 +2717,7 @@ export default function CouncilPortal() {
                                 setCustomPermissionDocs([]);
                                 setPermissionsErrors({});
                               }}
-                              className="px-3 py-1.5 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-brutal rounded-none"
+                              className="px-3 py-1.5 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-brutal rounded-none cursor-pointer"
                               title="Upload Stage 2 clearance & permission documents"
                             >
                               Upload Documents (Stage 2)
@@ -2732,7 +2735,7 @@ export default function CouncilPortal() {
                                 setReportImages([]);
                                 setActiveTab('report');
                               }}
-                              className="px-3 py-1.5 bg-emerald-700 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-800 transition-brutal rounded-none"
+                              className="px-3 py-1.5 bg-emerald-700 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-800 transition-brutal rounded-none cursor-pointer"
                               title="Submit Stage 3 post-event summary report & photos"
                             >
                               Submit Report (Stage 3)
@@ -2754,7 +2757,7 @@ export default function CouncilPortal() {
                                   }
                                 }
                               }}
-                              className="px-3 py-1.5 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-brutal rounded-none"
+                              className="px-3 py-1.5 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-brutal rounded-none cursor-pointer"
                               title="Close and archive the event"
                             >
                               Close Event
@@ -2766,7 +2769,7 @@ export default function CouncilPortal() {
                             <button
                               onClick={(e) => handleDeleteProposal(event, e)}
                               title="Delete Proposal / Event"
-                              className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 border border-transparent hover:border-red-200 transition-colors rounded-none shrink-0"
+                              className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-600 border border-transparent hover:border-red-200 transition-colors rounded-none shrink-0 cursor-pointer"
                             >
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M3 6h18"></path>
@@ -2957,12 +2960,12 @@ export default function CouncilPortal() {
                           )}
 
                           {/* Bottom Right Action Bar inside Drawer for Stage 1, Stage 2 & Stage 3 Uploads */}
-                          <div className="flex flex-wrap justify-end items-center gap-3 pt-4 border-t-2 border-[#171e19]">
+                          <div className="flex flex-wrap justify-end items-center gap-2.5 sm:gap-3 pt-4 border-t-2 border-[#171e19] w-full">
                             {/* Stage 1 Edit — only in Stage 1 */}
                             {['submitted', 'revision_needed', 'rejected'].includes(event.status) && (
                               <button
                                 onClick={(e) => handleEditClick(event, e)}
-                                className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-all rounded-none"
+                                className="w-full sm:w-auto px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-slate-100 transition-all rounded-none cursor-pointer text-center"
                               >
                                 Edit Proposal (Stage 1)
                               </button>
@@ -2979,7 +2982,7 @@ export default function CouncilPortal() {
                                   setCustomPermissionDocs([]);
                                   setPermissionsErrors({});
                                 }}
-                                className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[3px_3px_0px_0px_#171e19] transition-all rounded-none"
+                                className="w-full sm:w-auto px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider hover:shadow-[3px_3px_0px_0px_#171e19] transition-all rounded-none cursor-pointer text-center"
                               >
                                 Upload Documents (Stage 2)
                               </button>
@@ -2996,7 +2999,7 @@ export default function CouncilPortal() {
                                   setReportImages([]);
                                   setActiveTab('report');
                                 }}
-                                className="px-4 py-2 bg-emerald-800 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-900 transition-all rounded-none"
+                                className="w-full sm:w-auto px-4 py-2 bg-emerald-800 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-emerald-900 transition-all rounded-none cursor-pointer text-center"
                               >
                                 Submit Report (Stage 3)
                               </button>
@@ -3017,7 +3020,7 @@ export default function CouncilPortal() {
                                     }
                                   }
                                 }}
-                                className="px-4 py-2 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-all rounded-none"
+                                className="w-full sm:w-auto px-4 py-2 bg-[#171e19] text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-[#ffe17c] hover:text-[#171e19] transition-all rounded-none cursor-pointer text-center"
                               >
                                 Close Event
                               </button>
@@ -3027,7 +3030,7 @@ export default function CouncilPortal() {
                             {['submitted', 'revision_needed', 'rejected', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(event.status) && (
                               <button
                                 onClick={(e) => handleDeleteProposal(event, e)}
-                                className="px-4 py-2 bg-red-600 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-red-700 transition-all rounded-none"
+                                className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider hover:bg-red-700 transition-all rounded-none cursor-pointer text-center"
                               >
                                 Delete Event
                               </button>
@@ -3145,8 +3148,14 @@ export default function CouncilPortal() {
               <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-red-200 border border-red-400"></span> Blocked by Admin</div>
             </div>
 
+            {/* Mobile Calendar Swipe Prompt */}
+            <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#171e19] uppercase sm:hidden bg-[#ffe17c]/50 border border-[#171e19] py-1.5 px-3 rounded-none mx-auto w-fit">
+              <span className="animate-pulse">👉</span>
+              <span>Swipe horizontally to view full calendar</span>
+            </div>
+
             {/* Calendar Grid */}
-            <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0">
+            <div className="overflow-x-auto pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
               <div className="min-w-[650px] bg-white border-2 border-[#171e19] overflow-hidden shadow-[4px_4px_0px_0px_#ffe17c]">
                 {/* Weekday Headers */}
                 <div className="grid grid-cols-7 bg-[#171e19] font-satoshi text-[10px] font-bold uppercase tracking-wider text-white text-center py-2.5">
@@ -3255,157 +3264,113 @@ export default function CouncilPortal() {
                     );
                   });
                 })()}
-
-              </div>
-            </div>
-          </div>
-
-
-
-            {/* Stats Strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
-                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Total Events This Month</p>
-                <p className="font-anton text-3xl text-[#171e19] mt-1">
-                  {allCalEvents.filter(ev => {
-                    if (!['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(ev.status)) return false;
-                    const eStart = ev.startDate?.toDate ? ev.startDate.toDate() : new Date(ev.startDate);
-                    return eStart.getMonth() === calMonth.getMonth() && eStart.getFullYear() === calMonth.getFullYear();
-                  }).length}
-                </p>
-              </div>
-              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#ffe17c]">
-                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Your Council's Events</p>
-                <p className="font-anton text-3xl text-[#171e19] mt-1">
-                  {events.length}
-                </p>
-              </div>
-              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
-                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Blocked Periods</p>
-                <p className="font-anton text-3xl text-red-600 mt-1">{blockedDates.length}</p>
-              </div>
-              <div className="bg-white border-2 border-[#171e19] p-4 rounded-none shadow-[3px_3px_0px_0px_#171e19]">
-                <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Pending Proposals (All)</p>
-                <p className="font-anton text-3xl text-[#171e19] mt-1">
-                  {allCalEvents.filter(ev => ev.status === 'submitted').length}
-                </p>
-              </div>
-            </div>
-
-            {/* Blocked Dates Info Panel */}
-            {blockedDates.length > 0 && (
-              <div className="bg-red-50 border-2 border-red-400 p-5 space-y-3 rounded-none">
-                <h3 className="font-anton text-lg text-red-800 uppercase tracking-tight flex items-center gap-2"><IconBan className="w-5 h-5" /> Admin-Blocked Periods</h3>
-                <p className="font-satoshi text-xs text-red-700 font-semibold uppercase tracking-wide">Avoid proposing events on these dates.</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {blockedDates.map(bd => {
-                    const start = bd.startDate?.toDate ? bd.startDate.toDate() : new Date(bd.startDate);
-                    const end = bd.endDate?.toDate ? bd.endDate.toDate() : new Date(bd.endDate);
-                    const isSameDay = format(start, 'yyyy-MM-dd') === format(end, 'yyyy-MM-dd');
-                    return (
-                      <div key={bd.id} className="flex items-start gap-3 p-3 bg-white border border-red-300 rounded-none">
-                        <IconBan className="text-red-500 w-4 h-4 shrink-0 mt-0.5" />
-                        <div>
-                          <p className="font-anton text-sm text-[#171e19] tracking-tight">{bd.reason}</p>
-                          <p className="font-satoshi text-[10px] text-red-700 font-bold uppercase mt-0.5">
-                            {isSameDay
-                              ? format(start, 'MMM dd, yyyy')
-                              : `${format(start, 'MMM dd')} – ${format(end, 'MMM dd, yyyy')}`}
-                          </p>
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* TAB: SUBMIT REPORT */}
+        {/* TAB: SUBMIT POST-EVENT REPORT (STAGE 3) */}
         {activeTab === 'report' && reportingEvent && (
-          <div className="bg-white border-2 border-[#171e19] p-8 space-y-6 rounded-none shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in max-h-[90vh] overflow-y-auto">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="h-2 w-2 bg-[#ffe17c] border border-[#171e19]" />
-                <span className="font-satoshi text-[10px] font-bold text-[#171e19] uppercase tracking-widest">Report Filing Console</span>
+          <div className="space-y-6 animate-fade-in">
+            <div className="flex justify-between items-start border-b-2 border-[#171e19] pb-4">
+              <div>
+                <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Stage 3 Post-Event Documentation</p>
+                <h2 className="font-anton text-3xl text-[#171e19] mt-1 tracking-tight">
+                  SUBMIT REPORT: {reportingEvent.eventName.toUpperCase()}
+                </h2>
+                <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider mt-1">
+                  Event ID: <span className="text-[#171e19] font-bold">{reportingEvent.eventId}</span> · Upload post-event summary report and event photographs.
+                </p>
               </div>
-              <h2 className="font-anton text-2xl text-[#171e19] tracking-tight">
-                ARCHIVE EVENT: {reportingEvent.eventName.toUpperCase()}
-              </h2>
-              <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider mt-1">
-                Upload the final wrap-up PDF and event photos to close out the event. Both fields are required.
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setReportingEvent(null);
+                  setActiveTab('my-events');
+                }}
+                className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
+              >
+                Back to My Events
+              </button>
             </div>
 
-            {submitting && (
+            {reportSubmitting && (
               <div className="bg-[#ffe17c]/20 border-2 border-[#171e19] p-4 rounded-none flex items-center gap-3 animate-pulse">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-[#171e19] shrink-0" />
                 <div className="font-satoshi text-xs font-bold uppercase tracking-wider">
-                  <p className="text-[#171e19]">Uploading wrap-up files...</p>
+                  <p className="text-[#171e19]">Uploading report files & updating event status...</p>
                   <p className="text-[#b7c6c2] mt-0.5">{uploadProgress}</p>
                 </div>
               </div>
             )}
 
-            <form onSubmit={handleReportSubmit} className="space-y-6">
-              <div className="flex flex-col gap-2">
+            <form onSubmit={handleReportSubmit} className="space-y-6 bg-white border-2 border-[#171e19] p-5 sm:p-8 shadow-[4px_4px_0px_0px_#171e19]">
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-7 bg-emerald-600 border border-[#171e19]" />
+                  <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">STAGE 3 FILES</h3>
+                </div>
+
                 <DragDropUpload
                   id="reportPdf"
-                  label="Upload Final Report PDF *"
-                  helperText="This single PDF must cover: actual attendance/turnout figures, expense summaries, any incidents/issues, and notes/learnings from the event."
+                  label="Comprehensive Post-Event Report PDF *"
+                  helperText="Upload the signed/final post-event report including participant statistics, event timeline, winners list, and financial summary."
                   accept="application/pdf"
                   file={reportPdf}
-                  onChange={(file) => setReportPdf(file)}
+                  onChange={(f) => setReportPdf(f)}
+                  error={reportErrors.reportPdf}
+                  cachedUrl={reportingEvent.reportPdfUrl}
                 />
-              </div>
 
-              <div className="flex flex-col gap-2">
                 <DragDropUpload
                   id="reportImages"
-                  label="Attach Event Photos (At least 1 required) *"
-                  accept="image/*"
-                  multiple={true}
+                  label="Event Photographs (Max 5 Images) *"
+                  helperText="Select or drop up to 5 high-resolution event photographs (JPEG, PNG)."
+                  accept="image/jpeg,image/png,image/webp"
                   filesList={reportImages}
+                  multiple={true}
                   onChange={(files) => setReportImages(files)}
+                  error={reportErrors.reportImages}
                 />
               </div>
 
-              <div className="flex justify-end pt-3 gap-3 border-t-2 border-[#171e19]">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t-2 border-[#171e19]">
                 <button
                   type="button"
+                  disabled={reportSubmitting}
                   onClick={() => {
                     setReportingEvent(null);
-                    setReportPdf(null);
-                    setReportImages([]);
                     setActiveTab('my-events');
                   }}
-                  className="px-5 py-2.5 rounded-none border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-sm font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
+                  className="w-full sm:w-auto px-6 py-3 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] rounded-none font-anton text-lg uppercase tracking-wider transition-brutal border-2 border-[#171e19]"
+                  disabled={reportSubmitting}
+                  className="w-full sm:w-auto px-8 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-anton text-base sm:text-lg uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:bg-slate-400 text-center cursor-pointer"
                 >
-                  {reportingEvent?.status === 'report_revision_needed' ? 'RESUBMIT REPORT' : 'Submit Report'}
+                  {reportSubmitting ? 'UPLOADING REPORT...' : 'SUBMIT REPORT (STAGE 3)'}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* MODAL OVERLAY: STAGE 2 PERMISSIONS UPLOAD */}
+        {/* MODAL OVERLAYS */}
+
+        {/* STAGE 2 PERMISSION DOCUMENTS UPLOAD MODAL */}
         {permissionsUploadEvent && (
-          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19] max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-3 sm:px-4">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-4 sm:p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] animate-fade-in text-[#171e19] max-h-[90vh] overflow-y-auto">
               <div>
                 <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Stage 2: Upload Clearance & Permission Documents</p>
-                <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                <h3 className="font-anton text-xl sm:text-2xl text-[#171e19] mt-1 tracking-tight">
                   {permissionsUploadEvent.eventName.toUpperCase()}
                 </h3>
-                <div className="mt-3 bg-[#ffe17c]/30 border-2 border-[#171e19] p-3 text-[#171e19] shadow-[2px_2px_0px_0px_#171e19]">
+                <div className="mt-2.5 bg-[#ffe17c]/30 border-2 border-[#171e19] p-3 text-[#171e19] shadow-[2px_2px_0px_0px_#171e19]">
                   <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider mb-1">⚠️ IMPORTANT INSTRUCTION</p>
                   <p className="font-satoshi text-xs font-semibold leading-relaxed">
                     Please ensure that you have mentioned the Event ID <span className="font-bold underline bg-white px-1 border border-[#171e19]">{permissionsUploadEvent.eventId}</span> (received in Stage 1) on all physical permission documents before scanning and uploading them.
@@ -3436,14 +3401,14 @@ export default function CouncilPortal() {
 
                 {/* Optional Custom Permission Letters Section */}
                 <div className="space-y-3 pt-3 border-t-2 border-[#171e19]">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]">
                       Additional Clearance Documents (Optional)
                     </span>
                     <button
                       type="button"
                       onClick={() => setCustomPermissionDocs(prev => [...prev, { id: Date.now() + Math.random(), name: '', file: null }])}
-                      className="px-3 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] font-satoshi font-bold text-[10px] uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-all rounded-none"
+                      className="px-3 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] font-satoshi font-bold text-[10px] uppercase tracking-wider hover:shadow-[2px_2px_0px_0px_#171e19] transition-all rounded-none cursor-pointer"
                     >
                       + Add Custom Document
                     </button>
@@ -3458,7 +3423,7 @@ export default function CouncilPortal() {
                         <button
                           type="button"
                           onClick={() => setCustomPermissionDocs(prev => prev.filter(d => d.id !== item.id))}
-                          className="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 border border-[#171e19] text-[10px] font-bold uppercase transition-colors"
+                          className="px-2 py-0.5 bg-red-100 hover:bg-red-200 text-red-700 border border-[#171e19] text-[10px] font-bold uppercase transition-colors cursor-pointer"
                         >
                           Remove
                         </button>
@@ -3486,7 +3451,7 @@ export default function CouncilPortal() {
                   ))}
                 </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
+                <div className="flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 pt-3 border-t border-[#171e19]/10">
                   <button
                     type="button"
                     disabled={permissionsSubmitting}
@@ -3496,14 +3461,14 @@ export default function CouncilPortal() {
                       setCustomPermissionDocs([]);
                       setPermissionsErrors({});
                     }}
-                    className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                    className="w-full sm:w-auto px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={permissionsSubmitting}
-                    className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal"
+                    className="w-full sm:w-auto px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal text-center cursor-pointer"
                   >
                     {permissionsUploadEvent?.status === 'permissions_revision_needed' ? 'RESUBMIT CLEARANCE DOCUMENTS' : 'Submit Letters'}
                   </button>
@@ -3766,19 +3731,19 @@ export default function CouncilPortal() {
                   {memberErrors.contactNumber && <p className="font-satoshi text-[10px] text-red-500 font-bold uppercase tracking-wide">{memberErrors.contactNumber}</p>}
                 </div>
 
-                <div className="flex justify-end gap-3 pt-3 border-t border-[#171e19]/10">
+                <div className="flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 pt-3 border-t border-[#171e19]/10">
                   <button
                     type="button"
                     disabled={memberSubmitting}
                     onClick={() => setMemberModalOpen(false)}
-                    className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                    className="w-full sm:w-auto px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={memberSubmitting}
-                    className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
+                    className="w-full sm:w-auto px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50 text-center cursor-pointer"
                   >
                     {memberSubmitting ? 'SAVING...' : (editingMember ? 'UPDATE MEMBER' : 'ADD MEMBER')}
                   </button>
@@ -3789,11 +3754,11 @@ export default function CouncilPortal() {
         )}
         {/* FORGOT / FIRST TIME CHANGE PASSWORD MODAL OVERLAY */}
         {showResetModal && (
-          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19]">
+          <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-3 sm:px-4">
+            <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-md p-5 sm:p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] text-[#171e19] max-h-[90vh] overflow-y-auto">
               <div>
                 <p className="font-satoshi text-[10px] uppercase font-bold text-[#b7c6c2]">Password Management</p>
-                <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+                <h3 className="font-anton text-xl sm:text-2xl text-[#171e19] mt-1 tracking-tight">
                   RESET ACCOUNT PASSWORD
                 </h3>
                 <p className="font-satoshi text-xs text-[#6b7280] mt-1 font-medium leading-relaxed">
@@ -3819,25 +3784,25 @@ export default function CouncilPortal() {
                     placeholder="Enter your official email address"
                     value={resetEmail}
                     onChange={(e) => setResetEmail(e.target.value)}
-                    className="w-full bg-white border-2 border-[#171e19] px-4 py-2.5 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
+                    className="w-full bg-white border-2 border-[#171e19] px-3.5 sm:px-4 py-2.5 text-sm text-[#171e19] font-satoshi font-semibold focus:outline-none focus:border-[#ffe17c] rounded-none transition-brutal"
                   />
                 </div>
 
-                <div className="flex justify-end gap-3 pt-2 border-t border-[#171e19]/10">
+                <div className="flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 pt-2 border-t border-[#171e19]/10">
                   <button
                     type="button"
                     onClick={() => {
                       setShowResetModal(false);
                       setResetMessage(null);
                     }}
-                    className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                    className="w-full sm:w-auto px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={resetSubmitting}
-                    className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:bg-slate-400"
+                    className="w-full sm:w-auto px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:bg-slate-400 text-center cursor-pointer"
                   >
                     {resetSubmitting ? 'SENDING...' : 'SEND RESET LINK'}
                   </button>

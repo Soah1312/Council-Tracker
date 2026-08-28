@@ -1454,18 +1454,18 @@ export default function AdminPanel() {
                   />
                 </div>
 
-                <div className="flex gap-2 pt-2">
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
                   <button
                     type="button"
                     onClick={() => setShowResetModal(false)}
-                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-all rounded-none"
+                    className="w-full sm:flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-all rounded-none cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={resetSubmitting}
-                    className="flex-1 py-2.5 bg-[#ffe17c] hover:bg-[#ffe17c]/90 border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-all rounded-none disabled:opacity-50"
+                    className="w-full sm:flex-1 py-2.5 bg-[#ffe17c] hover:bg-[#ffe17c]/90 border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-all rounded-none disabled:opacity-50 cursor-pointer"
                   >
                     {resetSubmitting ? 'Sending...' : 'Send Reset Link'}
                   </button>
@@ -1480,7 +1480,7 @@ export default function AdminPanel() {
 
   // MAIN ADMIN PANEL VIEW
   return (
-    <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
+    <div className="max-w-[1550px] mx-auto px-3 sm:px-4 md:px-8 py-5 sm:py-8 space-y-6">
       {/* Toast Notification */}
       {notification && (
         <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${
@@ -1494,12 +1494,12 @@ export default function AdminPanel() {
 
       {/* Review Dialog Modal Overlay */}
       {reviewingEvent && (
-        <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-4">
-          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-[#171e19]/70 backdrop-blur-sm flex justify-center items-center px-3 sm:px-4">
+          <div className="bg-white border-4 border-[#171e19] rounded-none w-full max-w-lg p-4 sm:p-6 space-y-4 shadow-[8px_8px_0px_0px_#ffe17c] max-h-[90vh] overflow-y-auto">
 
             <div>
               <p className="font-satoshi text-[10px] uppercase font-bold text-[#171e19]/60">Submit Event Review</p>
-              <h3 className="font-anton text-2xl text-[#171e19] mt-1 tracking-tight">
+              <h3 className="font-anton text-xl sm:text-2xl text-[#171e19] mt-1 tracking-tight">
                 ACTION ON: {reviewingEvent.eventName.toUpperCase()}
               </h3>
               <p className="font-satoshi text-xs text-[#171e19] mt-1 uppercase font-semibold">
@@ -1531,21 +1531,21 @@ export default function AdminPanel() {
               />
             </div>
 
-            <div className="flex justify-end gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => {
                   setReviewingEvent(null);
                   setReviewNotes('');
                 }}
-                className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                className="w-full sm:w-auto px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={submitReview}
-                className="px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal"
+                className="w-full sm:w-auto px-5 py-2 bg-[#171e19] hover:bg-[#ffe17c] text-white hover:text-[#171e19] font-anton text-sm uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal text-center cursor-pointer"
               >
                 Confirm Action
               </button>
@@ -1556,19 +1556,19 @@ export default function AdminPanel() {
 
       {/* EVENT DETAIL MODAL — full screen centered */}
       {selectedEventDetail && (
-        <div className="fixed inset-0 z-40 bg-[#171e19]/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-40 bg-[#171e19]/80 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-6">
           <div className="bg-white border-2 border-[#171e19] w-full max-w-5xl max-h-[92vh] overflow-hidden shadow-[8px_8px_0px_0px_#171e19] flex flex-col animate-slide-up">
             
             {/* Modal Header Bar */}
-            <div className="flex items-start justify-between border-b-2 border-[#171e19] px-6 py-4 shrink-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="font-satoshi text-xs font-bold tracking-widest border border-[#171e19] px-3 py-1 bg-white text-[#171e19]">
+            <div className="flex items-start justify-between border-b-2 border-[#171e19] px-4 sm:px-6 py-3 sm:py-4 shrink-0 gap-2">
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                <span className="font-satoshi text-xs font-bold tracking-widest border border-[#171e19] px-2.5 sm:px-3 py-1 bg-white text-[#171e19]">
                   {selectedEventDetail.eventId}
                 </span>
                 {(() => {
                   const stage = getEventStage(selectedEventDetail.status);
                   return (
-                    <span className={`px-3 py-1 font-satoshi text-xs font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
+                    <span className={`px-2.5 sm:px-3 py-1 font-satoshi text-xs font-bold uppercase tracking-widest border border-[#171e19]/25 rounded-none ${stage.colorClass}`}>
                       {stage.label}
                     </span>
                   );
@@ -1579,21 +1579,21 @@ export default function AdminPanel() {
               </div>
               <button
                 onClick={() => setSelectedEventDetail(null)}
-                className="font-satoshi text-sm font-bold uppercase tracking-wider border-2 border-[#171e19] px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 shrink-0"
+                className="font-satoshi text-xs sm:text-sm font-bold uppercase tracking-wider border-2 border-[#171e19] px-3 sm:px-4 py-1.5 sm:py-2 hover:bg-slate-100 transition-colors flex items-center gap-1.5 shrink-0 cursor-pointer"
               >
                 <IconX className="w-4 h-4" /> Close
               </button>
             </div>
 
             {/* Scrollable Body */}
-            <div className="overflow-y-auto flex-1 p-6 space-y-5">
+            <div className="overflow-y-auto flex-1 p-4 sm:p-6 space-y-4 sm:space-y-5">
               
               {/* Event Title Row */}
               <div>
-                <h3 className="font-anton text-4xl text-[#171e19] leading-tight tracking-tight">
+                <h3 className="font-anton text-2xl sm:text-4xl text-[#171e19] leading-tight tracking-tight">
                   {String(selectedEventDetail.eventName || '').toUpperCase()}
                 </h3>
-                <p className="font-satoshi text-sm text-[#ffe17c] bg-[#171e19] px-3 py-1.5 inline-block uppercase font-bold tracking-wider mt-2">{selectedEventDetail.councilName}</p>
+                <p className="font-satoshi text-xs sm:text-sm text-[#ffe17c] bg-[#171e19] px-3 py-1.5 inline-block uppercase font-bold tracking-wider mt-2">{selectedEventDetail.councilName}</p>
               </div>
 
               {/* Event Progress Tracker */}
@@ -1624,7 +1624,7 @@ export default function AdminPanel() {
                 {/* LEFT: Dates, Venue, Footfall, Contacts */}
                 <div className="space-y-4">
                   {/* Logistical Grid */}
-                  <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
+                  <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-4 sm:p-5 space-y-4">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Event Logistics</span>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[#171e19] font-satoshi">
                       {(!selectedEventDetail.isMultiSession || !Array.isArray(selectedEventDetail.eventSessions) || selectedEventDetail.eventSessions.length === 0) && (
@@ -1639,12 +1639,12 @@ export default function AdminPanel() {
                           </div>
                         </>
                       )}
-                      <div className="col-span-2">
+                      <div className="col-span-1 sm:col-span-2">
                         <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Venue Location</span>
                         <span className="font-bold text-sm">{selectedEventDetail.venue ? String(selectedEventDetail.venue).toUpperCase() : 'CRCE CAMPUS'}</span>
                       </div>
                       {selectedEventDetail.isMultiSession && Array.isArray(selectedEventDetail.eventSessions) && selectedEventDetail.eventSessions.length > 0 && (
-                        <div className="col-span-2 border-t border-[#171e19]/10 pt-3 space-y-2">
+                        <div className="col-span-1 sm:col-span-2 border-t border-[#171e19]/10 pt-3 space-y-2">
                           <span className="font-bold text-[#171e19]/60 uppercase block text-[11px]">Sessions Breakdown ({selectedEventDetail.eventSessions.length})</span>
                           <div className="space-y-1.5">
                             {selectedEventDetail.eventSessions.map((s, idx) => (
@@ -1659,121 +1659,94 @@ export default function AdminPanel() {
                           </div>
                         </div>
                       )}
-                      {selectedEventDetail.expectedFootfall > 0 && (
-                        <div>
-                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Expected Footfall</span>
-                          <span className="font-bold text-sm">{selectedEventDetail.expectedFootfall} Attendees</span>
-                        </div>
-                      )}
-                      {selectedEventDetail.registrationFeeApplicable && selectedEventDetail.registrationFeeAmount !== undefined && (
-                        <div>
-                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Registration Fee</span>
-                          <span className="font-bold text-sm">₹{selectedEventDetail.registrationFeeAmount} / head</span>
-                        </div>
-                      )}
-                      {selectedEventDetail.prizeMoneyApplicable && selectedEventDetail.prizeMoneyAmount && (
-                        <div className="col-span-2">
-                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Prize Pool</span>
-                          <span className="font-bold text-sm">₹{selectedEventDetail.prizeMoneyAmount} <span className="text-[#171e19]/60 font-medium">via {selectedEventDetail.prizeMoneySource}</span></span>
-                        </div>
-                      )}
-                      {selectedEventDetail.externalParticipantsApplicable && selectedEventDetail.externalParticipantsExpected > 0 && (
-                        <div>
-                          <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">External Participants</span>
-                          <span className="font-bold text-sm">{selectedEventDetail.externalParticipantsExpected} Students</span>
-                        </div>
-                      )}
+                      <div>
+                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Expected Footfall</span>
+                        <span className="font-bold text-sm">{selectedEventDetail.expectedFootfall || 'N/A'} Attendees</span>
+                      </div>
+                      <div>
+                        <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Registration Fees</span>
+                        <span className="font-bold text-sm">{selectedEventDetail.registrationFees ? `₹ ${selectedEventDetail.registrationFees}` : 'Free'}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Contacts */}
-                  {(selectedEventDetail.facultyCoordinatorName || selectedEventDetail.studentContactName) && (
-                    <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5 space-y-4">
-                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Contacts</span>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-[#171e19] font-satoshi">
-                        {selectedEventDetail.facultyCoordinatorName && (
-                          <div>
-                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Faculty Coordinator</span>
-                            <span className="font-bold text-sm">{String(selectedEventDetail.facultyCoordinatorName).toUpperCase()}</span>
-                          </div>
+                  {/* Contact Persons */}
+                  <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-4 sm:p-5 space-y-3 font-satoshi">
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Key Contacts</span>
+                    <div className="space-y-2 text-sm text-[#171e19]">
+                      <div className="flex justify-between items-center border-b border-[#171e19]/10 pb-2">
+                        <div>
+                          <p className="font-bold text-xs uppercase text-[#171e19]">Student In-Charge</p>
+                          <p className="text-xs text-[#171e19]/70 uppercase">{selectedEventDetail.studentContactName || 'N/A'}</p>
+                        </div>
+                        {selectedEventDetail.studentContactPhone && (
+                          <a href={`tel:${selectedEventDetail.studentContactPhone}`} className="font-mono text-xs font-bold bg-white border border-[#171e19] px-2 py-1 hover:bg-[#ffe17c] transition-colors">
+                            {selectedEventDetail.studentContactPhone}
+                          </a>
                         )}
-                        {selectedEventDetail.studentContactName && (
-                          <div>
-                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Student Lead POC</span>
-                            <span className="font-bold text-sm block">{String(selectedEventDetail.studentContactName).toUpperCase()}</span>
-                            {selectedEventDetail.studentContactPhone && <span className="text-sm text-[#171e19]/60">{selectedEventDetail.studentContactPhone}</span>}
-                          </div>
-                        )}
-                        {selectedEventDetail.guestApplicable && selectedEventDetail.guestName && (
-                          <div className="col-span-2">
-                            <span className="font-bold text-[#171e19]/60 uppercase block text-xs mb-1">Chief Guest</span>
-                            <span className="font-bold text-sm">{String(selectedEventDetail.guestName).toUpperCase()}{selectedEventDetail.guestDesignation ? `, ${selectedEventDetail.guestDesignation}` : ''}</span>
-                          </div>
+                      </div>
+                      <div className="flex justify-between items-center pt-1">
+                        <div>
+                          <p className="font-bold text-xs uppercase text-[#171e19]">Faculty Coordinator</p>
+                          <p className="text-xs text-[#171e19]/70 uppercase">{selectedEventDetail.facultyCoordinatorName || 'N/A'}</p>
+                        </div>
+                        {selectedEventDetail.facultyCoordinatorPhone && (
+                          <a href={`tel:${selectedEventDetail.facultyCoordinatorPhone}`} className="font-mono text-xs font-bold bg-white border border-[#171e19] px-2 py-1 hover:bg-[#ffe17c] transition-colors">
+                            {selectedEventDetail.facultyCoordinatorPhone}
+                          </a>
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
-
-                {/* RIGHT: Resources, Safety, Documents */}
-                <div className="space-y-4">
-                  {/* Resources */}
-                  {selectedEventDetail.resourcesNeeded && (
-                    <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-5">
-                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block mb-2">AV / Resources Requested</span>
-                      <p className="italic text-[#171e19]/80 text-sm leading-relaxed font-medium font-satoshi">"{String(selectedEventDetail.resourcesNeeded).toUpperCase()}"</p>
-                    </div>
-                  )}
-
-                  {/* Review Notes & Activity History */}
-                  <div className="bg-[#ffe17c]/20 border-2 border-[#171e19] p-5 space-y-3 font-satoshi">
-                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19] block">
-                      Official Admin Review Notes &amp; Activity History
-                    </span>
-                    {renderAuditLog(selectedEventDetail)}
                   </div>
 
-                  {/* Safety */}
-                  {selectedEventDetail.safetyArrangementNeeded && selectedEventDetail.safetyArrangementDetails && (
-                    <div className="bg-red-50 border border-red-200 p-5">
-                      <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-red-600 block mb-2">Barricading & Safety Arrangements</span>
-                      <p className="italic text-red-900 text-sm leading-relaxed font-semibold font-satoshi">"{String(selectedEventDetail.safetyArrangementDetails).toUpperCase()}"</p>
-                    </div>
-                  )}
+                  {/* Submission History / Metadata */}
+                  <div className="bg-[#b7c6c2]/10 border border-[#171e19]/15 p-4 sm:p-5 space-y-2 text-xs font-satoshi text-[#171e19]">
+                    <span className="font-bold uppercase tracking-widest text-[#171e19]/60 block mb-2">Workflow Metadata</span>
+                    <p><span className="font-bold uppercase">Submitted By:</span> {selectedEventDetail.submittedBy || 'Council Representative'}</p>
+                    <p><span className="font-bold uppercase">Created On:</span> {formatEventDate(selectedEventDetail.createdAt)}</p>
+                    {selectedEventDetail.stage1ApprovedAt && (
+                      <p><span className="font-bold uppercase">Stage 1 Approved:</span> {formatEventDate(selectedEventDetail.stage1ApprovedAt)}</p>
+                    )}
+                    {selectedEventDetail.approvedAt && (
+                      <p><span className="font-bold uppercase">Final Approved:</span> {formatEventDate(selectedEventDetail.approvedAt)}</p>
+                    )}
+                  </div>
+                </div>
 
-                  {/* Document Clearance Links */}
-                  <div className="border border-[#171e19]/15 p-5 space-y-3">
-                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Documents</span>
-                    <div className="grid grid-cols-1 gap-3 font-satoshi">
-                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl) && 
-                        renderDocumentLink(selectedEventDetail, 'proposal', 'Proposal Document', selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl)
-                      }
-                      {selectedEventDetail.eventOutcomeUrl && 
-                        renderDocumentLink(selectedEventDetail, 'other_document', 'Event Outcome', selectedEventDetail.eventOutcomeUrl)
-                      }
-                      {selectedEventDetail.doswPermissionLetterUrl && 
-                        renderDocumentLink(selectedEventDetail, 'dosw_clearance', 'DoSW Clearance PDF', selectedEventDetail.doswPermissionLetterUrl)
-                      }
+                {/* RIGHT: Documents & Reviews */}
+                <div className="space-y-4">
+                  {/* Documents Container */}
+                  <div className="bg-white border-2 border-[#171e19] p-4 sm:p-5 space-y-4">
+                    <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19] block border-b-2 border-[#171e19] pb-2">Attached Documents</span>
+                    
+                    {/* Stage 1: Proposal Document */}
+                    <div className="space-y-2">
+                      <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block">Stage 1 Proposal</span>
+                      {renderDocumentLink(selectedEventDetail, 'proposal', 'Event Proposal PDF', selectedEventDetail.proposalDocumentUrl || selectedEventDetail.eventDescriptionUrl)}
+                    </div>
+
+                    {/* Stage 2 Documents */}
+                    <div className="space-y-2 border-t border-[#171e19]/10 pt-3">
+                      <span className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60 block">Stage 2 Clearances</span>
+                      {renderDocumentLink(selectedEventDetail, 'dosw', 'DoSW & Principal Clearance PDF', selectedEventDetail.doswPermissionLetterUrl)}
+                      
                       {selectedEventDetail.customPermissionLetters && selectedEventDetail.customPermissionLetters.map((docItem, idx) => (
-                        <div key={idx} className="w-full">
-                          {renderDocumentLink(selectedEventDetail, 'custom_clearance', docItem.title || `Clearance Document ${idx + 1}`, docItem.url, docItem.title)}
+                        <div key={idx}>
+                          {renderDocumentLink(selectedEventDetail, `custom_${idx}`, `${docItem.title || 'Clearance Letter'} PDF`, docItem.url)}
                         </div>
                       ))}
-                      {selectedEventDetail.otherDocumentUrl && 
-                        renderDocumentLink(selectedEventDetail, 'other_document', 'Other Clearance PDF', selectedEventDetail.otherDocumentUrl)
-                      }
-                      {selectedEventDetail.attendanceWaiverUrl && 
-                        renderDocumentLink(selectedEventDetail, 'attendance_waiver', 'Attendance Waiver PDF', selectedEventDetail.attendanceWaiverUrl)
-                      }
-                      {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.proposalDocumentUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
-                        <p className="text-[#171e19]/60 text-sm italic">No documents uploaded yet.</p>
+                      {selectedEventDetail.otherDocumentUrl && (
+                        renderDocumentLink(selectedEventDetail, 'other', 'Other Clearance Letter PDF', selectedEventDetail.otherDocumentUrl)
+                      )}
+                      {selectedEventDetail.attendanceWaiverUrl && (
+                        renderDocumentLink(selectedEventDetail, 'waiver', 'Attendance Waiver Request List PDF', selectedEventDetail.attendanceWaiverUrl)
                       )}
                     </div>
                   </div>
 
                   {/* Post-Event Report (if closed or report submitted) */}
                   {['closed', 'report_submitted', 'report_revision_needed', 'report_approved'].includes(selectedEventDetail.status) && selectedEventDetail.reportPdfUrl && (
-                    <div className="space-y-3 border-t-2 border-dashed border-[#171e19] pt-4 bg-[#ffe17c]/5 p-5 font-satoshi">
+                    <div className="space-y-3 border-t-2 border-dashed border-[#171e19] pt-4 bg-[#ffe17c]/5 p-4 sm:p-5 font-satoshi">
                       <h4 className="font-bold text-[#171e19] uppercase tracking-wider text-xs">
                         {selectedEventDetail.status === 'closed' ? 'Archived Post-Event Report' : 'Submitted Post-Event Report'}
                       </h4>
@@ -1805,7 +1778,7 @@ export default function AdminPanel() {
 
             {/* Sticky Action Footer — Mutually Exclusive Action Buttons per Stage */}
             {!adminUser?.readOnly && (
-              <div className="flex items-center gap-3 px-6 py-4 border-t-2 border-[#171e19] bg-white shrink-0 flex-wrap">
+              <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3 px-4 sm:px-6 py-3.5 sm:py-4 border-t-2 border-[#171e19] bg-white shrink-0 w-full">
                 {/* STAGE 1: Unapproved / Reverted / Pending Review */}
                 {['submitted', 'revision_needed'].includes(selectedEventDetail.status) && (() => {
                   const role = adminUser?.role;
@@ -1822,19 +1795,19 @@ export default function AdminPanel() {
                   return (<>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'proposal_approved')}
-                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all text-center cursor-pointer"
                     >
                       {label}
                     </button>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
-                      className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                     >
                       Request Revision
                     </button>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                      className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all text-center cursor-pointer"
                     >
                       Reject Proposal
                     </button>
@@ -1845,19 +1818,19 @@ export default function AdminPanel() {
                 {selectedEventDetail.status === 'proposal_approved' && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                   >
                     Revert Stage 1 Approval
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'revision_needed')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                   >
                     Request Revision
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all text-center cursor-pointer"
                   >
                     Reject Proposal
                   </button>
@@ -1879,19 +1852,19 @@ export default function AdminPanel() {
                   return (<>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'approved')}
-                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all text-center cursor-pointer"
                     >
                       {label}
                     </button>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
-                      className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                     >
                       Request Document Revision
                     </button>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                      className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all text-center cursor-pointer"
                     >
                       Reject Request
                     </button>
@@ -1902,26 +1875,26 @@ export default function AdminPanel() {
                 {['approved', 'report_pending', 'closed'].includes(selectedEventDetail.status) && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_submitted')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                   >
                     Revert Stage 2 Approval
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'permissions_revision_needed')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                   >
                     Request Document Revision
                   </button>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                    className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all text-center cursor-pointer"
                   >
                     Reject Request
                   </button>
                   {!['report_pending', 'report_submitted', 'report_revision_needed', 'closed'].includes(selectedEventDetail.status) && (
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'report_pending')}
-                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[160px]"
+                      className="w-full sm:flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all text-center cursor-pointer"
                     >
                       Mark Stage 3 (Report Pending)
                     </button>
@@ -1929,7 +1902,7 @@ export default function AdminPanel() {
                   {selectedEventDetail.status === 'closed' && (
                     <button
                       onClick={(e) => handleDeleteArchivedEvent(selectedEventDetail, e)}
-                      className="flex-1 py-3 bg-red-600 border-2 border-[#171e19] text-white font-anton text-xs uppercase tracking-widest hover:bg-red-700 hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[160px] inline-flex items-center justify-center gap-1.5"
+                      className="w-full sm:flex-1 py-3 bg-red-600 border-2 border-[#171e19] text-white font-anton text-xs uppercase tracking-widest hover:bg-red-700 hover:shadow-[3px_3px_0px_0px_#171e19] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <IconTrash className="w-4 h-4 text-white" />
                       <span>Delete Closed Event</span>
@@ -1941,7 +1914,7 @@ export default function AdminPanel() {
                 {selectedEventDetail.status === 'report_approved' && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'report_submitted')}
-                    className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                    className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                   >
                     Revert Stage 3 Approval
                   </button>
@@ -1963,19 +1936,19 @@ export default function AdminPanel() {
                   return (<>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'closed')}
-                      className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all text-center cursor-pointer"
                     >
                       {label}
                     </button>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'report_revision_needed')}
-                      className="flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:bg-slate-50 transition-all text-center cursor-pointer"
                     >
                       Request Report Revision
                     </button>
                     <button
                       onClick={() => openReviewDialog(selectedEventDetail, 'rejected')}
-                      className="flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all min-w-[140px]"
+                      className="w-full sm:flex-1 py-3 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-widest hover:bg-red-50 transition-all text-center cursor-pointer"
                     >
                       Reject Report
                     </button>
@@ -1986,13 +1959,13 @@ export default function AdminPanel() {
                 {selectedEventDetail.status === 'rejected' && (<>
                   <button
                     onClick={() => openReviewDialog(selectedEventDetail, 'submitted')}
-                    className="flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all"
+                    className="w-full sm:flex-1 py-3 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-widest hover:shadow-[3px_3px_0px_0px_#171e19] transition-all text-center cursor-pointer"
                   >
                     Re-Open Proposal for Evaluation
                   </button>
                   <button
                     onClick={(e) => handleDeleteArchivedEvent(selectedEventDetail, e)}
-                    className="flex-1 py-3 bg-red-600 border-2 border-[#171e19] text-white font-anton text-xs uppercase tracking-widest hover:bg-red-700 hover:shadow-[3px_3px_0px_0px_#171e19] transition-all inline-flex items-center justify-center gap-1.5"
+                    className="w-full sm:flex-1 py-3 bg-red-600 border-2 border-[#171e19] text-white font-anton text-xs uppercase tracking-widest hover:bg-red-700 hover:shadow-[3px_3px_0px_0px_#171e19] transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <IconTrash className="w-4 h-4 text-white" />
                     <span>Delete Rejected Event</span>
@@ -2542,19 +2515,19 @@ export default function AdminPanel() {
                 />
               </div>
 
-              <div className="flex justify-end gap-4 pt-4 border-t-2 border-[#171e19]/10">
+              <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t-2 border-[#171e19]/10">
                 <button
                   type="button"
                   disabled={pastEventSubmitting}
                   onClick={() => setShowAddPastEventModal(false)}
-                  className="px-6 py-3 border-2 border-[#171e19] hover:bg-slate-100 text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                  className="w-full sm:w-auto px-6 py-3 border-2 border-[#171e19] hover:bg-slate-100 text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pastEventSubmitting}
-                  className="px-8 py-3 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-base uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50"
+                  className="w-full sm:w-auto px-8 py-3 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] font-anton text-base uppercase tracking-widest rounded-none border-2 border-[#171e19] transition-brutal disabled:opacity-50 text-center cursor-pointer"
                 >
                   {pastEventSubmitting ? 'UPLOADING & ADDING EVENT...' : 'ADD PAST EVENT'}
                 </button>
@@ -2567,16 +2540,16 @@ export default function AdminPanel() {
 
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-[#171e19] pb-6 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between border-b-2 border-[#171e19] pb-4 sm:pb-6 gap-4">
         <div>
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 bg-[#ffe17c] border border-[#171e19]" />
             <p className="font-satoshi text-[10px] uppercase tracking-widest text-[#171e19] font-bold">Administrative Dashboard</p>
           </div>
-          <h1 className="font-anton text-4xl text-[#171e19] tracking-tight mt-2 flex items-center gap-3 flex-wrap">
+          <h1 className="font-anton text-2xl sm:text-3xl md:text-4xl text-[#171e19] tracking-tight mt-2 flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <span>ADMINISTRATIVE CONSOLE</span>
             {adminUser && (
-              <span className="font-satoshi text-xs font-bold uppercase tracking-widest bg-[#171e19] text-[#ffe17c] px-3 py-1 border-2 border-[#171e19] shadow-[2px_2px_0px_0px_#ffe17c]">
+              <span className="font-satoshi text-[10px] sm:text-xs font-bold uppercase tracking-widest bg-[#171e19] text-[#ffe17c] px-2.5 sm:px-3 py-0.5 sm:py-1 border-2 border-[#171e19] shadow-[2px_2px_0px_0px_#ffe17c]">
                 {adminUser.badge || adminUser.role?.toUpperCase()}
               </span>
             )}
@@ -2588,24 +2561,24 @@ export default function AdminPanel() {
           )}
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
           {adminUser?.role === 'super_admin' && (
             <button
               onClick={() => setShowAddPastEventModal(true)}
-              className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/80 transition-brutal shadow-[2px_2px_0px_0px_#171e19] cursor-pointer flex items-center gap-1.5"
+              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/80 transition-brutal shadow-[2px_2px_0px_0px_#171e19] cursor-pointer flex items-center justify-center gap-1.5 text-center"
             >
               + ADD PAST EVENT
             </button>
           )}
           <Link
             to="/portal"
-            className="inline-flex items-center px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
+            className="flex-1 sm:flex-initial inline-flex items-center justify-center px-3.5 sm:px-4 py-2 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] transition-brutal text-center"
           >
             &larr; PORTAL HOME
           </Link>
           <button
             onClick={handleLogout}
-            className="px-4 py-2 border-2 border-[#171e19] bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/10 transition-brutal cursor-pointer"
+            className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 border-2 border-[#171e19] bg-white font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] hover:bg-[#ffe17c]/10 transition-brutal cursor-pointer text-center"
           >
             LOGOUT
           </button>
@@ -2613,12 +2586,12 @@ export default function AdminPanel() {
       </div>
 
       {/* Main Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
         {/* Navigation Sidebar */}
-        <div className="lg:col-span-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 gap-2 sm:gap-3 no-scrollbar">
+        <div className="lg:col-span-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 gap-2 sm:gap-3 no-scrollbar scroll-smooth">
           <button
             onClick={() => setActiveSubTab('dashboard')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
+            className={`px-3.5 sm:px-4 py-2.5 sm:py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal cursor-pointer ${
               activeSubTab === 'dashboard'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -2629,7 +2602,7 @@ export default function AdminPanel() {
           
           <button
             onClick={() => setActiveSubTab('review')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
+            className={`px-3.5 sm:px-4 py-2.5 sm:py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal cursor-pointer ${
               activeSubTab === 'review'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -2645,7 +2618,7 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('logbook')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
+            className={`px-3.5 sm:px-4 py-2.5 sm:py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal cursor-pointer ${
               activeSubTab === 'logbook'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -2656,7 +2629,7 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('calendar')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
+            className={`px-3.5 sm:px-4 py-2.5 sm:py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal cursor-pointer ${
               activeSubTab === 'calendar'
                 ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -2667,7 +2640,7 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('councils')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
+            className={`px-3.5 sm:px-4 py-2.5 sm:py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal cursor-pointer ${
               activeSubTab === 'councils'
                 ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
@@ -2681,23 +2654,23 @@ export default function AdminPanel() {
         <div className="lg:col-span-3">
           {/* TAB: DASHBOARD */}
           {activeSubTab === 'dashboard' && (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Metrics Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
                 {/* Card 1: Pending Review */}
-                <div className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
+                <div className="bg-white border-2 border-[#171e19] p-4 sm:p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
                   <div className="flex items-center justify-between">
                     <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-[#171e19]/60">Stage 1</span>
                     <span className="w-2.5 h-2.5 rounded-full bg-[#ffe17c] border border-[#171e19]" />
                   </div>
                   <div className="mt-2">
-                    <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countPendingReview}</p>
+                    <p className="font-anton text-3xl sm:text-5xl text-[#171e19] tracking-tight">{countPendingReview}</p>
                     <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Pending Approvals</p>
                   </div>
                 </div>
                 
                 {/* Card 2 — Stage 2: Awaiting council documents */}
-                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
+                <div className={`bg-white border-2 border-[#171e19] p-4 sm:p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
                   countAwaitingDocs > 0 ? 'bg-indigo-50/60 border-indigo-900' : ''
                 }`}>
                   <div className="flex items-center justify-between">
@@ -2705,40 +2678,40 @@ export default function AdminPanel() {
                     <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 border border-[#171e19]" />
                   </div>
                   <div className="mt-2">
-                    <p className={`font-anton text-5xl tracking-tight ${countAwaitingDocs > 0 ? 'text-indigo-900' : 'text-[#171e19]'}`}>
+                    <p className={`font-anton text-3xl sm:text-5xl tracking-tight ${countAwaitingDocs > 0 ? 'text-indigo-900' : 'text-[#171e19]'}`}>
                       {countAwaitingDocs}
                     </p>
-                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Awaiting Council Docs</p>
-                    <p className="font-satoshi text-[10px] text-[#171e19]/70 font-semibold uppercase mt-0.5">Clearance letters pending</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Awaiting Docs</p>
+                    <p className="font-satoshi text-[10px] text-[#171e19]/70 font-semibold uppercase mt-0.5">Clearance pending</p>
                   </div>
                 </div>
 
                 {/* Card 3: Approved Upcoming */}
-                <div className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
+                <div className="bg-white border-2 border-[#171e19] p-4 sm:p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
                   <div className="flex items-center justify-between">
                     <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-[#171e19]/60">Stage 3</span>
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 border border-[#171e19]" />
                   </div>
                   <div className="mt-2">
-                    <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countApprovedUpcoming}</p>
+                    <p className="font-anton text-3xl sm:text-5xl text-[#171e19] tracking-tight">{countApprovedUpcoming}</p>
                     <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Approved Upcoming</p>
                   </div>
                 </div>
 
                 {/* Card 4: Report Pending */}
-                <div className="bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
+                <div className="bg-white border-2 border-[#171e19] p-4 sm:p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all">
                   <div className="flex items-center justify-between">
                     <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-[#171e19]/60">Post-Event</span>
                     <span className="w-2.5 h-2.5 rounded-full bg-amber-500 border border-[#171e19]" />
                   </div>
                   <div className="mt-2">
-                    <p className="font-anton text-5xl text-[#171e19] tracking-tight">{countReportPending}</p>
+                    <p className="font-anton text-3xl sm:text-5xl text-[#171e19] tracking-tight">{countReportPending}</p>
                     <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Report Pending</p>
                   </div>
                 </div>
 
                 {/* Card 5: Overdue Reports */}
-                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
+                <div className={`bg-white border-2 border-[#171e19] p-4 sm:p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
                   countOverdueReports > 0 ? 'bg-red-50/70 border-red-600' : ''
                 }`}>
                   <div className="flex items-center justify-between">
@@ -2746,7 +2719,7 @@ export default function AdminPanel() {
                     <span className={`w-2.5 h-2.5 rounded-full bg-red-600 border border-[#171e19] ${countOverdueReports > 0 ? 'animate-ping' : ''}`} />
                   </div>
                   <div className="mt-2">
-                    <p className={`font-anton text-5xl tracking-tight ${countOverdueReports > 0 ? 'text-red-600 animate-pulse' : 'text-[#171e19]'}`}>
+                    <p className={`font-anton text-3xl sm:text-5xl tracking-tight ${countOverdueReports > 0 ? 'text-red-600 animate-pulse' : 'text-[#171e19]'}`}>
                       {countOverdueReports}
                     </p>
                     <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Overdue Reports</p>
@@ -2755,9 +2728,9 @@ export default function AdminPanel() {
               </div>
 
               {/* Needs Attention Queue (Urgency Sorted) */}
-              <div className="bg-white border-2 border-[#171e19] rounded-none p-6 space-y-4 shadow-[4px_4px_0px_0px_#171e19]">
+              <div className="bg-white border-2 border-[#171e19] rounded-none p-4 sm:p-6 space-y-4 shadow-[4px_4px_0px_0px_#171e19]">
                 <div>
-                  <h3 className="font-anton text-2xl text-[#171e19] tracking-tight">NEEDS ATTENTION</h3>
+                  <h3 className="font-anton text-xl sm:text-2xl text-[#171e19] tracking-tight">NEEDS ATTENTION</h3>
                   <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase mt-1">
                     Action items — overdue reports, proposals awaiting admin review, and events waiting for council documents.
                   </p>
@@ -2777,7 +2750,7 @@ export default function AdminPanel() {
                   </div>
                 ) : needsAttentionList.length === 0 ? (
                   <div className="text-center py-6 border border-dashed border-[#171e19] rounded-none">
-                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60 flex items-center gap-1.5"><IconCheck className="w-3 h-3 text-emerald-500" /> Clear Desk! No pending items require attention.</p>
+                    <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60 flex items-center justify-center gap-1.5"><IconCheck className="w-3 h-3 text-emerald-500" /> Clear Desk! No pending items require attention.</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-[#171e19]/10">
@@ -2786,11 +2759,11 @@ export default function AdminPanel() {
                         <div
                           key={event.eventId}
                           onClick={() => setSelectedEventDetail(event)}
-                          className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer hover:bg-[#ffe17c]/5 px-3 -mx-3 rounded-none transition-brutal"
+                          className="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 cursor-pointer hover:bg-[#ffe17c]/5 px-2 sm:px-3 -mx-2 sm:-mx-3 rounded-none transition-brutal"
                         >
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-anton text-lg text-[#171e19] tracking-tight">
+                              <p className="font-anton text-base sm:text-lg text-[#171e19] tracking-tight">
                                 {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
                               </p>
                               <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19]">
@@ -2815,7 +2788,7 @@ export default function AdminPanel() {
                             {renderTimelineRows(event, true)}
                           </div>
 
-                          <div className="flex items-center gap-3 shrink-0">
+                          <div className="flex flex-wrap items-center gap-2 sm:gap-3 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
                             {event.attentionReason === 'overdue' && (
                               <span className="px-2.5 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] text-xs font-bold uppercase rounded-none">
                                 Report Overdue ({getDaysDiff(event.reportDueDate)}d)
@@ -2868,7 +2841,7 @@ export default function AdminPanel() {
                                 e.stopPropagation();
                                 setSelectedEventDetail(event);
                               }}
-                              className="px-3 py-1.5 bg-white hover:bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wide transition-brutal rounded-none"
+                              className="px-3 py-1.5 bg-white hover:bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wide transition-brutal rounded-none cursor-pointer"
                             >
                               Details
                             </button>
@@ -2948,10 +2921,10 @@ export default function AdminPanel() {
                                 {renderTimelineRows(event, true)}
                               </div>
                               
-                              <div className="flex gap-2 sm:self-start flex-wrap">
+                              <div className="flex gap-2 sm:self-start flex-wrap w-full sm:w-auto mt-2 sm:mt-0">
                                 <button
                                   onClick={() => openReviewDialog(event, 'proposal_approved')}
-                                  className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                                 >
                                   {(() => {
                                     const role = adminUser?.role;
@@ -2964,13 +2937,13 @@ export default function AdminPanel() {
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'revision_needed')}
-                                  className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                                 >
                                   Request Revision
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'rejected')}
-                                  className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50 text-center cursor-pointer"
                                 >
                                   Reject Proposal
                                 </button>
@@ -3051,11 +3024,11 @@ export default function AdminPanel() {
 
                       <div className="space-y-4">
                         {pendingPermissions.map(event => (
-                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
+                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-4 sm:p-6 space-y-4 rounded-none">
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#171e19]/10 pb-4">
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <h3 className="font-anton text-xl text-[#171e19] tracking-tight">
+                                  <h3 className="font-anton text-lg sm:text-xl text-[#171e19] tracking-tight">
                                     {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
                                   </h3>
                                   <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
@@ -3077,10 +3050,10 @@ export default function AdminPanel() {
                                 {renderTimelineRows(event, true)}
                               </div>
                               
-                              <div className="flex gap-2 sm:self-start flex-wrap">
+                              <div className="flex gap-2 sm:self-start flex-wrap w-full sm:w-auto mt-2 sm:mt-0">
                                 <button
                                   onClick={() => openReviewDialog(event, 'approved')}
-                                  className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                                 >
                                   {(() => {
                                     const role = adminUser?.role;
@@ -3093,13 +3066,13 @@ export default function AdminPanel() {
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'permissions_revision_needed')}
-                                  className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                                 >
                                   Request Document Revision
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'rejected')}
-                                  className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50 text-center cursor-pointer"
                                 >
                                   Reject Request
                                 </button>
@@ -3180,11 +3153,11 @@ export default function AdminPanel() {
 
                       <div className="space-y-4">
                         {pendingReports.map(event => (
-                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
+                          <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-4 sm:p-6 space-y-4 rounded-none">
                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#171e19]/10 pb-4">
                               <div>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <h3 className="font-anton text-xl text-[#171e19] tracking-tight">
+                                  <h3 className="font-anton text-lg sm:text-xl text-[#171e19] tracking-tight">
                                     {event.jointWith ? `${event.eventName.toUpperCase()} (${event.jointWith.toUpperCase()})` : event.eventName.toUpperCase()}
                                   </h3>
                                   <span className="font-satoshi text-[10px] font-bold tracking-widest border border-[#171e19] px-2 py-0.5 bg-white text-[#171e19] shrink-0">
@@ -3206,10 +3179,10 @@ export default function AdminPanel() {
                                 {renderTimelineRows(event, true)}
                               </div>
                               
-                              <div className="flex gap-2 sm:self-start flex-wrap">
+                              <div className="flex gap-2 sm:self-start flex-wrap w-full sm:w-auto mt-2 sm:mt-0">
                                 <button
                                   onClick={() => openReviewDialog(event, 'closed')}
-                                  className="px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-[#ffe17c] border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                                 >
                                   {(() => {
                                     const role = adminUser?.role;
@@ -3222,13 +3195,13 @@ export default function AdminPanel() {
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'report_revision_needed')}
-                                  className="px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border-2 border-[#171e19] text-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none text-center cursor-pointer"
                                 >
                                   Request Report Revision
                                 </button>
                                 <button
                                   onClick={() => openReviewDialog(event, 'rejected')}
-                                  className="px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50"
+                                  className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 bg-white border-2 border-red-500 text-red-500 font-anton text-xs uppercase tracking-wider transition-brutal rounded-none hover:bg-red-50 text-center cursor-pointer"
                                 >
                                   Reject Report
                                 </button>
@@ -3295,92 +3268,77 @@ export default function AdminPanel() {
             <div className="space-y-6">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#171e19]/10 pb-4">
                 <div>
-                  <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">Events Registry</h2>
+                  <h2 className="font-anton text-2xl sm:text-3xl text-[#171e19] tracking-tight">Events Registry</h2>
                   <p className="font-satoshi text-xs text-[#171e19]/60 font-semibold uppercase tracking-wider mt-1">
                     Search, filter, and audit chronological event request histories and final reports.
                   </p>
                 </div>
-                <button
-                  onClick={exportToCSV}
-                  className="px-4 py-2.5 bg-[#ffe17c] hover:bg-[#ffe17c]/90 text-[#171e19] border-2 border-[#171e19] font-anton text-xs uppercase tracking-wider transition-brutal rounded-none sm:self-end"
-                >
-                  Export CSV
-                </button>
               </div>
 
-              {/* Filters Box */}
-              <div className="bg-white border-2 border-[#171e19] rounded-none p-5 space-y-4 shadow-sm">
+              {/* Filters / Search Bar */}
+              <div className="bg-white border-2 border-[#171e19] p-4 sm:p-5 space-y-4 rounded-none shadow-[4px_4px_0px_0px_#171e19]">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Column 1: Search & Council */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Search Text</label>
+                  {/* Column 1: Search */}
+                  <div className="space-y-1.5">
+                    <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Search Registry</label>
+                    <div className="relative">
                       <input
                         type="text"
-                        placeholder="Search by event name or ID..."
+                        placeholder="Search event name, ID, council, venue..."
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
-                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-4 py-2 text-xs text-[#171e19] placeholder-[#b7c6c2] outline-none w-full"
+                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-4 py-2 text-xs text-[#171e19] placeholder-[#b7c6c2] outline-none w-full font-satoshi font-semibold"
                       />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-[#171e19]/60 hover:text-[#171e19]"
+                        >
+                          ✕
+                        </button>
+                      )}
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Council / Committee</label>
+                  </div>
+
+                  {/* Column 2: Status & Council Filters */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Filter Status</label>
+                      <select
+                        value={statusFilter}
+                        onChange={e => setStatusFilter(e.target.value)}
+                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full font-satoshi font-semibold"
+                      >
+                        <option value="All">All Statuses</option>
+                        <option value="submitted">Stage 1: Submitted</option>
+                        <option value="proposal_approved">Stage 2: Pending Docs</option>
+                        <option value="permissions_submitted">Stage 2: Docs Review</option>
+                        <option value="approved">Approved Upcoming</option>
+                        <option value="report_pending">Stage 3: Report Pending</option>
+                        <option value="report_submitted">Stage 3: Report Review</option>
+                        <option value="closed">Closed / Archived</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Council</label>
                       <select
                         value={councilFilter}
                         onChange={e => setCouncilFilter(e.target.value)}
-                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full"
+                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full font-satoshi font-semibold"
                       >
-                        <option value="All">All Councils ({COUNCILS.length})</option>
+                        <option value="All">All Councils</option>
                         {COUNCILS.map(c => (
-                          <option key={c.id} value={c.id}>{c.name.toUpperCase()}</option>
+                          <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
                     </div>
                   </div>
 
-                  {/* Column 2: Status & Category */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Status</label>
-                      <select
-                        value={statusFilter}
-                        onChange={e => setStatusFilter(e.target.value)}
-                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full"
-                      >
-                        <option value="All">All Statuses</option>
-                        <option value="submitted">Stage 1 — Proposal Submitted (Pending Review)</option>
-                        <option value="revision_needed">Stage 1 — Revision Requested</option>
-                        <option value="rejected">Stage 1 — Proposal Rejected</option>
-                        <option value="proposal_approved">Stage 2 — Proposal Accepted (Awaiting Documents)</option>
-                        <option value="permissions_submitted">Stage 2 — Documents Submitted (Pending Review)</option>
-                        <option value="permissions_revision_needed">Stage 2 — Documents Revision Requested</option>
-                        <option value="approved">Stage 3 — Fully Approved (Upcoming)</option>
-                        <option value="report_pending">Stage 3 — Post-Event Report Pending</option>
-                        <option value="closed">Closed — Report Submitted</option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Category</label>
-                      <select
-                        value={categoryFilter}
-                        onChange={e => setCategoryFilter(e.target.value)}
-                        className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full"
-                      >
-                        <option value="All">All Categories</option>
-                        <option value="technical">Technical</option>
-                        <option value="cultural">Cultural</option>
-                        <option value="sports">Sports</option>
-                        <option value="workshop">Workshop</option>
-                        <option value="guest_lecture">Guest Lecture</option>
-                        <option value="competition">Competition</option>
-                        <option value="other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-
                   {/* Column 3: Date Range */}
-                  <div className="space-y-3">
-                    <div className="flex flex-col gap-1.5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
                       <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">From Date</label>
                       <input
                         type="date"
@@ -3389,7 +3347,7 @@ export default function AdminPanel() {
                         className="bg-white border-2 border-[#171e19] focus:border-[#ffe17c] rounded-none px-3 py-2 text-xs text-[#171e19] outline-none w-full"
                       />
                     </div>
-                    <div className="flex flex-col gap-1.5">
+                    <div className="space-y-1.5">
                       <label className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">To Date</label>
                       <input
                         type="date"
@@ -3420,95 +3378,102 @@ export default function AdminPanel() {
                   <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19]/60">No events yet.</p>
                 </div>
               ) : (
-                <div className="bg-white border-2 border-[#171e19] overflow-hidden rounded-none">
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 border-b border-[#171e19]/10 font-satoshi text-[10px] uppercase tracking-wider text-[#171e19]/60 font-bold">
-                          <th className="p-4 min-w-[140px] whitespace-nowrap text-center">Event ID</th>
-                          <th className="p-4">Council</th>
-                          <th className="p-4">Event Name</th>
-                          <th className="p-4">Category</th>
-                          <th className="p-4">Dates</th>
-                          <th className="p-4">Venue</th>
-                          <th className="p-4">Status</th>
-                          <th className="p-4">Submitted On</th>
-                          <th className="p-4 pr-6 text-center">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-[#171e19]/10 font-satoshi text-xs font-medium text-[#171e19]">
-                        {filteredEvents.map(event => {
-                          const isRepPending = isReportPending(event);
-                          return (
-                            <tr
-                              key={event.eventId}
-                              onClick={() => setSelectedEventDetail(event)}
-                              className="hover:bg-[#ffe17c]/5 cursor-pointer transition-brutal"
-                            >
-                              <td className="p-4 min-w-[140px] whitespace-nowrap text-center">
-                                {/* Signature ID Tag */}
-                                <span className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-[#171e19] rounded-md font-mono text-xs font-bold tracking-wider">
-                                  {event.eventId}
-                                </span>
-                              </td>
-                              <td className="p-4 text-[#171e19] font-bold">
-                                {event.jointWith ? `${event.councilName} x ${event.jointWith}` : event.councilName}
-                              </td>
-                              <td className="p-4 font-semibold">
-                                {event.eventName}
-                              </td>
-                              <td className="p-4 capitalize">
-                                {event.category?.replace('_', ' ')}
-                              </td>
-                              <td className="p-4">
-                                 {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 ? (
-                                   <div className="flex flex-col gap-1 text-xs">
-                                     {event.eventSessions.map((s, sIdx) => (
-                                       <span key={sIdx} className="bg-slate-100 px-2 py-0.5 border border-slate-200 rounded text-[#171e19] whitespace-nowrap font-medium">
-                                         {formatEventDate(s.startDate, 'MMM dd, yyyy') === formatEventDate(s.endDate, 'MMM dd, yyyy')
-                                           ? formatEventDate(s.startDate, 'MMM dd, yyyy')
-                                           : `${formatEventDate(s.startDate, 'MMM dd, yyyy')} - ${formatEventDate(s.endDate, 'MMM dd, yyyy')}`}
-                                       </span>
-                                     ))}
-                                   </div>
-                                 ) : (
-                                   <span className="whitespace-nowrap">
-                                     {formatEventDate(event.startDate, 'MMM dd, yyyy') === formatEventDate(event.endDate, 'MMM dd, yyyy')
-                                       ? formatEventDate(event.startDate, 'MMM dd, yyyy')
-                                       : `${formatEventDate(event.startDate, 'MMM dd, yyyy')} - ${formatEventDate(event.endDate, 'MMM dd, yyyy')}`}
-                                   </span>
-                                 )}
-                               </td>
-                              <td className="p-4 uppercase font-bold text-[#171e19]">
-                                {event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}
-                              </td>
-                              <td className="p-4 whitespace-nowrap">
-                                <span className={getBadgeClass(event)}>
-                                  {getStatusDetails(event).label}
-                                </span>
-                              </td>
-                              <td className="p-4 whitespace-nowrap">
-                                {formatEventDate(event.createdAt, 'MMM dd, yyyy')}
-                              </td>
-                              <td className="p-4 pr-6 text-center whitespace-nowrap">
-                                {!adminUser?.readOnly && ['closed', 'rejected'].includes(event.status) ? (
-                                  <button
-                                    onClick={(e) => handleDeleteArchivedEvent(event, e)}
-                                    title={`Delete ${event.status === 'closed' ? 'Closed' : 'Rejected'} Event`}
-                                    className="p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded transition-all inline-flex items-center gap-1 font-satoshi text-[11px] font-bold uppercase"
-                                  >
-                                    <IconTrash className="w-3.5 h-3.5" />
-                                    <span>Delete</span>
-                                  </button>
-                                ) : (
-                                  <span className="text-[#171e19]/30 text-xs">—</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
+                <div className="space-y-2">
+                  {/* Mobile Table Swipe Hint */}
+                  <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#171e19] uppercase sm:hidden bg-[#ffe17c]/50 border border-[#171e19] py-1.5 px-3 rounded-none mx-auto w-fit">
+                    <span className="animate-pulse">👉</span>
+                    <span>Swipe horizontally to view full registry table</span>
+                  </div>
+
+                  <div className="bg-white border-2 border-[#171e19] overflow-hidden rounded-none shadow-[4px_4px_0px_0px_#171e19]">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-[#171e19]/10 font-satoshi text-[10px] uppercase tracking-wider text-[#171e19]/60 font-bold">
+                            <th className="p-3 sm:p-4 min-w-[140px] whitespace-nowrap text-center">Event ID</th>
+                            <th className="p-3 sm:p-4">Council</th>
+                            <th className="p-3 sm:p-4 min-w-[160px]">Event Name</th>
+                            <th className="p-3 sm:p-4">Category</th>
+                            <th className="p-3 sm:p-4 min-w-[130px]">Dates</th>
+                            <th className="p-3 sm:p-4">Venue</th>
+                            <th className="p-3 sm:p-4">Status</th>
+                            <th className="p-3 sm:p-4 whitespace-nowrap">Submitted On</th>
+                            <th className="p-3 sm:p-4 pr-6 text-center">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-[#171e19]/10 font-satoshi text-xs font-medium text-[#171e19]">
+                          {filteredEvents.map(event => {
+                            return (
+                              <tr
+                                key={event.eventId}
+                                onClick={() => setSelectedEventDetail(event)}
+                                className="hover:bg-[#ffe17c]/5 cursor-pointer transition-brutal"
+                              >
+                                <td className="p-3 sm:p-4 min-w-[140px] whitespace-nowrap text-center">
+                                  {/* Signature ID Tag */}
+                                  <span className="px-2.5 sm:px-3 py-1 bg-slate-100 border border-slate-200 text-[#171e19] rounded-md font-mono text-xs font-bold tracking-wider">
+                                    {event.eventId}
+                                  </span>
+                                </td>
+                                <td className="p-3 sm:p-4 text-[#171e19] font-bold">
+                                  {event.jointWith ? `${event.councilName} x ${event.jointWith}` : event.councilName}
+                                </td>
+                                <td className="p-3 sm:p-4 font-semibold">
+                                  {event.eventName}
+                                </td>
+                                <td className="p-3 sm:p-4 capitalize">
+                                  {event.category?.replace('_', ' ')}
+                                </td>
+                                <td className="p-3 sm:p-4">
+                                  {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 ? (
+                                    <div className="flex flex-col gap-1 text-xs">
+                                      {event.eventSessions.map((s, sIdx) => (
+                                        <span key={sIdx} className="bg-slate-100 px-2 py-0.5 border border-slate-200 rounded text-[#171e19] whitespace-nowrap font-medium">
+                                          {formatEventDate(s.startDate, 'MMM dd, yyyy') === formatEventDate(s.endDate, 'MMM dd, yyyy')
+                                            ? formatEventDate(s.startDate, 'MMM dd, yyyy')
+                                            : `${formatEventDate(s.startDate, 'MMM dd, yyyy')} - ${formatEventDate(s.endDate, 'MMM dd, yyyy')}`}
+                                        </span>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <span className="whitespace-nowrap">
+                                      {formatEventDate(event.startDate, 'MMM dd, yyyy') === formatEventDate(event.endDate, 'MMM dd, yyyy')
+                                        ? formatEventDate(event.startDate, 'MMM dd, yyyy')
+                                        : `${formatEventDate(event.startDate, 'MMM dd, yyyy')} - ${formatEventDate(event.endDate, 'MMM dd, yyyy')}`}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="p-3 sm:p-4 uppercase font-bold text-[#171e19]">
+                                  {event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}
+                                </td>
+                                <td className="p-3 sm:p-4 whitespace-nowrap">
+                                  <span className={getBadgeClass(event)}>
+                                    {getStatusDetails(event).label}
+                                  </span>
+                                </td>
+                                <td className="p-3 sm:p-4 whitespace-nowrap">
+                                  {formatEventDate(event.createdAt, 'MMM dd, yyyy')}
+                                </td>
+                                <td className="p-3 sm:p-4 pr-6 text-center whitespace-nowrap">
+                                  {!adminUser?.readOnly && ['closed', 'rejected'].includes(event.status) ? (
+                                    <button
+                                      onClick={(e) => handleDeleteArchivedEvent(event, e)}
+                                      title={`Delete ${event.status === 'closed' ? 'Closed' : 'Rejected'} Event`}
+                                      className="p-1.5 sm:p-2 text-red-600 hover:text-white hover:bg-red-600 border border-red-200 hover:border-red-600 rounded transition-all inline-flex items-center gap-1 font-satoshi text-[11px] font-bold uppercase cursor-pointer"
+                                    >
+                                      <IconTrash className="w-3.5 h-3.5" />
+                                      <span>Delete</span>
+                                    </button>
+                                  ) : (
+                                    <span className="text-[#171e19]/30 text-xs">—</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
@@ -3561,18 +3526,18 @@ export default function AdminPanel() {
                         />
                         {blockDateErrors.reason && <p className="text-red-500 text-[10px] font-bold">{blockDateErrors.reason}</p>}
                       </div>
-                      <div className="flex justify-end gap-3 pt-2">
+                      <div className="flex flex-col sm:flex-row justify-end gap-2.5 sm:gap-3 pt-2">
                         <button
                           type="button"
                           onClick={() => { setBlockDateModalOpen(false); setBlockDateErrors({}); }}
-                          className="px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal"
+                          className="w-full sm:w-auto px-4 py-2 border-2 border-[#171e19] hover:bg-slate-100 font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] rounded-none transition-brutal text-center cursor-pointer"
                         >
                           Cancel
                         </button>
                         <button
                           type="submit"
                           disabled={blockDateSubmitting}
-                          className="px-5 py-2 bg-red-700 hover:bg-red-800 text-white font-anton text-sm uppercase tracking-widest rounded-none border-2 border-red-900 transition-brutal disabled:opacity-60"
+                          className="w-full sm:w-auto px-5 py-2 bg-red-700 hover:bg-red-800 text-white font-anton text-sm uppercase tracking-widest rounded-none border-2 border-red-900 transition-brutal disabled:opacity-60 text-center cursor-pointer"
                         >
                           {blockDateSubmitting ? 'BLOCKING...' : 'BLOCK DATES'}
                         </button>
@@ -3583,35 +3548,35 @@ export default function AdminPanel() {
               )}
 
               {/* Calendar Card */}
-              <div className="bg-white border-2 border-[#171e19] p-6 space-y-6 rounded-none shadow-[4px_4px_0px_0px_#ffe17c]">
+              <div className="bg-white border-2 border-[#171e19] p-4 sm:p-6 space-y-5 sm:space-y-6 rounded-none shadow-[4px_4px_0px_0px_#ffe17c]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#171e19]/10 pb-4 gap-4">
                   <div>
-                    <h2 className="font-anton text-3xl text-[#171e19] tracking-tight">CALENDAR REGISTRY</h2>
+                    <h2 className="font-anton text-2xl sm:text-3xl text-[#171e19] tracking-tight">CALENDAR REGISTRY</h2>
                     <p className="font-satoshi text-[10px] text-[#171e19]/60 font-bold uppercase">
                       Approved schedules, venue conflicts, and admin-blocked periods.
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <button
                       onClick={() => { setBlockDateForm({ startDate: '', endDate: '', reason: '' }); setBlockDateErrors({}); setBlockDateModalOpen(true); }}
-                      className="px-4 py-2 bg-red-700 hover:bg-red-800 text-white border-2 border-red-900 font-anton text-xs uppercase tracking-widest transition-brutal rounded-none"
+                      className="px-3.5 sm:px-4 py-2 bg-red-700 hover:bg-red-800 text-white border-2 border-red-900 font-anton text-xs uppercase tracking-widest transition-brutal rounded-none cursor-pointer"
                     >
                       + Block Dates
                     </button>
-                    <button onClick={handlePrevMonth} className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal">
+                    <button onClick={handlePrevMonth} className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal cursor-pointer">
                       &larr; Prev
                     </button>
-                    <span className="font-anton text-2xl text-[#171e19] select-none tracking-wide">
+                    <span className="font-anton text-lg sm:text-2xl text-[#171e19] select-none tracking-wide">
                       {format(currentMonthDate, 'MMMM yyyy').toUpperCase()}
                     </span>
-                    <button onClick={handleNextMonth} className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal">
+                    <button onClick={handleNextMonth} className="px-3 py-1.5 border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-xs font-bold uppercase transition-brutal cursor-pointer">
                       Next &rarr;
                     </button>
                   </div>
                 </div>
 
                 {/* Legend */}
-                <div className="flex flex-wrap gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
+                <div className="flex flex-wrap gap-2.5 sm:gap-3 items-center font-satoshi text-[10px] font-bold uppercase tracking-wider">
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-[#ffe17c] border border-[#171e19]/35"></span> Stage 1 (Proposal)</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-indigo-700"></span> Stage 2 (Documents)</div>
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 bg-emerald-600"></span> Closed</div>
@@ -3619,8 +3584,14 @@ export default function AdminPanel() {
                   <div className="flex items-center gap-1.5"><span className="w-3 h-3 border-2 border-dashed border-red-500"></span> Venue Conflict</div>
                 </div>
 
+                {/* Mobile Calendar Swipe Prompt */}
+                <div className="flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#171e19] uppercase sm:hidden bg-[#ffe17c]/50 border border-[#171e19] py-1.5 px-3 rounded-none mx-auto w-fit">
+                  <span className="animate-pulse">👉</span>
+                  <span>Swipe horizontally to view full calendar</span>
+                </div>
+
                 {/* Month Grid */}
-                <div className="overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0">
+                <div className="overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
                   <div className="min-w-[768px]">
                     <div className="border-t border-l border-[#171e19]">
                   <div className="grid grid-cols-7 border-b border-[#171e19] bg-[#b7c6c2]/10 font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70 text-center py-2">

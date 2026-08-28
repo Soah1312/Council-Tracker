@@ -97,19 +97,19 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
             }
             setIsOpen(prev => !prev);
           }}
-          className={`w-full bg-white border-2 ${error ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-3 py-2 text-xs font-bold text-[#171e19] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase shrink-0 cursor-pointer`}
+          className={`w-full min-h-[42px] bg-white border-2 ${error ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-3.5 py-2.5 text-xs font-bold text-[#171e19] focus:outline-none rounded-none transition-brutal flex items-center justify-between font-satoshi uppercase shrink-0 cursor-pointer active:bg-slate-50`}
         >
           <span className="truncate">
             {dateStr ? format(new Date(dateStr), 'MMM dd, yyyy') : 'SELECT DATE'}
           </span>
-          <IconCalendar className="w-4 h-4 text-[#171e19] shrink-0 ml-1" />
+          <IconCalendar className="w-4 h-4 text-[#171e19] shrink-0 ml-1.5" />
         </button>
 
         {/* Time Selector Dropdown */}
         <select
           value={isFullDay ? (isEndPicker ? '23:59' : '00:00') : (timeStr || '09:00')}
           onChange={(e) => handleTimeSelect(e.target.value)}
-          className={`w-full bg-white border-2 ${error ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-3 py-2 text-xs font-bold focus:outline-none rounded-none transition-brutal font-satoshi uppercase cursor-pointer ${
+          className={`w-full min-h-[42px] bg-white border-2 ${error ? 'border-red-500 bg-red-50/20' : 'border-[#171e19] focus:border-[#ffe17c]'} px-3.5 py-2.5 text-xs font-bold focus:outline-none rounded-none transition-brutal font-satoshi uppercase cursor-pointer ${
             isFullDay ? 'bg-[#ffe17c]/30 text-[#171e19]' : 'text-[#171e19]'
           }`}
         >
@@ -123,19 +123,20 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
 
       {/* Custom Brutalist Calendar Popover */}
       {isOpen && (
-        <div className="absolute z-50 top-full mt-2 left-0 w-64 bg-white border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#171e19] p-3 animate-fade-in">
-          <div className="flex items-center justify-between border-b-2 border-[#171e19] pb-2 mb-2">
+        <div className="absolute z-50 top-full mt-2 left-0 sm:left-auto sm:right-0 md:left-0 md:right-auto w-[calc(100vw-2.5rem)] max-w-[290px] sm:w-72 bg-white border-2 border-[#171e19] shadow-[4px_4px_0px_0px_#171e19] p-3.5 animate-fade-in">
+          <div className="flex items-center justify-between border-b-2 border-[#171e19] pb-2.5 mb-2.5">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() - 1, 1));
               }}
-              className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal cursor-pointer"
+              className="w-8 h-8 border-2 border-[#171e19] hover:bg-[#ffe17c] active:bg-[#ffe17c] flex items-center justify-center font-bold text-sm rounded-none transition-brutal cursor-pointer shrink-0"
+              aria-label="Previous month"
             >
               &larr;
             </button>
-            <span className="font-anton text-xs uppercase tracking-wider text-[#171e19]">
+            <span className="font-anton text-xs sm:text-sm uppercase tracking-wider text-[#171e19] text-center truncate px-1">
               {format(calMonth, 'MMMM yyyy')}
             </span>
             <button
@@ -144,13 +145,14 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
                 e.stopPropagation();
                 setCalMonth(new Date(calMonth.getFullYear(), calMonth.getMonth() + 1, 1));
               }}
-              className="w-6 h-6 border-2 border-[#171e19] hover:bg-[#ffe17c] flex items-center justify-center font-bold text-xs rounded-none transition-brutal cursor-pointer"
+              className="w-8 h-8 border-2 border-[#171e19] hover:bg-[#ffe17c] active:bg-[#ffe17c] flex items-center justify-center font-bold text-sm rounded-none transition-brutal cursor-pointer shrink-0"
+              aria-label="Next month"
             >
               &rarr;
             </button>
           </div>
 
-          <div className="grid grid-cols-7 text-center font-bold text-[9px] uppercase tracking-wider text-[#b7c6c2] mb-1.5">
+          <div className="grid grid-cols-7 text-center font-bold text-[10px] uppercase tracking-wider text-[#b7c6c2] mb-2">
             {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w, idx) => <div key={idx}>{w}</div>)}
           </div>
 
@@ -164,7 +166,7 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
 
               const dayButtons = [];
               for (let i = 0; i < startWeekDay; i++) {
-                dayButtons.push(<div key={`pad-${i}`} className="h-6" />);
+                dayButtons.push(<div key={`pad-${i}`} className="h-8 sm:h-7" />);
               }
 
               for (let i = 1; i <= totalDays; i++) {
@@ -185,14 +187,14 @@ export default function BrutalistDateTimePicker({ label, value, onChange, isDate
                       e.stopPropagation();
                       handleDateSelect(currentDayObj);
                     }}
-                    className={`h-6 w-full flex items-center justify-center transition-all rounded-none border-2 cursor-pointer ${
+                    className={`h-8 sm:h-7 w-full flex items-center justify-center transition-all rounded-none border-2 cursor-pointer text-xs font-bold ${
                       blocked
                         ? 'bg-red-100 border-red-300 text-red-700 font-bold opacity-80 cursor-not-allowed'
                         : isSelected
-                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black'
+                          ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c] font-black shadow-[1px_1px_0px_0px_#ffe17c]'
                           : isToday
-                            ? 'border-[#ffe17c] bg-[#ffe17c]/20 text-[#171e19]'
-                            : 'border-transparent hover:border-[#171e19] text-[#171e19]'
+                            ? 'border-[#ffe17c] bg-[#ffe17c]/25 text-[#171e19] font-black'
+                            : 'border-transparent hover:border-[#171e19] active:bg-slate-100 text-[#171e19]'
                     }`}
                   >
                     {i}

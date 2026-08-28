@@ -32,6 +32,7 @@
     font-family: 'Satoshi', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Custom inputs for the high-contrast brutalist look */
@@ -40,6 +41,21 @@
   textarea {
     font-family: 'Satoshi', sans-serif;
     font-weight: 500;
+  }
+
+  /* Prevent automatic iOS Safari zooming on focus for mobile devices */
+  @media (max-width: 768px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
+    }
+  }
+
+  /* Momentum smooth touch scrolling */
+  .overflow-x-auto,
+  .overflow-y-auto {
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Hide scrollbars globally */
