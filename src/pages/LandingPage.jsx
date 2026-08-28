@@ -35,7 +35,9 @@ const STATUS_CONFIG = {
   revision_needed: { label: 'Proposal Revision Needed', color: '#f97316', icon: AlertCircle },
   rejected: { label: 'Proposal Rejected', color: '#ef4444', icon: X },
   report_pending: { label: 'Post-Event Report Pending', color: '#3b82f6', icon: Activity },
-  closed: { label: 'Event Closed', color: '#94a3b8', icon: CheckCircle },
+  report_submitted: { label: 'Report Submitted', color: '#3b82f6', icon: Activity },
+  report_approved: { label: 'Completed Successfully', color: '#10b981', icon: CheckCircle },
+  closed: { label: 'Completed Successfully', color: '#10b981', icon: CheckCircle },
 };
 
 const toDate = (field) => {
@@ -380,7 +382,7 @@ export default function LandingPage() {
       const resolved = data
         .map(e => ({ ...e, _status: resolveStatus(e), _startDate: toDate(e.startDate) }))
         .filter(e => e.councilId !== 'test-council' && !e.isTestCouncil && (e.councilName || '').toLowerCase() !== 'test council')
-        .filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(e._status))
+        .filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'report_submitted', 'report_approved', 'closed'].includes(e._status))
         .sort((a, b) => (a._startDate || 0) - (b._startDate || 0));
       setEvents(resolved);
     } catch (e) { console.error(e); }
@@ -396,10 +398,10 @@ export default function LandingPage() {
   const stats = {
     total: events.length,
     upcoming: events.filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved'].includes(e._status)).length,
-    closed: events.filter(e => e._status === 'closed').length,
+    closed: events.filter(e => ['closed', 'report_approved'].includes(e._status)).length,
   };
   const next = events.find(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved'].includes(e._status) && e._startDate > new Date());
-  const calEvs = events.filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(e._status) && e._startDate);
+  const calEvs = events.filter(e => ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'report_submitted', 'report_approved', 'closed'].includes(e._status) && e._startDate);
 
   return (
     <div className="min-h-screen bg-[#000] text-white font-satoshi overflow-x-hidden selection:bg-[#ffe17c] selection:text-black">

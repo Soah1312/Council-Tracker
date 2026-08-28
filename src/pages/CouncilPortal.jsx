@@ -1357,8 +1357,9 @@ export default function CouncilPortal() {
           colorClass: 'bg-[#ffe17c] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]',
           isReportPending: true
         };
+      case 'report_approved':
       case 'closed':
-        return { label: 'Event Closed', colorClass: 'bg-[#b7c6c2] text-[#171e19] px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/10' };
+        return { label: 'Completed Successfully', colorClass: 'bg-emerald-700 text-white px-3 py-1 rounded-full text-[10px] uppercase font-bold border border-[#171e19]/10' };
       default:
         return { label: status, colorClass: 'bg-slate-800 text-slate-300 px-3 py-1 rounded-full text-[10px] uppercase font-bold' };
     }
@@ -1639,16 +1640,16 @@ export default function CouncilPortal() {
         imageUrls.push(imgUrl);
       }
 
-      setUploadProgress('Closing event in database...');
+      setUploadProgress('Submitting report to database...');
       await submitReport(reportingEvent.id, pdfUrl, imageUrls);
       // Fire-and-forget email notification
       notifyReportSubmitted(reportingEvent, council.name).catch(console.error);
 
       showNotification('Event report submitted successfully! Awaiting administrator approval.');
+      setActiveTab('my-events');
       setReportingEvent(null);
       setReportPdf(null);
       setReportImages([]);
-      setActiveTab('my-events');
     } catch (err) {
       console.error(err);
       showNotification('Failed to submit report assets.', 'error');
@@ -3181,7 +3182,7 @@ export default function CouncilPortal() {
 
                     // All events (all councils) occurring on this day — only show events whose Stage 1 has been proceeded
                     const dayEvents = day ? allCalEvents.filter(event => {
-                      const relevantStatuses = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'];
+                      const relevantStatuses = ['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'report_submitted', 'report_approved', 'closed'];
                       if (!relevantStatuses.includes(event.status)) return false;
                       return isEventActiveOnDate(event, day);
                     }) : [];
@@ -3268,7 +3269,7 @@ export default function CouncilPortal() {
                 <p className="font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/60">Total Events This Month</p>
                 <p className="font-anton text-3xl text-[#171e19] mt-1">
                   {allCalEvents.filter(ev => {
-                    if (!['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'closed'].includes(ev.status)) return false;
+                    if (!['proposal_approved', 'permissions_submitted', 'permissions_revision_needed', 'approved', 'report_pending', 'report_submitted', 'report_approved', 'closed'].includes(ev.status)) return false;
                     const eStart = ev.startDate?.toDate ? ev.startDate.toDate() : new Date(ev.startDate);
                     return eStart.getMonth() === calMonth.getMonth() && eStart.getFullYear() === calMonth.getFullYear();
                   }).length}
@@ -3331,10 +3332,10 @@ export default function CouncilPortal() {
                 <span className="font-satoshi text-[10px] font-bold text-[#171e19] uppercase tracking-widest">Report Filing Console</span>
               </div>
               <h2 className="font-anton text-2xl text-[#171e19] tracking-tight">
-                ARCHIVE EVENT: {reportingEvent.eventName.toUpperCase()}
+                SUBMIT STAGE 3 REPORT: {reportingEvent.eventName.toUpperCase()}
               </h2>
               <p className="font-satoshi text-xs text-[#b7c6c2] font-semibold uppercase tracking-wider mt-1">
-                Upload the final wrap-up PDF and event photos to close out the event. Both fields are required.
+                Upload the final wrap-up PDF and event photos to complete the event report. Both fields are required.
               </p>
             </div>
 
@@ -3375,10 +3376,10 @@ export default function CouncilPortal() {
                 <button
                   type="button"
                   onClick={() => {
+                    setActiveTab('my-events');
                     setReportingEvent(null);
                     setReportPdf(null);
                     setReportImages([]);
-                    setActiveTab('my-events');
                   }}
                   className="px-5 py-2.5 rounded-none border-2 border-[#171e19] hover:bg-[#ffe17c]/10 text-sm font-bold uppercase tracking-wider text-[#171e19] transition-brutal"
                 >
