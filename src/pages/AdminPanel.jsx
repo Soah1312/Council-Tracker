@@ -150,7 +150,7 @@ export default function AdminPanel() {
           return;
         }
         if (!s.venue || !s.venue.trim()) {
-          showNotification('All sessions must have a specified venue / room.', 'error');
+          showNotification('All sessions must have a specified venue and / or room.', 'error');
           return;
         }
       }
@@ -429,16 +429,16 @@ export default function AdminPanel() {
     }
 
     // Enforce required notes/comments for Reject and Request Revision
-    const isRequired = 
-      reviewStatusType === 'rejected' || 
-      reviewStatusType === 'revision_needed' || 
+    const isRequired =
+      reviewStatusType === 'rejected' ||
+      reviewStatusType === 'revision_needed' ||
       reviewStatusType === 'permissions_revision_needed';
 
     if (isRequired && !reviewNotes.trim()) {
       showNotification('Comments/notes are required when rejecting or requesting revisions.', 'error');
       return;
     }
-    
+
     try {
       const updatedEvent = await updateEventStatus(reviewingEvent.id, reviewStatusType, reviewNotes, { role: adminUser?.role, name: adminUser?.name });
       const dualResult = updatedEvent?._dualApprovalResult;
@@ -504,7 +504,7 @@ export default function AdminPanel() {
         const isRepPending = isReportPending(event);
         const displayStatus = isRepPending ? 'report pending' : event.status;
         const councilName = event.jointWith ? `${event.councilName} x ${event.jointWith}` : event.councilName;
-        
+
         const startDate = formatEventDate(event.startDate, 'yyyy-MM-dd HH:mm');
         const endDate = formatEventDate(event.endDate, 'yyyy-MM-dd HH:mm');
 
@@ -554,15 +554,15 @@ export default function AdminPanel() {
       return String(dateField);
     }
   };
-  
+
   const getEventStagesTimeline = (event) => {
     const logs = Array.isArray(event.auditLog) ? event.auditLog : [];
     const history = Array.isArray(event.reviewHistory) ? event.reviewHistory : [];
 
     // --- STAGE 1 ---
     let stage1Sub = null;
-    const s1SubLog = [...logs].reverse().find(l => 
-      (l.stage === 1 || !l.stage) && 
+    const s1SubLog = [...logs].reverse().find(l =>
+      (l.stage === 1 || !l.stage) &&
       (l.eventType === 'submitted' || l.eventType === 'resubmitted' || l.type === 'submitted' || l.type === 'resubmitted')
     );
     if (s1SubLog?.timestamp) {
@@ -581,8 +581,8 @@ export default function AdminPanel() {
     }
 
     let stage1App = null;
-    const s1AppLog = [...logs].reverse().find(l => 
-      (l.stage === 1 || !l.stage) && 
+    const s1AppLog = [...logs].reverse().find(l =>
+      (l.stage === 1 || !l.stage) &&
       (l.eventType === 'approved' || l.eventType === 'proposal_approved' || l.type === 'approved' || l.type === 'proposal_approved')
     );
     if (s1AppLog?.timestamp) {
@@ -602,8 +602,8 @@ export default function AdminPanel() {
 
     // --- STAGE 2 ---
     let stage2Sub = null;
-    const s2SubLog = [...logs].reverse().find(l => 
-      l.stage === 2 && 
+    const s2SubLog = [...logs].reverse().find(l =>
+      l.stage === 2 &&
       (l.eventType === 'document_uploaded' || l.eventType === 'resubmitted' || l.type === 'document_uploaded' || l.type === 'resubmitted')
     );
     if (s2SubLog?.timestamp) {
@@ -627,8 +627,8 @@ export default function AdminPanel() {
     }
 
     let stage2App = null;
-    const s2AppLog = [...logs].reverse().find(l => 
-      l.stage === 2 && 
+    const s2AppLog = [...logs].reverse().find(l =>
+      l.stage === 2 &&
       (l.eventType === 'approved' || l.type === 'approved')
     );
     if (s2AppLog?.timestamp) {
@@ -643,8 +643,8 @@ export default function AdminPanel() {
 
     // --- STAGE 3 ---
     let stage3Sub = null;
-    const s3SubLog = [...logs].reverse().find(l => 
-      l.stage === 3 && 
+    const s3SubLog = [...logs].reverse().find(l =>
+      l.stage === 3 &&
       (l.eventType === 'report_submitted' || l.eventType === 'resubmitted' || l.type === 'report_submitted' || l.type === 'resubmitted')
     );
     if (s3SubLog?.timestamp) {
@@ -658,8 +658,8 @@ export default function AdminPanel() {
     }
 
     let stage3App = null;
-    const s3AppLog = [...logs].reverse().find(l => 
-      l.stage === 3 && 
+    const s3AppLog = [...logs].reverse().find(l =>
+      l.stage === 3 &&
       (l.eventType === 'approved' || l.type === 'approved')
     );
     if (s3AppLog?.timestamp) {
@@ -681,8 +681,8 @@ export default function AdminPanel() {
 
   const renderTimelineRows = (event, isCompact = false) => {
     const timeline = getEventStagesTimeline(event);
-    const textClass = isCompact 
-      ? "font-satoshi text-[10px] text-[#171e19] uppercase font-bold" 
+    const textClass = isCompact
+      ? "font-satoshi text-[10px] text-[#171e19] uppercase font-bold"
       : "font-satoshi text-xs text-[#171e19] uppercase font-extrabold";
     const gapClass = isCompact ? "gap-x-4" : "gap-x-5";
 
@@ -736,7 +736,7 @@ export default function AdminPanel() {
 
   const renderDocumentLink = (event, type, label, fallbackUrl, customTitle = null) => {
     const history = Array.isArray(event.documentHistory) ? event.documentHistory : [];
-    
+
     // Find versions matching this type (and customTitle if custom_clearance)
     const versions = history.filter(docItem => {
       if (docItem.type !== type) return false;
@@ -900,18 +900,18 @@ export default function AdminPanel() {
     const endA = evt.endDate?.toDate ? evt.endDate.toDate().getTime() : new Date(evt.endDate).getTime();
     if (isNaN(startA) || isNaN(endA)) return false;
     const venueA = evt.venue.toLowerCase().trim();
-    
+
     return eventsList.some(other => {
       if (!other || other.eventId === evt.eventId) return false;
       if (!isProposalAccepted(other.status)) return false;
       if (!other.venue || !other.startDate || !other.endDate) return false;
       const venueB = other.venue.toLowerCase().trim();
       if (venueA !== venueB) return false;
-      
+
       const startB = other.startDate?.toDate ? other.startDate.toDate().getTime() : new Date(other.startDate).getTime();
       const endB = other.endDate?.toDate ? other.endDate.toDate().getTime() : new Date(other.endDate).getTime();
       if (isNaN(startB) || isNaN(endB)) return false;
-      
+
       return startA < endB && endA > startB;
     });
   };
@@ -922,7 +922,7 @@ export default function AdminPanel() {
     const month = date.getMonth();
     const firstDayIndex = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
-    
+
     const days = [];
     for (let i = 0; i < firstDayIndex; i++) {
       days.push(null);
@@ -1087,9 +1087,8 @@ export default function AdminPanel() {
             return (
               <div key={stg.num} className={`p-2.5 border-2 flex flex-col items-center text-center justify-between gap-1 transition-brutal ${bgColor}`}>
                 <div className="flex items-center gap-1.5 justify-center flex-wrap">
-                  <span className={`w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold ${
-                    isCompleted ? 'bg-[#ffe17c] text-[#171e19]' : isActive ? 'bg-[#171e19] text-[#ffe17c]' : 'bg-[#171e19]/10 text-[#171e19]/50'
-                  }`}>
+                  <span className={`w-4 h-4 rounded-full text-[9px] flex items-center justify-center font-bold ${isCompleted ? 'bg-[#ffe17c] text-[#171e19]' : isActive ? 'bg-[#171e19] text-[#ffe17c]' : 'bg-[#171e19]/10 text-[#171e19]/50'
+                    }`}>
                     {isCompleted ? '✓' : stg.num}
                   </span>
                   <span className="font-anton text-xs uppercase tracking-wide">{stg.name}</span>
@@ -1172,18 +1171,18 @@ export default function AdminPanel() {
   const getBadgeClass = (event) => getStatusDetails(event).colorClass;
 
   const renderApprovalBadges = (event, stageNum) => {
-    const approvals = 
-      stageNum === 1 ? (event.stage1Approvals || {}) : 
-      stageNum === 2 ? (event.stage2Approvals || {}) : 
-      (event.stage3Approvals || {});
-    const isFullyApprovedState = 
+    const approvals =
+      stageNum === 1 ? (event.stage1Approvals || {}) :
+        stageNum === 2 ? (event.stage2Approvals || {}) :
+          (event.stage3Approvals || {});
+    const isFullyApprovedState =
       (stageNum === 1 && event.status === 'proposal_approved') ||
       (stageNum === 2 && event.status === 'approved') ||
       (stageNum === 3 && (event.status === 'report_approved' || event.status === 'closed'));
 
     const isSuperAdminApproved = Boolean(
       isFullyApprovedState && (
-        approvals.super_admin?.approved || 
+        approvals.super_admin?.approved ||
         approvals.dosw?.viaSuperAdmin ||
         approvals.stuco?.viaSuperAdmin
       )
@@ -1223,13 +1222,13 @@ export default function AdminPanel() {
     const pendingProposals = allEvents.filter(e => e.status === 'submitted');
     const pendingPermissions = allEvents.filter(e => e.status === 'permissions_submitted');
     const pendingReports = allEvents.filter(e => e.status === 'report_submitted');
-    
+
     const sortedOverdue = overdue.sort((a, b) => {
       const dateA = a.reportDueDate?.toDate ? a.reportDueDate.toDate() : new Date(a.reportDueDate);
       const dateB = b.reportDueDate?.toDate ? b.reportDueDate.toDate() : new Date(b.reportDueDate);
       return dateA - dateB;
     });
-    
+
     const sortedPendingProposals = pendingProposals.sort((a, b) => {
       const dateA = a.startDate?.toDate ? a.startDate.toDate() : new Date(a.startDate);
       const dateB = b.startDate?.toDate ? b.startDate.toDate() : new Date(b.startDate);
@@ -1247,7 +1246,7 @@ export default function AdminPanel() {
       const dateB = b.reportSubmittedAt?.toDate ? b.reportSubmittedAt.toDate() : new Date(b.reportSubmittedAt || 0);
       return dateA - dateB;
     });
-    
+
     // Events waiting for council to upload permission documents (Stage 2, council's turn)
     const awaitingDocs = allEvents.filter(e => e.status === 'proposal_approved');
     const sortedAwaitingDocs = awaitingDocs.sort((a, b) => {
@@ -1303,7 +1302,7 @@ export default function AdminPanel() {
     }
     if (councilFilter !== 'All' && event.councilId !== councilFilter) return false;
     if (categoryFilter !== 'All' && event.category !== categoryFilter) return false;
-    
+
     if (startDateFilter) {
       const filterStart = new Date(startDateFilter).getTime();
       const eventStart = event.startDate?.toDate ? event.startDate.toMillis() : new Date(event.startDate).getTime();
@@ -1316,10 +1315,10 @@ export default function AdminPanel() {
     }
 
     const text = searchTerm.toLowerCase();
-    const matchesSearch = 
+    const matchesSearch =
       (event.eventName && event.eventName.toLowerCase().includes(text)) ||
       (event.eventId && event.eventId.toLowerCase().includes(text));
-      
+
     return matchesSearch;
   });
 
@@ -1434,9 +1433,8 @@ export default function AdminPanel() {
               </div>
 
               {resetMessage && (
-                <div className={`p-3 border-2 text-xs font-bold uppercase ${
-                  resetMessage.type === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-800'
-                }`}>
+                <div className={`p-3 border-2 text-xs font-bold uppercase ${resetMessage.type === 'error' ? 'bg-red-50 border-red-500 text-red-700' : 'bg-emerald-50 border-emerald-500 text-emerald-800'
+                  }`}>
                   {resetMessage.text}
                 </div>
               )}
@@ -1483,11 +1481,10 @@ export default function AdminPanel() {
     <div className="max-w-[1550px] mx-auto px-4 md:px-8 py-8 space-y-6">
       {/* Toast Notification */}
       {notification && (
-        <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${
-          notification.type === 'error' 
-            ? 'bg-red-50 border-red-500 text-red-800' 
+        <div className={`fixed bottom-5 right-5 z-50 flex items-center p-4 border transition-all duration-300 transform translate-y-0 rounded-none ${notification.type === 'error'
+            ? 'bg-red-50 border-red-500 text-red-800'
             : 'bg-emerald-50 border-emerald-500 text-emerald-800'
-        }`}>
+          }`}>
           <div className="font-satoshi text-xs font-bold uppercase tracking-wide">{notification.message}</div>
         </div>
       )}
@@ -1558,7 +1555,7 @@ export default function AdminPanel() {
       {selectedEventDetail && (
         <div className="fixed inset-0 z-40 bg-[#171e19]/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
           <div className="bg-white border-2 border-[#171e19] w-full max-w-5xl max-h-[92vh] overflow-hidden shadow-[8px_8px_0px_0px_#171e19] flex flex-col animate-slide-up">
-            
+
             {/* Modal Header Bar */}
             <div className="flex items-start justify-between border-b-2 border-[#171e19] px-6 py-4 shrink-0">
               <div className="flex items-center gap-3 flex-wrap">
@@ -1587,7 +1584,7 @@ export default function AdminPanel() {
 
             {/* Scrollable Body */}
             <div className="overflow-y-auto flex-1 p-6 space-y-5">
-              
+
               {/* Event Title Row */}
               <div>
                 <h3 className="font-anton text-4xl text-[#171e19] leading-tight tracking-tight">
@@ -1745,13 +1742,13 @@ export default function AdminPanel() {
                   <div className="border border-[#171e19]/15 p-5 space-y-3">
                     <span className="font-satoshi text-xs font-bold uppercase tracking-widest text-[#171e19]/60 block">Uploaded Documents</span>
                     <div className="grid grid-cols-1 gap-3 font-satoshi">
-                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl) && 
+                      {(selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl) &&
                         renderDocumentLink(selectedEventDetail, 'proposal', 'Proposal Document', selectedEventDetail.eventDescriptionUrl || selectedEventDetail.proposalDocumentUrl)
                       }
-                      {selectedEventDetail.eventOutcomeUrl && 
+                      {selectedEventDetail.eventOutcomeUrl &&
                         renderDocumentLink(selectedEventDetail, 'other_document', 'Event Outcome', selectedEventDetail.eventOutcomeUrl)
                       }
-                      {selectedEventDetail.doswPermissionLetterUrl && 
+                      {selectedEventDetail.doswPermissionLetterUrl &&
                         renderDocumentLink(selectedEventDetail, 'dosw_clearance', 'DoSW Clearance PDF', selectedEventDetail.doswPermissionLetterUrl)
                       }
                       {selectedEventDetail.customPermissionLetters && selectedEventDetail.customPermissionLetters.map((docItem, idx) => (
@@ -1759,10 +1756,10 @@ export default function AdminPanel() {
                           {renderDocumentLink(selectedEventDetail, 'custom_clearance', docItem.title || `Clearance Document ${idx + 1}`, docItem.url, docItem.title)}
                         </div>
                       ))}
-                      {selectedEventDetail.otherDocumentUrl && 
+                      {selectedEventDetail.otherDocumentUrl &&
                         renderDocumentLink(selectedEventDetail, 'other_document', 'Other Clearance PDF', selectedEventDetail.otherDocumentUrl)
                       }
-                      {selectedEventDetail.attendanceWaiverUrl && 
+                      {selectedEventDetail.attendanceWaiverUrl &&
                         renderDocumentLink(selectedEventDetail, 'attendance_waiver', 'Attendance Waiver PDF', selectedEventDetail.attendanceWaiverUrl)
                       }
                       {!selectedEventDetail.eventDescriptionUrl && !selectedEventDetail.proposalDocumentUrl && !selectedEventDetail.eventOutcomeUrl && !selectedEventDetail.doswPermissionLetterUrl && !selectedEventDetail.customPermissionLetters?.length && !selectedEventDetail.otherDocumentUrl && !selectedEventDetail.attendanceWaiverUrl && (
@@ -2108,9 +2105,8 @@ export default function AdminPanel() {
                 <button
                   type="button"
                   onClick={() => setPastEventForm(p => ({ ...p, isMultiSession: !p.isMultiSession }))}
-                  className={`px-4 py-2 font-anton text-xs uppercase tracking-wider border-2 border-[#171e19] transition-all cursor-pointer ${
-                    pastEventForm.isMultiSession ? 'bg-[#ffe17c] text-[#171e19]' : 'bg-white text-slate-700'
-                  }`}
+                  className={`px-4 py-2 font-anton text-xs uppercase tracking-wider border-2 border-[#171e19] transition-all cursor-pointer ${pastEventForm.isMultiSession ? 'bg-[#ffe17c] text-[#171e19]' : 'bg-white text-slate-700'
+                    }`}
                 >
                   {pastEventForm.isMultiSession ? '✓ Multi-Session Enabled' : 'Single Range'}
                 </button>
@@ -2299,7 +2295,7 @@ export default function AdminPanel() {
                       <span className="font-anton text-sm uppercase text-[#171e19]">Stage 1 Proposal PDF</span>
                     </div>
                     <p className="text-[11px] text-[#171e19]/60">Event proposal description document</p>
-                    
+
                     <label className="block cursor-pointer">
                       <input
                         type="file"
@@ -2618,22 +2614,20 @@ export default function AdminPanel() {
         <div className="lg:col-span-1 flex flex-row lg:flex-col overflow-x-auto lg:overflow-visible pb-2 lg:pb-0 gap-2 sm:gap-3 no-scrollbar">
           <button
             onClick={() => setActiveSubTab('dashboard')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
-              activeSubTab === 'dashboard'
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${activeSubTab === 'dashboard'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
-            }`}
+              }`}
           >
             <span>Overview Dashboard</span>
           </button>
-          
+
           <button
             onClick={() => setActiveSubTab('review')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
-              activeSubTab === 'review'
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${activeSubTab === 'review'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
-            }`}
+              }`}
           >
             <span>Review Proposals</span>
             {pendingEvents.length > 0 && (
@@ -2645,33 +2639,30 @@ export default function AdminPanel() {
 
           <button
             onClick={() => setActiveSubTab('logbook')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
-              activeSubTab === 'logbook'
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${activeSubTab === 'logbook'
                 ? 'bg-[#171e19] border-[#171e19] text-white'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
-            }`}
+              }`}
           >
             <span>Events Registry</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('calendar')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
-              activeSubTab === 'calendar'
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${activeSubTab === 'calendar'
                 ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
-            }`}
+              }`}
           >
             <span>Calendar View</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('councils')}
-            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${
-              activeSubTab === 'councils'
+            className={`px-4 py-3 font-anton uppercase tracking-wider text-xs sm:text-sm transition-brutal rounded-none flex items-center justify-between gap-3 border-2 shrink-0 whitespace-nowrap lg:w-full lg:whitespace-normal ${activeSubTab === 'councils'
                 ? 'bg-[#171e19] border-[#171e19] text-[#ffe17c]'
                 : 'bg-white border-[#171e19]/10 hover:border-[#171e19] text-[#171e19]'
-            }`}
+              }`}
           >
             <span>Council Directory</span>
           </button>
@@ -2695,11 +2686,10 @@ export default function AdminPanel() {
                     <p className="font-satoshi text-xs font-bold uppercase tracking-wider text-[#171e19] mt-1">Pending Approvals</p>
                   </div>
                 </div>
-                
+
                 {/* Card 2 — Stage 2: Awaiting council documents */}
-                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
-                  countAwaitingDocs > 0 ? 'bg-indigo-50/60 border-indigo-900' : ''
-                }`}>
+                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${countAwaitingDocs > 0 ? 'bg-indigo-50/60 border-indigo-900' : ''
+                  }`}>
                   <div className="flex items-center justify-between">
                     <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-indigo-900">Stage 2</span>
                     <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 border border-[#171e19]" />
@@ -2738,9 +2728,8 @@ export default function AdminPanel() {
                 </div>
 
                 {/* Card 5: Overdue Reports */}
-                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${
-                  countOverdueReports > 0 ? 'bg-red-50/70 border-red-600' : ''
-                }`}>
+                <div className={`bg-white border-2 border-[#171e19] p-5 rounded-none shadow-[4px_4px_0px_0px_#171e19] flex flex-col justify-between hover:translate-y-[-2px] transition-all ${countOverdueReports > 0 ? 'bg-red-50/70 border-red-600' : ''
+                  }`}>
                   <div className="flex items-center justify-between">
                     <span className="font-satoshi text-[10px] font-extrabold uppercase tracking-widest text-red-700">Action Required</span>
                     <span className={`w-2.5 h-2.5 rounded-full bg-red-600 border border-[#171e19] ${countOverdueReports > 0 ? 'animate-ping' : ''}`} />
@@ -2846,20 +2835,19 @@ export default function AdminPanel() {
                               const diffDays = due ? Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24)) : null;
                               const isOverdue = diffDays !== null && diffDays < 0;
                               return (
-                                <span className={`px-2.5 py-1 text-xs font-bold uppercase rounded-none border ${
-                                  isOverdue
+                                <span className={`px-2.5 py-1 text-xs font-bold uppercase rounded-none border ${isOverdue
                                     ? 'bg-red-800 border-red-900 text-white'
                                     : diffDays !== null && diffDays <= 3
-                                    ? 'bg-amber-400 border-amber-600 text-[#171e19]'
-                                    : 'bg-emerald-900 border-emerald-700 text-emerald-100'
-                                }`}>
+                                      ? 'bg-amber-400 border-amber-600 text-[#171e19]'
+                                      : 'bg-emerald-900 border-emerald-700 text-emerald-100'
+                                  }`}>
                                   {isOverdue
                                     ? `⚠ Report Overdue (${Math.abs(diffDays)}d ago)`
                                     : diffDays === 0
-                                    ? '⚠ Report Due Today!'
-                                    : due
-                                    ? `Stage 3 — Report Due in ${diffDays}d`
-                                    : 'Stage 3 — Report Pending'}
+                                      ? '⚠ Report Due Today!'
+                                      : due
+                                        ? `Stage 3 — Report Due in ${diffDays}d`
+                                        : 'Stage 3 — Report Pending'}
                                 </span>
                               );
                             })()}
@@ -2919,7 +2907,7 @@ export default function AdminPanel() {
                         <span className="w-2.5 h-2.5 bg-[#ffe17c] border border-[#171e19]" />
                         <h3 className="font-anton text-lg text-[#171e19] tracking-tight uppercase">Stage 1: Proposal Review Queue ({pendingProposals.length})</h3>
                       </div>
-                      
+
                       <div className="space-y-4">
                         {pendingProposals.map(event => (
                           <div key={event.eventId} className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
@@ -2947,7 +2935,7 @@ export default function AdminPanel() {
                                 <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
                                 {renderTimelineRows(event, true)}
                               </div>
-                              
+
                               <div className="flex gap-2 sm:self-start flex-wrap">
                                 <button
                                   onClick={() => openReviewDialog(event, 'proposal_approved')}
@@ -3076,7 +3064,7 @@ export default function AdminPanel() {
                                 <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
                                 {renderTimelineRows(event, true)}
                               </div>
-                              
+
                               <div className="flex gap-2 sm:self-start flex-wrap">
                                 <button
                                   onClick={() => openReviewDialog(event, 'approved')}
@@ -3205,7 +3193,7 @@ export default function AdminPanel() {
                                 <p className="font-satoshi text-[10px] uppercase font-semibold text-[#171e19]/60 mt-1">Contact: {event.studentContactName ? event.studentContactName.toUpperCase() : 'TBD'} {event.studentContactPhone ? `• ${event.studentContactPhone}` : ''}</p>
                                 {renderTimelineRows(event, true)}
                               </div>
-                              
+
                               <div className="flex gap-2 sm:self-start flex-wrap">
                                 <button
                                   onClick={() => openReviewDialog(event, 'closed')}
@@ -3461,24 +3449,24 @@ export default function AdminPanel() {
                                 {event.category?.replace('_', ' ')}
                               </td>
                               <td className="p-4">
-                                 {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 ? (
-                                   <div className="flex flex-col gap-1 text-xs">
-                                     {event.eventSessions.map((s, sIdx) => (
-                                       <span key={sIdx} className="bg-slate-100 px-2 py-0.5 border border-slate-200 rounded text-[#171e19] whitespace-nowrap font-medium">
-                                         {formatEventDate(s.startDate, 'MMM dd, yyyy') === formatEventDate(s.endDate, 'MMM dd, yyyy')
-                                           ? formatEventDate(s.startDate, 'MMM dd, yyyy')
-                                           : `${formatEventDate(s.startDate, 'MMM dd, yyyy')} - ${formatEventDate(s.endDate, 'MMM dd, yyyy')}`}
-                                       </span>
-                                     ))}
-                                   </div>
-                                 ) : (
-                                   <span className="whitespace-nowrap">
-                                     {formatEventDate(event.startDate, 'MMM dd, yyyy') === formatEventDate(event.endDate, 'MMM dd, yyyy')
-                                       ? formatEventDate(event.startDate, 'MMM dd, yyyy')
-                                       : `${formatEventDate(event.startDate, 'MMM dd, yyyy')} - ${formatEventDate(event.endDate, 'MMM dd, yyyy')}`}
-                                   </span>
-                                 )}
-                               </td>
+                                {event.isMultiSession && Array.isArray(event.eventSessions) && event.eventSessions.length > 0 ? (
+                                  <div className="flex flex-col gap-1 text-xs">
+                                    {event.eventSessions.map((s, sIdx) => (
+                                      <span key={sIdx} className="bg-slate-100 px-2 py-0.5 border border-slate-200 rounded text-[#171e19] whitespace-nowrap font-medium">
+                                        {formatEventDate(s.startDate, 'MMM dd, yyyy') === formatEventDate(s.endDate, 'MMM dd, yyyy')
+                                          ? formatEventDate(s.startDate, 'MMM dd, yyyy')
+                                          : `${formatEventDate(s.startDate, 'MMM dd, yyyy')} - ${formatEventDate(s.endDate, 'MMM dd, yyyy')}`}
+                                      </span>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="whitespace-nowrap">
+                                    {formatEventDate(event.startDate, 'MMM dd, yyyy') === formatEventDate(event.endDate, 'MMM dd, yyyy')
+                                      ? formatEventDate(event.startDate, 'MMM dd, yyyy')
+                                      : `${formatEventDate(event.startDate, 'MMM dd, yyyy')} - ${formatEventDate(event.endDate, 'MMM dd, yyyy')}`}
+                                  </span>
+                                )}
+                              </td>
                               <td className="p-4 uppercase font-bold text-[#171e19]">
                                 {event.venue ? event.venue.toUpperCase() : 'CRCE CAMPUS'}
                               </td>
@@ -3623,78 +3611,76 @@ export default function AdminPanel() {
                 <div className="overflow-x-auto pb-4 -mx-6 px-6 sm:mx-0 sm:px-0">
                   <div className="min-w-[768px]">
                     <div className="border-t border-l border-[#171e19]">
-                  <div className="grid grid-cols-7 border-b border-[#171e19] bg-[#b7c6c2]/10 font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70 text-center py-2">
-                    <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-                  </div>
-                  <div className="grid grid-cols-7">
-                    {getDaysInMonth(currentMonthDate).map((day, idx) => {
-                      const isToday = day && day.toDateString() === new Date().toDateString();
-                      const blockedInfo = isDayBlocked(day);
-                      const dayEvents = day ? allEvents.filter(event => {
-                        if (!isProposalAccepted(event.status)) return false;
-                        return isEventActiveOnDate(event, day);
-                      }) : [];
+                      <div className="grid grid-cols-7 border-b border-[#171e19] bg-[#b7c6c2]/10 font-satoshi text-[10px] font-bold uppercase tracking-wider text-[#171e19]/70 text-center py-2">
+                        <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                      </div>
+                      <div className="grid grid-cols-7">
+                        {getDaysInMonth(currentMonthDate).map((day, idx) => {
+                          const isToday = day && day.toDateString() === new Date().toDateString();
+                          const blockedInfo = isDayBlocked(day);
+                          const dayEvents = day ? allEvents.filter(event => {
+                            if (!isProposalAccepted(event.status)) return false;
+                            return isEventActiveOnDate(event, day);
+                          }) : [];
 
-                      return (
-                        <div
-                          key={idx}
-                          className={`min-h-[110px] p-2 border-r border-b border-[#171e19] flex flex-col font-satoshi transition-all relative ${
-                            isToday ? 'ring-2 ring-inset ring-[#171e19] z-10' : ''
-                          } ${blockedInfo ? 'bg-red-50' : 'bg-white'}`}
-                        >
-                          {day ? (
-                            <>
-                              {blockedInfo && (
-                                <div
-                                  className="absolute inset-0 pointer-events-none opacity-20"
-                                  style={{ backgroundImage: 'repeating-linear-gradient(45deg,#ef4444 0,#ef4444 2px,transparent 0,transparent 50%)', backgroundSize: '10px 10px' }}
-                                />
-                              )}
-                              <span className={`text-xs font-bold z-10 relative ${
-                                isToday ? 'text-white bg-[#171e19] px-1.5 py-0.5 self-start font-anton tracking-wide' :
-                                blockedInfo ? 'text-red-700' : 'text-[#171e19]'
-                              }`}>
-                                {day.getDate()}
-                              </span>
-                              {blockedInfo && (
-                                <div className="z-10 relative mt-1 mb-1">
-                                  <div
-                                    className="text-[9px] font-bold uppercase tracking-tight text-red-900 bg-red-100 border border-red-400 p-1 leading-tight flex items-start gap-1 rounded-none shadow-xs whitespace-normal break-words"
-                                    title={blockedInfo.reason}
-                                  >
-                                    <IconBan className="w-3 h-3 shrink-0 text-red-600 mt-0.5" />
-                                    <span className="break-words font-extrabold">{blockedInfo.reason}</span>
-                                  </div>
-                                </div>
-                              )}
-                              <div className="mt-1 space-y-1 flex-grow overflow-y-auto z-10 relative">
-                                {dayEvents.map(event => {
-                                  const clash = hasClash(event, allEvents);
-                                  return (
+                          return (
+                            <div
+                              key={idx}
+                              className={`min-h-[110px] p-2 border-r border-b border-[#171e19] flex flex-col font-satoshi transition-all relative ${isToday ? 'ring-2 ring-inset ring-[#171e19] z-10' : ''
+                                } ${blockedInfo ? 'bg-red-50' : 'bg-white'}`}
+                            >
+                              {day ? (
+                                <>
+                                  {blockedInfo && (
                                     <div
-                                      key={event.eventId}
-                                      onClick={() => setSelectedEventDetail(event)}
-                                      className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer break-words whitespace-normal leading-tight ${getEventStageChipClass(event.status)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
-                                      title={`${event.eventName}${event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''} (${clash ? 'CONFLICT!' : 'Scheduled'})`}
-                                    >
-                                      {event.eventName}{event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''}
-                                      {clash && <span className="ml-1 text-red-500 inline-flex"><IconWarning className="w-2.5 h-2.5" /></span>}
+                                      className="absolute inset-0 pointer-events-none opacity-20"
+                                      style={{ backgroundImage: 'repeating-linear-gradient(45deg,#ef4444 0,#ef4444 2px,transparent 0,transparent 50%)', backgroundSize: '10px 10px' }}
+                                    />
+                                  )}
+                                  <span className={`text-xs font-bold z-10 relative ${isToday ? 'text-white bg-[#171e19] px-1.5 py-0.5 self-start font-anton tracking-wide' :
+                                      blockedInfo ? 'text-red-700' : 'text-[#171e19]'
+                                    }`}>
+                                    {day.getDate()}
+                                  </span>
+                                  {blockedInfo && (
+                                    <div className="z-10 relative mt-1 mb-1">
+                                      <div
+                                        className="text-[9px] font-bold uppercase tracking-tight text-red-900 bg-red-100 border border-red-400 p-1 leading-tight flex items-start gap-1 rounded-none shadow-xs whitespace-normal break-words"
+                                        title={blockedInfo.reason}
+                                      >
+                                        <IconBan className="w-3 h-3 shrink-0 text-red-600 mt-0.5" />
+                                        <span className="break-words font-extrabold">{blockedInfo.reason}</span>
+                                      </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            </>
-                          ) : (
-                            <div className="bg-slate-50/50 w-full h-full min-h-[90px]" />
-                          )}
-                        </div>
-                      );
-                    })}
+                                  )}
+                                  <div className="mt-1 space-y-1 flex-grow overflow-y-auto z-10 relative">
+                                    {dayEvents.map(event => {
+                                      const clash = hasClash(event, allEvents);
+                                      return (
+                                        <div
+                                          key={event.eventId}
+                                          onClick={() => setSelectedEventDetail(event)}
+                                          className={`p-1 text-[9px] font-bold uppercase tracking-tight cursor-pointer break-words whitespace-normal leading-tight ${getEventStageChipClass(event.status)} ${clash ? 'border-2 border-dashed border-red-500' : ''}`}
+                                          title={`${event.eventName}${event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''} (${clash ? 'CONFLICT!' : 'Scheduled'})`}
+                                        >
+                                          {event.eventName}{event.venue && event.venue.trim() ? ` @ ${event.venue}` : ''}
+                                          {clash && <span className="ml-1 text-red-500 inline-flex"><IconWarning className="w-2.5 h-2.5" /></span>}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              ) : (
+                                <div className="bg-slate-50/50 w-full h-full min-h-[90px]" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
               {/* Blocked Dates Management Panel */}
               <div className="bg-white border-2 border-[#171e19] p-6 space-y-4 rounded-none">
@@ -3808,16 +3794,16 @@ export default function AdminPanel() {
                       if (searchTerm) {
                         const term = searchTerm.toLowerCase();
                         const matches = (m.name && m.name.toLowerCase().includes(term)) ||
-                                        (m.designation && m.designation.toLowerCase().includes(term)) ||
-                                        (m.contactNumber && m.contactNumber.toLowerCase().includes(term)) ||
-                                        (m.councilName && m.councilName.toLowerCase().includes(term));
+                          (m.designation && m.designation.toLowerCase().includes(term)) ||
+                          (m.contactNumber && m.contactNumber.toLowerCase().includes(term)) ||
+                          (m.councilName && m.councilName.toLowerCase().includes(term));
                         if (!matches) return false;
                       }
                       return true;
                     });
 
                     const activeCouncilIds = [...new Set(filteredMembers.map(m => m.councilId))];
-                    const displayCouncils = COUNCILS.filter(c => 
+                    const displayCouncils = COUNCILS.filter(c =>
                       councilFilter === 'All' ? activeCouncilIds.includes(c.id) : c.id === councilFilter
                     );
 
@@ -3840,7 +3826,7 @@ export default function AdminPanel() {
                           return (
                             <div key={c.id} className="border-2 border-[#171e19] bg-white space-y-0 shadow-[4px_4px_0px_0px_#ffe17c]">
                               {/* Council Header (Accordion Toggle) */}
-                              <button 
+                              <button
                                 onClick={() => toggleCouncilRoster(c.id)}
                                 className="w-full flex flex-col sm:flex-row sm:items-center justify-between p-5 hover:bg-[#ffe17c]/10 transition-colors text-left"
                               >
@@ -3851,7 +3837,7 @@ export default function AdminPanel() {
                                       {c.name}
                                     </h3>
                                   </div>
-                                  
+
                                   <div className="flex items-center gap-2 flex-wrap sm:ml-2">
                                     {councilMembersList[0] && (
                                       <span className="font-satoshi text-xs font-bold uppercase tracking-wider bg-[#171e19] text-white px-2 py-0.5 rounded-none flex items-center gap-1.5">
@@ -3865,7 +3851,7 @@ export default function AdminPanel() {
                                     )}
                                   </div>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-3 mt-3 sm:mt-0">
                                   <span className="font-anton text-xs uppercase tracking-widest px-3 py-1 bg-white border border-[#171e19] text-[#171e19] shrink-0">
                                     {councilMembersList.length} {councilMembersList.length === 1 ? 'MEMBER' : 'MEMBERS'}
