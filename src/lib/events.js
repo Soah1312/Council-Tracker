@@ -350,8 +350,9 @@ export async function deleteEventRequest(eventId) {
   if (snap.exists()) {
     const data = snap.data();
     const status = data.status;
-    if (!['submitted', 'revision_needed', 'rejected'].includes(status)) {
-      throw new Error('Deletion restricted: Proposal cannot be deleted once Stage 1 has been approved.');
+    const allowedStatuses = ['submitted', 'revision_needed', 'rejected', 'proposal_approved', 'permissions_submitted', 'permissions_revision_needed'];
+    if (!allowedStatuses.includes(status)) {
+      throw new Error('Deletion restricted: Events cannot be deleted once Stage 2 clearance has been fully approved.');
     }
     await deleteDoc(eventRef);
   }
