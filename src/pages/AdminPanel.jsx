@@ -881,8 +881,8 @@ export default function AdminPanel() {
 
   const isReportOverdue = (event) => {
     if (event.status !== 'approved' && event.status !== 'report_pending' && event.status !== 'report_revision_needed') return false;
-    if (!event.reportDueDate) return false;
-    const dueDate = event.reportDueDate.toDate ? event.reportDueDate.toDate() : new Date(event.reportDueDate);
+    const dueDate = getEventReportDueDate(event);
+    if (!dueDate) return false;
     return dueDate < new Date();
   };
 
