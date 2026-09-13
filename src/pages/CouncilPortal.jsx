@@ -822,7 +822,7 @@ export default function CouncilPortal() {
       case 'report_submitted':
       case 'report_revision_needed':
       case 'report_approved':
-        return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING (PENDING)', colorClass: 'bg-emerald-950 text-white' };
+        return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING', colorClass: 'bg-emerald-950 text-white' };
       case 'closed':
         return { num: 3, label: 'STAGE 3: COMPLETED / ARCHIVED', colorClass: 'bg-[#b7c6c2] text-[#171e19]' };
       default:

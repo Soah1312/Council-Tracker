@@ -1047,7 +1047,7 @@ export default function AdminPanel() {
       case 'report_submitted':
       case 'report_revision_needed':
       case 'report_approved':
-        return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING (PENDING)', colorClass: 'bg-emerald-950 text-white' };
+        return { num: 3, label: 'STAGE 3: POST-EVENT REPORTING', colorClass: 'bg-emerald-950 text-white' };
       case 'closed':
         return { num: 3, label: 'STAGE 3: COMPLETED / ARCHIVED', colorClass: 'bg-[#b7c6c2] text-[#171e19]' };
       default:
@@ -1059,7 +1059,7 @@ export default function AdminPanel() {
     let currentStage = 1;
     if (['proposal_approved', 'permissions_submitted', 'permissions_revision_needed'].includes(status)) {
       currentStage = 2;
-    } else if (['approved', 'closed', 'report_pending'].includes(status)) {
+    } else if (['approved', 'closed', 'report_pending', 'report_submitted', 'report_revision_needed', 'report_approved'].includes(status)) {
       currentStage = 3;
     }
 
@@ -1224,8 +1224,8 @@ export default function AdminPanel() {
     const pendingReports = allEvents.filter(e => e.status === 'report_submitted');
 
     const sortedOverdue = overdue.sort((a, b) => {
-      const dateA = a.reportDueDate?.toDate ? a.reportDueDate.toDate() : new Date(a.reportDueDate);
-      const dateB = b.reportDueDate?.toDate ? b.reportDueDate.toDate() : new Date(b.reportDueDate);
+      const dateA = getEventReportDueDate(a) || new Date(0);
+      const dateB = getEventReportDueDate(b) || new Date(0);
       return dateA - dateB;
     });
 
@@ -1259,8 +1259,8 @@ export default function AdminPanel() {
     const reportPendingEvents = allEvents.filter(e => e.status === 'approved' || e.status === 'report_pending');
     const sortedReportPending = reportPendingEvents.sort((a, b) => {
       // Sort overdue first, then by due date ascending
-      const dueA = a.reportDueDate?.toDate ? a.reportDueDate.toDate() : (a.reportDueDate ? new Date(a.reportDueDate) : new Date(9999, 0));
-      const dueB = b.reportDueDate?.toDate ? b.reportDueDate.toDate() : (b.reportDueDate ? new Date(b.reportDueDate) : new Date(9999, 0));
+      const dueA = getEventReportDueDate(a) || new Date(9999, 0);
+      const dueB = getEventReportDueDate(b) || new Date(9999, 0);
       return dueA - dueB;
     });
 
@@ -1597,15 +1597,15 @@ export default function AdminPanel() {
               {renderStageTracker(selectedEventDetail.status)}
 
               {/* Overdue / Deadline Banner */}
-              {selectedEventDetail.status === 'approved' && selectedEventDetail.reportDueDate && (
+              {(selectedEventDetail.status === 'approved' || selectedEventDetail.status === 'report_pending' || selectedEventDetail.status === 'report_revision_needed') && getEventReportDueDate(selectedEventDetail) && (
                 <div className="bg-amber-50 border border-amber-300 p-4 text-amber-800 flex items-center justify-between gap-3 flex-wrap font-medium text-sm font-satoshi">
                   <div>
                     <span className="font-bold text-xs uppercase tracking-wider text-amber-600 block mb-1">Report Submission Deadline</span>
-                    <span className="text-sm uppercase">Post-event report expected by {formatEventDate(selectedEventDetail.reportDueDate)}.</span>
+                    <span className="text-sm uppercase">Post-event report expected by {formatEventDate(getEventReportDueDate(selectedEventDetail))}.</span>
                   </div>
                   <span className="font-mono text-sm font-bold bg-amber-200 border border-amber-400 px-3 py-1 uppercase shrink-0">
                     {(() => {
-                      const due = selectedEventDetail.reportDueDate.toDate ? selectedEventDetail.reportDueDate.toDate() : new Date(selectedEventDetail.reportDueDate);
+                      const due = getEventReportDueDate(selectedEventDetail);
                       const diffDays = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
                       if (diffDays < 0) return `Overdue by ${Math.abs(diffDays)} days`;
                       if (diffDays === 0) return 'Due Today!';
@@ -2805,11 +2805,16 @@ export default function AdminPanel() {
                           </div>
 
                           <div className="flex items-center gap-3 shrink-0">
-                            {event.attentionReason === 'overdue' && (
-                              <span className="px-2.5 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] text-xs font-bold uppercase rounded-none">
-                                Report Overdue ({getDaysDiff(event.reportDueDate)}d)
-                              </span>
-                            )}
+                            {event.attentionReason === 'overdue' && (() => {
+                              const due = getEventReportDueDate(event);
+                              const diffDays = due ? Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                              const overdueDays = diffDays !== null && diffDays < 0 ? Math.abs(diffDays) : 0;
+                              return (
+                                <span className="px-2.5 py-1 bg-[#ffe17c] border border-[#171e19] text-[#171e19] text-xs font-bold uppercase rounded-none">
+                                  Report Overdue ({overdueDays}d)
+                                </span>
+                              );
+                            })()}
                             {event.attentionReason === 'pending_report' && (
                               <span className="px-2.5 py-1 bg-blue-900 border border-[#171e19]/30 text-white text-xs font-bold uppercase rounded-none">
                                 Report Submitted — Pending Review
