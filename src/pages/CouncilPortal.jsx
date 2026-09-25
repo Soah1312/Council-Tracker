@@ -955,7 +955,7 @@ export default function CouncilPortal() {
 
     const stages = [
       { num: 1, name: 'Proposal', desc: 'Stage 1: Concept & Description' },
-      { num: 2, name: 'Documents', desc: 'Stage 2: Documents Uploaded' },
+      { num: 2, name: 'Documents', desc: 'Stage 2: Documents & Clearances' },
       { num: 3, name: 'Report', desc: 'Stage 3: Wrap-up & Completion' }
     ];
 
